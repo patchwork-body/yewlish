@@ -1,0 +1,35 @@
+[package]
+name = "storybook"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "server"
+required-features = ["ssr"]
+
+[[bin]]
+name = "client"
+required-features = ["hydration"]
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+yew = "0.21.0"
+log = "0.4.21"
+implicit-clone = "0.4.9"
+serde_json = "1.0.117"
+serde = "1.0.203"
+slot = { path = "../slot" }
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+wasm-bindgen-futures = "0.4.42"
+wasm-logger = "0.2.0"
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+rocket = "0.5.1"
+clap = { version = "4.5.4", features = ["derive"] }
+tokio = "1.38.0"
+
+[features]
+hydration = ["yew/hydration"]
+ssr = ["yew/ssr"]

@@ -1,0 +1,3 @@
+[workspace]
+members = [ "popover", "slot", "storybook"]
+resolver = "2"
