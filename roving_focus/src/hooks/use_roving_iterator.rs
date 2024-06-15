@@ -1,5 +1,5 @@
-use crate::utils::Dir;
 use std::{cell::RefCell, rc::Rc};
+use utils::enums::dir::Dir;
 use yew::prelude::*;
 
 pub trait RovingIterator {

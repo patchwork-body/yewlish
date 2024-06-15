@@ -1,8 +1,9 @@
 use std::{cell::RefCell, rc::Rc};
 
 use implicit_clone::unsync::*;
-use roving_focus::{utils::*, RovingFocus};
+use roving_focus::RovingFocus;
 use toggle::*;
+use utils::enums::{dir::Dir, orientation::Orientation};
 use yew::prelude::*;
 
 #[derive(Clone, Debug, PartialEq)]

@@ -12,3 +12,4 @@ toggle = { path = "../toggle" }
 log = "0.4.21"
 web-sys = { version = "0.3.69", features = ["HtmlDivElement", "HtmlButtonElement"] }
 roving_focus = { path = "../roving_focus" }
+utils = { path = "../utils" }

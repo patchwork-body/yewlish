@@ -1,7 +1,6 @@
 use implicit_clone::unsync::*;
 use primitives::*;
-use roving_focus::utils::*;
-use utils::hooks::use_controllable_state::*;
+use utils::{enums::orientation::Orientation, hooks::use_controllable_state::*};
 use yew::prelude::*;
 
 #[derive(Clone, Debug, PartialEq, Properties)]

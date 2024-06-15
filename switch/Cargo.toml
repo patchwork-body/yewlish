@@ -1,5 +1,5 @@
 [package]
-name = "roving_focus"
+name = "switch"
 version = "0.1.0"
 edition = "2021"
 
@@ -7,7 +7,5 @@ edition = "2021"
 
 [dependencies]
 implicit-clone = "0.4.9"
-log = "0.4.21"
-web-sys = {version = "0.3.69", features = ["KeyboardEventInit"]}
 yew = "0.21.0"
 utils = { path = "../utils" }

@@ -1,34 +1,5 @@
-use implicit_clone::unsync::IString;
 use web_sys::wasm_bindgen::JsCast;
 use web_sys::{window, Element, HtmlElement, NodeList};
-use yew::html::IntoPropValue;
-
-#[derive(Clone, Debug, PartialEq)]
-pub enum Dir {
-    Ltr,
-    Rtl,
-}
-
-#[derive(Clone, Debug, PartialEq)]
-pub enum Orientation {
-    Horizontal,
-    Vertical,
-}
-
-impl Default for Orientation {
-    fn default() -> Self {
-        Self::Horizontal
-    }
-}
-
-impl IntoPropValue<Option<IString>> for Orientation {
-    fn into_prop_value(self) -> Option<IString> {
-        match self {
-            Self::Horizontal => Some("horizontal".into()),
-            Self::Vertical => Some("vertical".into()),
-        }
-    }
-}
 
 pub trait NodeListIntoVec {
     fn into_vec(self) -> Vec<HtmlElement>;
@@ -37,13 +8,14 @@ pub trait NodeListIntoVec {
 impl NodeListIntoVec for NodeList {
     fn into_vec(self) -> Vec<HtmlElement> {
         let mut elements = Vec::new();
-        for i in 0..self.length() {
-            if let Some(node) = self.item(i) {
+        for index in 0..self.length() {
+            if let Some(node) = self.item(index) {
                 if let Ok(html_element) = node.dyn_into::<HtmlElement>() {
                     elements.push(html_element);
                 }
             }
         }
+
         elements
     }
 }

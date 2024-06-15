@@ -1,11 +1,12 @@
+pub mod helpers;
 pub mod hooks;
-pub mod utils;
 
+use dir::Dir;
+use helpers::*;
 use hooks::{use_children_as_html_collection::*, use_keydown::*, use_roving_iterator::*};
 use implicit_clone::unsync::IString;
-use utils::{
-    focus_child, get_next_focusable_element, get_prev_focusable_element, Dir, Orientation,
-};
+use orientation::Orientation;
+use utils::enums::*;
 use web_sys::{wasm_bindgen::JsCast, HtmlElement};
 use yew::prelude::*;
 

@@ -1,9 +1,10 @@
 use icons::*;
 use implicit_clone::unsync::IString;
-use roving_focus::*;
+use separator::*;
+use switch::*;
 use toggle::*;
 use toggle_group::*;
-use utils::Orientation;
+use utils::enums::orientation::Orientation;
 use yew::prelude::*;
 
 #[derive(Clone, Debug, PartialEq, Properties)]
@@ -54,6 +55,23 @@ pub fn app() -> Html {
         flex gap-5 data-[orientation=vertical]:flex-col
     "##;
 
+    let separator_class = r##"
+        border-t border-neutral-600 mx-10
+    "##;
+
+    let switch_class = r##"
+        peer inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full
+        border-2 border-transparent transition-colors focus-visible:outline-none
+        focus-visible:ring-2 focus-visible:ring-neutral-100 focus-visible:ring-offset-2
+        focus-visible:ring-offset-neutral-950 disabled:cursor-not-allowed disabled:opacity-50
+        data-[state=checked]:bg-neutral-100 data-[state=unchecked]:bg-neutral-800
+    "##;
+
+    let switch_thumb_class = r##"
+        pointer-events-none block h-5 w-5 rounded-full bg-neutral-950 shadow-lg ring-0 transition-transform
+        data-[state=checked]:translate-x-5 data-[state=unchecked]:translate-x-0
+    "##;
+
     let on_pressed_change = Callback::from(|next_state: bool| {
         log::info!("Pressed changed: {:?}", next_state);
     });
@@ -89,6 +107,8 @@ pub fn app() -> Html {
                     </Toggle>
                 </Section>
             </Wrapper>
+
+            <Separator class={separator_class} />
 
             <Wrapper title="ToggleGroup - Horizontal">
                 <Section title="Default value">
@@ -172,6 +192,8 @@ pub fn app() -> Html {
                 </Section>
             </Wrapper>
 
+            <Separator class={separator_class} />
+
             <Wrapper title="ToggleGroup - Vertical">
                 <Section title="Default value">
                     <ToggleGroup class={toggle_group_class} default_value={vec!["2".into()]} orientation={Orientation::Vertical}>
@@ -251,6 +273,34 @@ pub fn app() -> Html {
                             <FontItalicIcon width="48" height="48" />
                         </ToggleGroupItem>
                     </ToggleGroup>
+                </Section>
+            </Wrapper>
+
+            <Separator class={separator_class} />
+
+            <Wrapper title="Switch">
+                <Section title="Default">
+                    <Switch class={switch_class}>
+                        <SwitchThumb class={switch_thumb_class} />
+                    </Switch>
+                </Section>
+
+                <Section title="Default Checked">
+                    <Switch class={switch_class} default_checked={true}>
+                        <SwitchThumb class={switch_thumb_class} />
+                    </Switch>
+                </Section>
+
+                <Section title="Disabled">
+                    <Switch class={switch_class} disabled={true}>
+                        <SwitchThumb class={switch_thumb_class} />
+                    </Switch>
+                </Section>
+
+                <Section title="Disabled * Checked">
+                    <Switch class={switch_class} disabled={true} default_checked={true}>
+                        <SwitchThumb class={switch_thumb_class} />
+                    </Switch>
                 </Section>
             </Wrapper>
         </div>

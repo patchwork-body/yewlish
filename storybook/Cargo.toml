@@ -25,6 +25,9 @@ toggle_group = { path = "../toggle_group" }
 icons = { path = "../icons" }
 primitives = { path = "../primitives" }
 roving_focus = { path = "../roving_focus" }
+utils = { path = "../utils" }
+separator = { path = "../separator" }
+switch = { path = "../switch" }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 wasm-bindgen-futures = "0.4.42"
