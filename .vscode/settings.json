@@ -2,8 +2,16 @@
   "cSpell.words": [
     "accesskey",
     "autocapitalize",
+    "bindgen",
     "describedby",
+    "evenodd",
+    "focusin",
+    "keydown",
     "labelledby",
+    "onclick",
+    "onfocusin",
+    "onkeydown",
+    "onlcick",
     "Slottable",
     "structopt",
     "unsync"

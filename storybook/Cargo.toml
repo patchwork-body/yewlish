@@ -20,6 +20,11 @@ implicit-clone = "0.4.9"
 serde_json = "1.0.117"
 serde = "1.0.203"
 slot = { path = "../slot" }
+toggle = { path = "../toggle" }
+toggle_group = { path = "../toggle_group" }
+icons = { path = "../icons" }
+primitives = { path = "../primitives" }
+roving_focus = { path = "../roving_focus" }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 wasm-bindgen-futures = "0.4.42"

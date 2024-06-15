@@ -1,0 +1,14 @@
+[package]
+name = "toggle"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+yew = "0.21.0"
+log = "0.4.21"
+implicit-clone = "0.4.9"
+primitives = { path = "../primitives" }
+utils = { path = "../utils" }
+roving_focus = { path = "../roving_focus" }

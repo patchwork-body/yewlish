@@ -129,16 +129,6 @@ pub fn slot(props: &SlotProps) -> Html {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Properties)]
-pub struct ButtonProps {
-    #[prop_or_default]
-    pub children: Children,
-    #[prop_or_default]
-    pub as_child: bool,
-    #[prop_or_default]
-    pub r#type: AttrValue,
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -1,0 +1,14 @@
+[package]
+name = "toggle_group"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+implicit-clone = "0.4.9"
+yew = "0.21.0"
+toggle = { path = "../toggle" }
+log = "0.4.21"
+web-sys = { version = "0.3.69", features = ["HtmlDivElement", "HtmlButtonElement"] }
+roving_focus = { path = "../roving_focus" }
