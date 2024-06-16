@@ -1,3 +1,4 @@
+use checkbox::*;
 use icons::*;
 use implicit_clone::unsync::IString;
 use separator::*;
@@ -29,13 +30,33 @@ pub fn wrapper(props: &WrapperProps) -> Html {
 #[derive(Clone, Debug, PartialEq, Properties)]
 pub struct SectionProps {
     pub title: IString,
+    #[prop_or_default]
+    pub class: Option<IString>,
     pub children: Children,
 }
 
 #[function_component(Section)]
 pub fn section(props: &SectionProps) -> Html {
+    let class = classes!(
+        "flex",
+        "flex-col",
+        "flex-1",
+        "gap-y-5",
+        "items-center",
+        "border",
+        "rounded-md",
+        "p-5",
+        "border-neutral-600",
+        "focus-within:border-neutral-100",
+        "text-neutral-400",
+        "focus-within:text-neutral-100",
+        "hover:text-neutral-100",
+        "transition-colors",
+        props.class.as_ref()
+    );
+
     html! {
-        <section class="flex flex-col flex-1 gap-y-5 items-center border rounded-md p-5 border-neutral-600 focus-within:border-neutral-100 text-neutral-400 focus-within:text-neutral-100 hover:text-neutral-100 transition-colors">
+        <section class={class}>
             <h3 class="text-lg whitespace-nowrap">{props.title.clone()}</h3>
             {props.children.clone()}
         </section>
@@ -72,18 +93,27 @@ pub fn app() -> Html {
         data-[state=checked]:translate-x-5 data-[state=unchecked]:translate-x-0
     "##;
 
+    let checkbox_class = r##"
+        peer h-4 w-4 shrink-0 rounded-sm border border-neutral-100 ring-offset-neutral-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-100 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:bg-neutral-100 data-[state=checked]:text-neutral-950
+    "##;
+
+    let checkbox_indicator_class = r##"
+        flex items-center justify-center text-current
+    "##;
+
     let on_pressed_change = Callback::from(|next_state: bool| {
         log::info!("Pressed changed: {:?}", next_state);
     });
 
-    let state = use_state(|| false);
+    let toggle_state = use_state(|| false);
+    let checkbox_state = use_state(|| CheckedState::Unchecked);
 
     html! {
         <div class="flex flex-col min-h-screen bg-neutral-950">
             <Wrapper title="Toggle">
                 <Section title="Controllable">
-                    <Toggle class={toggle_class} pressed={*state} on_pressed_change={Callback::from(move |new_state| {
-                        state.set(new_state);
+                    <Toggle class={toggle_class} pressed={*toggle_state} on_pressed_change={Callback::from(move |new_state| {
+                        toggle_state.set(new_state);
                     })}>
                         <FontItalicIcon width="48" height="48" />
                     </Toggle>
@@ -301,6 +331,61 @@ pub fn app() -> Html {
                     <Switch class={switch_class} disabled={true} default_checked={true}>
                         <SwitchThumb class={switch_thumb_class} />
                     </Switch>
+                </Section>
+            </Wrapper>
+
+            <Separator class={separator_class} />
+
+            <Wrapper title="Checkbox">
+                <Section title="Default">
+                    <div class="flex flex-row items-center gap-x-2">
+                        <Checkbox id="checkbox#1" class={checkbox_class}>
+                            <CheckboxIndicator class={checkbox_indicator_class} show_when={CheckedState::Checked}>
+                                <CheckIcon />
+                            </CheckboxIndicator>
+                        </Checkbox>
+
+                        <label for="checkbox#1" class="text-neutral-200">{"Accept terms and conditions"}</label>
+                    </div>
+                </Section>
+
+                <Section title="Default value">
+                    <div class="flex flex-row items-center gap-x-2">
+                        <Checkbox id="checkbox#2" class={checkbox_class} default_checked={CheckedState::Checked}>
+                            <CheckboxIndicator class={checkbox_indicator_class} show_when={CheckedState::Checked}>
+                                <CheckIcon />
+                            </CheckboxIndicator>
+                        </Checkbox>
+
+                        <label for="checkbox#2" class="text-neutral-200">{"Accept terms and conditions"}</label>
+                    </div>
+                </Section>
+
+                <Section title="Controlled">
+                    <div class="flex flex-row items-center gap-x-2">
+                        <Checkbox id="checkbox#3" class={checkbox_class} checked={(*checkbox_state).clone()} on_checked_change={{
+                            let checkbox_state = checkbox_state.clone();
+                            Callback::from(move |checked: CheckedState| checkbox_state.set(checked))
+                        }}>
+                            <CheckboxIndicator class={checkbox_indicator_class} show_when={CheckedState::Checked}>
+                                <CheckIcon />
+                            </CheckboxIndicator>
+                        </Checkbox>
+
+                        <label for="checkbox#3" class="text-neutral-200">{"Accept terms and conditions: "} {if *checkbox_state == CheckedState::Checked {"+"} else {"-"}}</label>
+                    </div>
+                </Section>
+
+                <Section title="Disabled">
+                    <div class="flex flex-row items-center gap-x-2">
+                        <Checkbox id="checkbox#4" class={checkbox_class} disabled={true}>
+                            <CheckboxIndicator class={checkbox_indicator_class} show_when={CheckedState::Checked}>
+                                <CheckIcon />
+                            </CheckboxIndicator>
+                        </Checkbox>
+
+                        <label for="checkbox#4" class="text-neutral-200">{"Accept terms and conditions: "}</label>
+                    </div>
                 </Section>
             </Wrapper>
         </div>

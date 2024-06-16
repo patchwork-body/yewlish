@@ -28,6 +28,7 @@ roving_focus = { path = "../roving_focus" }
 utils = { path = "../utils" }
 separator = { path = "../separator" }
 switch = { path = "../switch" }
+checkbox = { path = "../checkbox" }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 wasm-bindgen-futures = "0.4.42"
