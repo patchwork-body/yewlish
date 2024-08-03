@@ -68,6 +68,8 @@ pub struct PopoverTriggerRenderAsProps {
     pub class: Option<AttrValue>,
     #[prop_or_default]
     pub toggle: Callback<MouseEvent>,
+    #[prop_or_default]
+    pub data_state: &'static str,
 }
 
 #[derive(Clone, Debug, PartialEq, Properties)]
@@ -97,16 +99,28 @@ pub fn popover_trigger(props: &PopoverTriggerProps) -> Html {
         }
     });
 
+    let data_state = use_memo(
+        context.is_open,
+        |is_open| {
+            if *is_open {
+                "open"
+            } else {
+                "closed"
+            }
+        },
+    );
+
     if let Some(render_as) = &props.render_as {
         return render_as.emit(PopoverTriggerRenderAsProps {
             children: props.children.clone(),
             class: props.class.clone(),
             toggle,
+            data_state: *data_state,
         });
     }
 
     html! {
-        <button class={&props.class} onclick={&toggle}>
+        <button data-state={*data_state} class={&props.class} onclick={&toggle}>
             {props.children.clone()}
         </button>
     }

@@ -453,10 +453,10 @@ pub fn app() -> Html {
                 <Section title="Default">
                     <Popover>
                         <PopoverTrigger class="flex justify-center gap-x-2" render_as={Callback::from(move |params| {
-                            let PopoverTriggerRenderAsProps { class, children, toggle } = params;
+                            let PopoverTriggerRenderAsProps { class, children, toggle, data_state } = params;
 
                             html! {
-                                 <label class={&class}>
+                                 <label class={&class} data-state={data_state}>
                                     <Switch class={switch_class} onclick={toggle}>
                                         <SwitchThumb class={switch_thumb_class} />
                                     </Switch>
