@@ -2,7 +2,7 @@ use attr_passer::*;
 use presence::*;
 use std::rc::Rc;
 use utils::hooks::use_controllable_state::use_controllable_state;
-use web_sys::Element;
+use web_sys::{wasm_bindgen::UnwrapThrowExt, Element};
 use yew::prelude::*;
 
 #[derive(Debug, Clone, PartialEq)]
@@ -156,6 +156,8 @@ pub struct PopoverContentProps {
     pub children: Children,
     #[prop_or_default]
     pub class: Option<AttrValue>,
+    #[prop_or_default]
+    pub container: Option<Element>,
 }
 
 #[function_component(PopoverContent)]
@@ -163,14 +165,14 @@ pub fn popover_content(props: &PopoverContentProps) -> Html {
     let context = use_context::<ReduciblePopoverContext>()
         .expect("PopoverContent must be a child of Popover");
 
-    let host = context.host.cast::<Element>();
-
-    if host.is_none() {
-        log::error!("PopoverContent must be a child of Popover");
-        return html! {};
-    }
-
-    let host = host.unwrap();
+    let host = use_memo(
+        (props.container.clone(), context.host.clone()),
+        |(container, context_host)| {
+            container
+                .clone()
+                .unwrap_or_else(|| context_host.cast::<Element>().unwrap_throw())
+        },
+    );
 
     create_portal(
         html! {
@@ -182,6 +184,6 @@ pub fn popover_content(props: &PopoverContentProps) -> Html {
                 </Presence>
             </AttrPasser>
         },
-        host,
+        (*host).clone(),
     )
 }
