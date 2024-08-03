@@ -11,3 +11,4 @@ web-sys = "0.3.69"
 log = "0.4.21"
 attr_passer = { path = "../attr_passer" }
 presence = { path = "../presence" }
+utils = { path = "../utils" }
