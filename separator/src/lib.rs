@@ -1,11 +1,10 @@
-use implicit_clone::unsync::*;
 use utils::enums::orientation::Orientation;
 use yew::prelude::*;
 
 #[derive(Clone, Debug, PartialEq, Properties)]
 pub struct SeparatorProps {
     #[prop_or_default]
-    pub class: Option<IString>,
+    pub class: Option<AttrValue>,
     #[prop_or_default]
     pub orientation: Orientation,
     #[prop_or_default]

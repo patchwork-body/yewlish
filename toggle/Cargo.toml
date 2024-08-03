@@ -8,7 +8,6 @@ edition = "2021"
 [dependencies]
 yew = "0.21.0"
 log = "0.4.21"
-implicit-clone = "0.4.9"
 primitives = { path = "../primitives" }
 roving_focus = { path = "../roving_focus" }
 utils = { path = "../utils" }

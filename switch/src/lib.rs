@@ -1,16 +1,18 @@
 use std::rc::Rc;
 
-use implicit_clone::unsync::*;
-use utils::hooks::use_controllable_state::use_controllable_state;
+use utils::{
+    helpers::combine_handlers::combine_handlers,
+    hooks::use_controllable_state::use_controllable_state,
+};
 use yew::prelude::*;
 
 #[derive(Clone, Debug, PartialEq, Properties)]
 pub struct SwitchProps {
     pub children: ChildrenWithProps<SwitchThumb>,
     #[prop_or_default]
-    pub id: Option<IString>,
+    pub id: Option<AttrValue>,
     #[prop_or_default]
-    pub class: Option<IString>,
+    pub class: Option<AttrValue>,
     #[prop_or_default]
     pub default_checked: Option<bool>,
     #[prop_or_default]
@@ -22,9 +24,11 @@ pub struct SwitchProps {
     #[prop_or_default]
     pub required: bool,
     #[prop_or_default]
-    pub name: Option<IString>,
+    pub name: Option<AttrValue>,
     #[prop_or_default]
-    pub value: Option<IString>,
+    pub value: Option<AttrValue>,
+    #[prop_or_default]
+    pub onclick: Option<Callback<MouseEvent>>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -88,7 +92,7 @@ pub fn switch(props: &SwitchProps) -> Html {
                 disabled={props.disabled}
                 name={&props.name}
                 value={&props.value}
-                onclick={toggle}
+                onclick={&combine_handlers(props.onclick.clone(), toggle.into())}
             >
                 {for props.children.iter()}
             </button>
@@ -99,7 +103,7 @@ pub fn switch(props: &SwitchProps) -> Html {
 #[derive(Clone, Debug, PartialEq, Properties)]
 pub struct SwitchThumbProps {
     #[prop_or_default]
-    pub class: Option<IString>,
+    pub class: Option<AttrValue>,
 }
 
 #[function_component(SwitchThumb)]

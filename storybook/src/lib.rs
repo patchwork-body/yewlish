@@ -1,6 +1,7 @@
 use checkbox::*;
 use icons::*;
-use implicit_clone::unsync::IString;
+use popover::*;
+use radio_group::*;
 use separator::*;
 use switch::*;
 use toggle::*;
@@ -10,7 +11,7 @@ use yew::prelude::*;
 
 #[derive(Clone, Debug, PartialEq, Properties)]
 pub struct WrapperProps {
-    pub title: IString,
+    pub title: AttrValue,
     pub children: Children,
 }
 
@@ -29,9 +30,9 @@ pub fn wrapper(props: &WrapperProps) -> Html {
 
 #[derive(Clone, Debug, PartialEq, Properties)]
 pub struct SectionProps {
-    pub title: IString,
+    pub title: AttrValue,
     #[prop_or_default]
-    pub class: Option<IString>,
+    pub class: Option<AttrValue>,
     pub children: Children,
 }
 
@@ -68,8 +69,8 @@ pub fn app() -> Html {
     let toggle_class = r##"
         text-neutral-100 bg-transparent p-1 rounded-md
         hover:text-neutral-400 hover:bg-neutral-800 focus-visible:ring-2 focus-visible:ring-neutral-400
-        data-[state=on]:bg-neutral-800 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-neutral-100
-        outline-none transition-colors duration-300
+        data-[state=on]:bg-neutral-800 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent
+        disabled:hover:text-neutral-100 outline-none transition-colors duration-300
     "##;
 
     let toggle_group_class = r##"
@@ -94,11 +95,36 @@ pub fn app() -> Html {
     "##;
 
     let checkbox_class = r##"
-        peer h-4 w-4 shrink-0 rounded-sm border border-neutral-100 ring-offset-neutral-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-100 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:bg-neutral-100 data-[state=checked]:text-neutral-950
+        peer h-4 w-4 shrink-0 rounded-sm border border-neutral-100 ring-offset-neutral-950 focus-visible:outline-none
+        focus-visible:ring-2 focus-visible:ring-neutral-100 focus-visible:ring-offset-2 disabled:cursor-not-allowed
+        disabled:opacity-50 data-[state=checked]:bg-neutral-100 data-[state=checked]:text-neutral-950
+    "##;
+
+    let checkbox_label_class = r##"
+        text-neutral-200 text-nowrap
     "##;
 
     let checkbox_indicator_class = r##"
         flex items-center justify-center text-current
+    "##;
+
+    let radio_group_class = r##"
+        flex flex-row gap-5
+    "##;
+
+    let radio_group_inner_class = r##"
+        flex flex-row items-center gap-x-2
+    "##;
+
+    let radio_group_item_class = r##"
+        aspect-square h-4 w-4 rounded-full border border-neutral-100 text-neutral-100
+        ring-offset-neutral-950 focus:outline-none focus-visible:ring-2 focus-visible:ring-neutral-100
+        focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50
+    "##;
+
+    let radio_group_item_indicator_class = r##"
+        flex items-center justify-center w-full h-full relative after:content-[''] after:block after:w-[8px]
+        after:h-[8px] after:rounded-[50%] after:bg-neutral-100
     "##;
 
     let on_pressed_change = Callback::from(|next_state: bool| {
@@ -345,7 +371,7 @@ pub fn app() -> Html {
                             </CheckboxIndicator>
                         </Checkbox>
 
-                        <label for="checkbox#1" class="text-neutral-200">{"Accept terms and conditions"}</label>
+                        <label for="checkbox#1" class={checkbox_label_class}>{"Accept terms and conditions"}</label>
                     </div>
                 </Section>
 
@@ -357,7 +383,7 @@ pub fn app() -> Html {
                             </CheckboxIndicator>
                         </Checkbox>
 
-                        <label for="checkbox#2" class="text-neutral-200">{"Accept terms and conditions"}</label>
+                        <label for="checkbox#2" class={checkbox_label_class}>{"Accept terms and conditions"}</label>
                     </div>
                 </Section>
 
@@ -372,7 +398,7 @@ pub fn app() -> Html {
                             </CheckboxIndicator>
                         </Checkbox>
 
-                        <label for="checkbox#3" class="text-neutral-200">{"Accept terms and conditions: "} {if *checkbox_state == CheckedState::Checked {"+"} else {"-"}}</label>
+                        <label for="checkbox#3" class={checkbox_label_class}>{"Accept terms and conditions: "} {if *checkbox_state == CheckedState::Checked {"+"} else {"-"}}</label>
                     </div>
                 </Section>
 
@@ -384,8 +410,70 @@ pub fn app() -> Html {
                             </CheckboxIndicator>
                         </Checkbox>
 
-                        <label for="checkbox#4" class="text-neutral-200">{"Accept terms and conditions: "}</label>
+                        <label for="checkbox#4" class={checkbox_label_class}>{"Accept terms and conditions: "}</label>
                     </div>
+                </Section>
+            </Wrapper>
+
+            <Separator class={separator_class} />
+
+            <Wrapper title="RadioGroup">
+                <Section title="Default">
+                    <RadioGroup class={radio_group_class}>
+                        <div class={radio_group_inner_class}>
+                            <RadioGroupItem id="radio#1" name="radio" value="1" class={radio_group_item_class}>
+                                <RadioGroupItemIndicator class={radio_group_item_indicator_class} />
+                            </RadioGroupItem>
+
+                            <label for="radio#1" class="text-neutral-200">{"Option 1"}</label>
+                        </div>
+
+                        <div class={radio_group_inner_class}>
+                            <RadioGroupItem id="radio#2" name="radio" value="2" class={radio_group_item_class}>
+                                <RadioGroupItemIndicator class={radio_group_item_indicator_class} />
+                            </RadioGroupItem>
+
+                            <label for="radio#2" class="text-neutral-200">{"Option 2"}</label>
+                        </div>
+
+                        <div class={radio_group_inner_class}>
+                            <RadioGroupItem id="radio#3" name="radio" value="3" class={radio_group_item_class}>
+                                <RadioGroupItemIndicator class={radio_group_item_indicator_class} />
+                            </RadioGroupItem>
+
+                            <label for="radio#3" class="text-neutral-200">{"Option 3"}</label>
+                        </div>
+                    </RadioGroup>
+                </Section>
+            </Wrapper>
+
+            <Separator class={separator_class} />
+
+            <Wrapper title="Popover">
+                <Section title="Default">
+                    <Popover>
+                        <PopoverTrigger class="flex justify-center gap-x-2" render_as={Callback::from(move |params| {
+                            let PopoverTriggerRenderAsProps { class, children, toggle } = params;
+
+                            html! {
+                                 <label class={&class}>
+                                    <Switch class={switch_class} onclick={toggle}>
+                                        <SwitchThumb class={switch_thumb_class} />
+                                    </Switch>
+
+                                    {children}
+                                 </label>
+                            }
+                        })}>
+                            {"Open"}
+                        </PopoverTrigger>
+
+                        <PopoverContent class="data-[state=open]:animate-fade-in data-[state=closed]:animate-fade-out">
+                            <div class="p-5 bg-neutral-800 rounded-md">
+                                <p class="text-neutral-200">{"Hello, World!"}</p>
+                            </div>
+                        </PopoverContent>
+                    </Popover>
                 </Section>
             </Wrapper>
         </div>

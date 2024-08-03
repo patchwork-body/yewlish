@@ -1,6 +1,11 @@
 {
   "cSpell.words": [
     "accesskey",
+    "animationcancel",
+    "animationend",
+    "animationstart",
+    "arbitrify",
+    "attributify",
     "autocapitalize",
     "bindgen",
     "describedby",
@@ -9,12 +14,15 @@
     "keydown",
     "labelledby",
     "onclick",
+    "onfocus",
     "onfocusin",
     "onkeydown",
     "onlcick",
+    "radiogroup",
     "Slottable",
     "structopt",
     "tabindex",
+    "unocss",
     "unsync"
   ]
 }

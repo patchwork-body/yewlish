@@ -1,4 +1,3 @@
-use implicit_clone::unsync::*;
 use primitives::*;
 use utils::{enums::orientation::Orientation, hooks::use_controllable_state::*};
 use yew::prelude::*;
@@ -16,11 +15,11 @@ pub struct ToggleProps {
     #[prop_or_default]
     pub disabled: bool,
     #[prop_or_default]
-    pub class: Option<IString>,
+    pub class: Option<AttrValue>,
     #[prop_or_default]
     pub node_ref: NodeRef,
     #[prop_or_default]
-    pub r#type: Option<IString>,
+    pub r#type: Option<AttrValue>,
     #[prop_or_default]
     pub on_click: Callback<MouseEvent>,
     #[prop_or_default]
@@ -39,7 +38,7 @@ pub fn toggle(props: &ToggleProps) -> Html {
         dispatch.emit(Box::new(move |prev_state| !prev_state));
     });
 
-    let aria_pressed: Option<IString> = if *value.borrow() {
+    let aria_pressed: Option<AttrValue> = if *value.borrow() {
         Some("true".into())
     } else {
         Some("false".into())
@@ -51,7 +50,7 @@ pub fn toggle(props: &ToggleProps) -> Html {
         DataState::Off
     };
 
-    let disabled: Option<IString> = if props.disabled {
+    let disabled: Option<AttrValue> = if props.disabled {
         Some("true".into())
     } else {
         None

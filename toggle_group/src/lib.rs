@@ -1,6 +1,5 @@
 use std::{cell::RefCell, rc::Rc};
 
-use implicit_clone::unsync::*;
 use roving_focus::RovingFocus;
 use toggle::*;
 use utils::enums::{dir::Dir, orientation::Orientation};
@@ -15,15 +14,15 @@ pub enum ToggleGroupType {
 #[derive(Clone, Debug, PartialEq)]
 pub struct ToggleGroupContext {
     pub(crate) r#type: ToggleGroupType,
-    pub(crate) value: Rc<RefCell<Vec<IString>>>,
+    pub(crate) value: Rc<RefCell<Vec<AttrValue>>>,
     pub(crate) disabled: bool,
     pub(crate) orientation: Orientation,
 }
 
 pub enum ToggleGroupAction {
-    Activate(IString),
-    Deactivate(IString),
-    Replace(IString),
+    Activate(AttrValue),
+    Deactivate(AttrValue),
+    Replace(AttrValue),
 }
 
 impl Reducible for ToggleGroupContext {
@@ -75,15 +74,15 @@ pub struct ToggleGroupProps {
     #[prop_or(ToggleGroupType::Radio)]
     pub r#type: ToggleGroupType,
     #[prop_or_default]
-    pub default_value: Option<Vec<IString>>,
+    pub default_value: Option<Vec<AttrValue>>,
     #[prop_or_default]
-    pub value: Option<Vec<IString>>,
+    pub value: Option<Vec<AttrValue>>,
     #[prop_or_default]
-    pub on_value_change: Callback<Vec<IString>>,
+    pub on_value_change: Callback<Vec<AttrValue>>,
     #[prop_or_default]
     pub disabled: bool,
     #[prop_or_default]
-    pub class: Option<IString>,
+    pub class: Option<AttrValue>,
     #[prop_or(true)]
     pub roving_focus: bool,
     #[prop_or_default]
@@ -137,13 +136,13 @@ pub fn toggle_group(props: &ToggleGroupProps) -> Html {
 
 #[derive(Clone, Debug, PartialEq, Properties)]
 pub struct ToggleGroupItemProps {
-    pub value: IString,
+    pub value: AttrValue,
     #[prop_or_default]
     pub children: Children,
     #[prop_or_default]
     pub disabled: bool,
     #[prop_or_default]
-    pub class: Option<IString>,
+    pub class: Option<AttrValue>,
 }
 
 #[function_component(ToggleGroupItem)]

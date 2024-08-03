@@ -1,5 +1,4 @@
-use implicit_clone::unsync::IString;
-use yew::html::IntoPropValue;
+use yew::{html::IntoPropValue, AttrValue};
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Orientation {
@@ -13,8 +12,8 @@ impl Default for Orientation {
     }
 }
 
-impl IntoPropValue<Option<IString>> for Orientation {
-    fn into_prop_value(self) -> Option<IString> {
+impl IntoPropValue<Option<AttrValue>> for Orientation {
+    fn into_prop_value(self) -> Option<AttrValue> {
         match self {
             Self::Horizontal => Some("horizontal".into()),
             Self::Vertical => Some("vertical".into()),

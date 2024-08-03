@@ -4,7 +4,6 @@ pub mod hooks;
 use dir::Dir;
 use helpers::*;
 use hooks::{use_children_as_html_collection::*, use_keydown::*, use_roving_iterator::*};
-use implicit_clone::unsync::IString;
 use orientation::Orientation;
 use utils::enums::*;
 use web_sys::{wasm_bindgen::JsCast, HtmlElement};
@@ -14,13 +13,15 @@ use yew::prelude::*;
 pub struct RovingFocusProps {
     pub children: Children,
     #[prop_or_default]
-    pub class: Option<IString>,
+    pub class: Option<AttrValue>,
     #[prop_or_default]
     pub orientation: Orientation,
     #[prop_or(Dir::Ltr)]
     pub dir: Dir,
     #[prop_or(true)]
     pub r#loop: bool,
+    #[prop_or_default]
+    pub role: Option<AttrValue>,
 }
 
 #[function_component(RovingFocus)]
@@ -66,30 +67,30 @@ pub fn roving_focus(props: &RovingFocusProps) -> Html {
                     "Home" => roving_iterator.borrow_mut().first(dir),
                     "End" => roving_iterator.borrow_mut().last(dir),
                     "Tab" => {
-                        if event.shift_key() {
-                            let last_focusable_element = children.item(0);
-
-                            let next_outside_focusable_element = get_prev_focusable_element(
-                                last_focusable_element
-                                    .unwrap()
-                                    .dyn_into::<HtmlElement>()
-                                    .unwrap(),
-                            );
-
-                            next_outside_focusable_element.focus().unwrap();
+                        let last_focusable_element_index = if event.shift_key() {
+                            0
                         } else {
-                            let last_focusable_element =
-                                children.item(roving_iterator.borrow().length - 1);
+                            roving_iterator.borrow().length - 1
+                        };
 
-                            let next_outside_focusable_element = get_next_focusable_element(
-                                last_focusable_element
-                                    .unwrap()
-                                    .dyn_into::<HtmlElement>()
-                                    .unwrap(),
+                        children
+                            .item(last_focusable_element_index)
+                            .and_then(|element| element.dyn_into::<HtmlElement>().ok())
+                            .and_then(|html_element| get_focusable_element(&html_element))
+                            .map(|html_element| {
+                                if event.shift_key() {
+                                    get_prev_focusable_element(html_element)
+                                } else {
+                                    get_next_focusable_element(html_element)
+                                }
+                            })
+                            .and_then(|next_outside_focusable_element| {
+                                next_outside_focusable_element.focus().err()
+                            })
+                            .map_or_else(
+                                || {},
+                                |error| log::error!("Failed to focus the element: {:?}", error),
                             );
-
-                            next_outside_focusable_element.focus().unwrap();
-                        }
 
                         *is_focus_entered.borrow_mut() = false;
                         None
@@ -143,7 +144,7 @@ pub fn roving_focus(props: &RovingFocusProps) -> Html {
     );
 
     html! {
-        <div class={&props.class} data-orientation={props.orientation.clone()} ref={node_ref} onfocusin={&focus_last_focused_child} onkeydown={&navigate_through_children}>
+        <div role={props.role.clone()} class={&props.class} data-orientation={props.orientation.clone()} ref={node_ref} onfocusin={&focus_last_focused_child} onkeydown={&navigate_through_children}>
             {for props.children.iter()}
         </div>
     }

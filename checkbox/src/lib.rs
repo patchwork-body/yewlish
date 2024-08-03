@@ -2,7 +2,6 @@ use std::default::Default;
 use std::rc::Rc;
 
 use html::IntoPropValue;
-use implicit_clone::unsync::*;
 use utils::hooks::use_controllable_state::use_controllable_state;
 use yew::prelude::*;
 
@@ -13,8 +12,8 @@ pub enum CheckedState {
     Unchecked,
 }
 
-impl IntoPropValue<Option<IString>> for CheckedState {
-    fn into_prop_value(self) -> Option<IString> {
+impl IntoPropValue<Option<AttrValue>> for CheckedState {
+    fn into_prop_value(self) -> Option<AttrValue> {
         match self {
             CheckedState::Checked => Some("checked".into()),
             CheckedState::Unchecked => Some("unchecked".into()),
@@ -55,9 +54,9 @@ type ReducibleCheckboxContext = UseReducerHandle<CheckboxContext>;
 pub struct CheckboxProps {
     pub children: ChildrenWithProps<CheckboxIndicator>,
     #[prop_or_default]
-    pub id: Option<IString>,
+    pub id: Option<AttrValue>,
     #[prop_or_default]
-    pub class: Option<IString>,
+    pub class: Option<AttrValue>,
     #[prop_or_default]
     pub default_checked: Option<CheckedState>,
     #[prop_or_default]
@@ -69,9 +68,9 @@ pub struct CheckboxProps {
     #[prop_or_default]
     pub required: bool,
     #[prop_or_default]
-    pub name: Option<IString>,
+    pub name: Option<AttrValue>,
     #[prop_or_default]
-    pub value: Option<IString>,
+    pub value: Option<AttrValue>,
 }
 
 #[function_component(Checkbox)]
@@ -109,7 +108,7 @@ pub fn checkbox(props: &CheckboxProps) -> Html {
         <ContextProvider<ReducibleCheckboxContext> context={context_value}>
             <button
                 id={props.id.clone()}
-                class={props.class.clone()}
+                class={&props.class}
                 type="button"
                 role="checkbox"
                 aria-checked={if *checked.borrow() == CheckedState::Checked { "true" } else { "false" }}
@@ -131,7 +130,9 @@ pub fn checkbox(props: &CheckboxProps) -> Html {
 #[derive(Clone, Debug, PartialEq, Properties)]
 pub struct CheckboxIndicatorProps {
     #[prop_or_default]
-    pub class: Option<IString>,
+    pub id: Option<AttrValue>,
+    #[prop_or_default]
+    pub class: Option<AttrValue>,
     #[prop_or_default]
     pub children: Children,
     #[prop_or_default]
@@ -149,7 +150,7 @@ pub fn checkbox_indicator(props: &CheckboxIndicatorProps) -> Html {
 
     html! {
         <span
-            class={props.class.clone()}
+            class={&props.class}
             data-state={if context.checked == CheckedState::Checked { "checked" } else { "unchecked" }}
             data-disabled={if context.disabled { Some(String::new()) } else { None::<String> }}
         >
