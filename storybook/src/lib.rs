@@ -508,6 +508,46 @@ pub fn app() -> Html {
                         </PopoverContent>
                     </Popover>
                 </Section>
+
+                <Section title="With render_as">
+                    <Popover>
+                        <PopoverTrigger class="flex justify-center gap-x-2" render_as={Callback::from(move |params| {
+                            let PopoverTriggerRenderAsProps { class, children, toggle, data_state } = params;
+
+                            html! {
+                                 <label class={&class} data-state={data_state}>
+                                    <Switch class={switch_class} onclick={toggle}>
+                                        <SwitchThumb class={switch_thumb_class} />
+                                    </Switch>
+
+                                    {children}
+                                 </label>
+                            }
+                        })}>
+                            {"Open"}
+                        </PopoverTrigger>
+
+                        <PopoverContent render_as={Callback::from(move |params| {
+                            let PopoverContentRenderAsProps { children, class, is_open } = params;
+
+                            if is_open {
+                                return html! {
+                                    <div class={class}>
+                                        {children}
+                                    </div>
+                                };
+                            }
+
+                            html! {
+                                { "Popover is closed" }
+                            }
+                        })} class="data-[state=open]:animate-fade-in data-[state=closed]:animate-fade-out">
+                            <div class="p-5 bg-neutral-800 rounded-md">
+                                <p class="text-neutral-200">{"Hello, World!"}</p>
+                            </div>
+                        </PopoverContent>
+                    </Popover>
+                </Section>
             </Wrapper>
         </div>
     }
