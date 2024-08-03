@@ -1,7 +1,7 @@
-use std::rc::Rc;
-
 use attr_passer::*;
 use presence::*;
+use std::rc::Rc;
+use utils::hooks::use_controllable_state::use_controllable_state;
 use web_sys::Element;
 use yew::prelude::*;
 
@@ -9,6 +9,7 @@ use yew::prelude::*;
 pub struct PopoverContext {
     pub host: NodeRef,
     pub is_open: bool,
+    pub on_toggle: Callback<MouseEvent>,
 }
 
 pub enum PopoverAction {
@@ -40,20 +41,41 @@ pub type ReduciblePopoverContext = UseReducerHandle<PopoverContext>;
 #[derive(Clone, Debug, PartialEq, Properties)]
 pub struct PopoverProps {
     pub children: Children,
+    #[prop_or_default]
+    pub open: bool,
+    #[prop_or_default]
+    pub on_open_change: Callback<bool>,
+    #[prop_or_default]
+    pub default_open: bool,
+    #[prop_or_default]
+    pub class: Option<AttrValue>,
 }
 
 #[function_component(Popover)]
 pub fn popover(props: &PopoverProps) -> Html {
     let node_ref = use_node_ref();
 
+    let (is_open, dispatch) = use_controllable_state(
+        props.default_open.into(),
+        props.open.into(),
+        props.on_open_change.clone(),
+    );
+
+    let on_toggle = use_callback(dispatch.clone(), {
+        move |_event: MouseEvent, dispatch| {
+            dispatch.emit(Box::new(|prev_state| !prev_state));
+        }
+    });
+
     let context_value = use_reducer(|| PopoverContext {
         host: node_ref.clone(),
-        is_open: false,
+        is_open: *is_open.borrow(),
+        on_toggle,
     });
 
     html! {
         <ContextProvider<ReduciblePopoverContext> context={context_value}>
-            <div ref={node_ref}>
+            <div ref={node_ref} class={&props.class}>
                 {props.children.clone()}
             </div>
         </ContextProvider<ReduciblePopoverContext>>
@@ -90,7 +112,9 @@ pub fn popover_trigger(props: &PopoverTriggerProps) -> Html {
     let toggle = use_callback(context.is_open, {
         let context = context.clone();
 
-        move |_event: MouseEvent, _| {
+        move |event: MouseEvent, _| {
+            context.on_toggle.emit(event);
+
             if context.is_open {
                 context.dispatch(PopoverAction::Close);
             } else {
