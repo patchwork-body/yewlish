@@ -527,12 +527,10 @@ pub fn app() -> Html {
                             {"Open"}
                         </PopoverTrigger>
 
-                        <PopoverContent render_as={Callback::from(move |params| {
-                            let PopoverContentRenderAsProps { children, class, is_open } = params;
-
+                        <PopoverContent render_as={Callback::from(move |PopoverContentRenderAsProps { children, class, is_open, style }| {
                             if is_open {
                                 return html! {
-                                    <div class={class}>
+                                    <div class={class} style={style}>
                                         {children}
                                     </div>
                                 };
