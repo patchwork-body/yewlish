@@ -7,7 +7,7 @@ edition = "2021"
 
 [dependencies]
 yew = "0.21.0"
-web-sys = "0.3.69"
+web-sys = { version = "0.3.69", features = ["Element", "DomRect"] }
 log = "0.4.21"
 attr_passer = { path = "../attr_passer" }
 presence = { path = "../presence" }
