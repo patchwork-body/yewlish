@@ -99,9 +99,9 @@ pub struct PopoverTriggerProps {
     #[prop_or_default]
     pub children: Children,
     #[prop_or_default]
-    pub render_as: Option<Callback<PopoverTriggerRenderAsProps, Html>>,
-    #[prop_or_default]
     pub class: Option<AttrValue>,
+    #[prop_or_default]
+    pub render_as: Option<Callback<PopoverTriggerRenderAsProps, Html>>,
 }
 
 #[function_component(PopoverTrigger)]
@@ -151,6 +151,16 @@ pub fn popover_trigger(props: &PopoverTriggerProps) -> Html {
 }
 
 #[derive(Clone, Debug, PartialEq, Properties)]
+pub struct PopoverContentRenderAsProps {
+    #[prop_or_default]
+    pub children: Children,
+    #[prop_or_default]
+    pub class: Option<AttrValue>,
+    #[prop_or_default]
+    pub is_open: bool,
+}
+
+#[derive(Clone, Debug, PartialEq, Properties)]
 pub struct PopoverContentProps {
     #[prop_or_default]
     pub children: Children,
@@ -158,6 +168,8 @@ pub struct PopoverContentProps {
     pub class: Option<AttrValue>,
     #[prop_or_default]
     pub container: Option<Element>,
+    #[prop_or_default]
+    pub render_as: Option<Callback<PopoverContentRenderAsProps, Html>>,
 }
 
 #[function_component(PopoverContent)]
@@ -174,7 +186,13 @@ pub fn popover_content(props: &PopoverContentProps) -> Html {
         },
     );
 
-    create_portal(
+    let result = if let Some(render_as) = &props.render_as {
+        return render_as.emit(PopoverContentRenderAsProps {
+            children: props.children.clone(),
+            class: props.class.clone(),
+            is_open: context.is_open,
+        });
+    } else {
         html! {
             <AttrPasser ..attributify! {
                 "data-state" => if context.is_open { "open" } else { "closed" }
@@ -183,7 +201,8 @@ pub fn popover_content(props: &PopoverContentProps) -> Html {
                     {props.children.clone()}
                 </Presence>
             </AttrPasser>
-        },
-        (*host).clone(),
-    )
+        }
+    };
+
+    create_portal(html! {{ result }}, (*host).clone())
 }
