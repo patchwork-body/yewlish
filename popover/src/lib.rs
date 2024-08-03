@@ -150,14 +150,31 @@ pub fn popover_trigger(props: &PopoverTriggerProps) -> Html {
     }
 }
 
+#[derive(Clone, Debug, PartialEq, Default)]
+pub enum PopoverSide {
+    Top,
+    Right,
+    #[default]
+    Bottom,
+    Left,
+}
+
+#[derive(Clone, Debug, PartialEq, Default)]
+pub enum PopoverAlign {
+    Start,
+    #[default]
+    Center,
+    End,
+}
+
 #[derive(Clone, Debug, PartialEq, Properties)]
 pub struct PopoverContentRenderAsProps {
+    pub is_open: bool,
+    pub style: AttrValue,
     #[prop_or_default]
     pub children: Children,
     #[prop_or_default]
     pub class: Option<AttrValue>,
-    #[prop_or_default]
-    pub is_open: bool,
 }
 
 #[derive(Clone, Debug, PartialEq, Properties)]
@@ -170,6 +187,10 @@ pub struct PopoverContentProps {
     pub container: Option<Element>,
     #[prop_or_default]
     pub render_as: Option<Callback<PopoverContentRenderAsProps, Html>>,
+    #[prop_or_default]
+    pub side: PopoverSide,
+    #[prop_or_default]
+    pub align: PopoverAlign,
 }
 
 #[function_component(PopoverContent)]
@@ -186,16 +207,58 @@ pub fn popover_content(props: &PopoverContentProps) -> Html {
         },
     );
 
+    let style = stringify!(
+        position: fixed;
+        top: 0;
+        left: 0;
+        will-change: transform;
+    )
+    .to_string();
+
+    let dom_rect = host.get_bounding_client_rect();
+
+    let transform = format!(
+        "transform: translate({}, {});",
+        match props.side {
+            PopoverSide::Right => format!("calc({}px + {}px)", dom_rect.x(), dom_rect.width()),
+            PopoverSide::Top | PopoverSide::Bottom => match props.align {
+                PopoverAlign::Start => format!("calc({}px - 100%)", dom_rect.x()),
+                PopoverAlign::Center => format!(
+                    "calc({}px - (max(100%, {}px) - min(100%, {}px)) / 2)",
+                    dom_rect.x(),
+                    dom_rect.width(),
+                    dom_rect.width()
+                ),
+                PopoverAlign::End => format!("calc({}px + {}px)", dom_rect.x(), dom_rect.width()),
+            },
+            PopoverSide::Left => format!("calc({}px - 100%)", dom_rect.x()),
+        },
+        match props.side {
+            PopoverSide::Top => format!("calc({}px - 100%)", dom_rect.y()),
+            PopoverSide::Bottom => format!("calc({}px + {}px)", dom_rect.y(), dom_rect.height()),
+            PopoverSide::Right | PopoverSide::Left => match props.align {
+                PopoverAlign::Start => format!("calc({}px - 100%)", dom_rect.y()),
+                PopoverAlign::Center =>
+                    format!("calc({}px - {}px)", dom_rect.y(), dom_rect.height()),
+                PopoverAlign::End => format!("calc({}px + {}px)", dom_rect.y(), dom_rect.height()),
+            },
+        },
+    );
+
+    let style = format!("{} {}", style, transform);
+
     let result = if let Some(render_as) = &props.render_as {
         return render_as.emit(PopoverContentRenderAsProps {
             children: props.children.clone(),
             class: props.class.clone(),
             is_open: context.is_open,
+            style: style.into(),
         });
     } else {
         html! {
             <AttrPasser ..attributify! {
-                "data-state" => if context.is_open { "open" } else { "closed" }
+                "data-state" => if context.is_open { "open" } else { "closed" },
+                "style" => style,
             }>
                 <Presence present={context.is_open} class={&props.class}>
                     {props.children.clone()}
