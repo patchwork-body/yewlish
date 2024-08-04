@@ -19,7 +19,6 @@ log = "0.4.21"
 serde_json = "1.0.117"
 serde = "1.0.203"
 web-sys = {version = "0.3.69", features = ["Document", "HtmlElement", "Location"]}
-slot = { path = "../slot" }
 toggle = { path = "../toggle" }
 toggle_group = { path = "../toggle_group" }
 icons = { path = "../icons" }
