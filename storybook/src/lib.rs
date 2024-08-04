@@ -134,6 +134,30 @@ pub fn app() -> Html {
     let toggle_state = use_state(|| false);
     let checkbox_state = use_state(|| CheckedState::Unchecked);
 
+    let popover_container = use_state(|| {
+        web_sys::window()
+            .unwrap()
+            .document()
+            .unwrap()
+            .get_element_by_id("container-for-popover")
+    });
+
+    {
+        let popover_container = popover_container.clone();
+
+        use_effect(move || {
+            if popover_container.is_none() {
+                popover_container.set(
+                    web_sys::window()
+                        .unwrap()
+                        .document()
+                        .unwrap()
+                        .get_element_by_id("container-for-popover"),
+                );
+            }
+        });
+    }
+
     html! {
         <div class="flex flex-col min-h-screen bg-neutral-950">
             <Wrapper title="Toggle">
@@ -494,19 +518,16 @@ pub fn app() -> Html {
                             {"Open"}
                         </PopoverTrigger>
 
-                        <PopoverContent container={
-                            web_sys::window()
-                                .unwrap()
-                                .document()
-                                .unwrap()
-                                .body()
-                                .map(|body| body.into())
-                        } class="data-[state=open]:animate-fade-in data-[state=closed]:animate-fade-out">
+                        <PopoverContent container={(*popover_container).clone()} class="data-[state=open]:animate-fade-in data-[state=closed]:animate-fade-out">
                             <div class="p-5 bg-neutral-800 rounded-md">
                                 <p class="text-neutral-200">{"Hello, World!"}</p>
                             </div>
                         </PopoverContent>
                     </Popover>
+
+                    <span id="container-for-popover">
+                        { "Container for Popover" }
+                    </span>
                 </Section>
 
                 <Section title="With render_as">
