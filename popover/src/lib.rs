@@ -2,7 +2,7 @@ use attr_passer::*;
 use presence::*;
 use std::rc::Rc;
 use utils::hooks::use_controllable_state::use_controllable_state;
-use web_sys::{wasm_bindgen::UnwrapThrowExt, Element};
+use web_sys::Element;
 use yew::prelude::*;
 
 #[derive(Debug, Clone, PartialEq)]
@@ -198,14 +198,14 @@ pub fn popover_content(props: &PopoverContentProps) -> Html {
     let context = use_context::<ReduciblePopoverContext>()
         .expect("PopoverContent must be a child of Popover");
 
-    let host = use_memo(
-        (props.container.clone(), context.host.clone()),
-        |(container, context_host)| {
-            container
-                .clone()
-                .unwrap_or_else(|| context_host.cast::<Element>().unwrap_throw())
-        },
-    );
+    let host = props.container.clone().unwrap_or_else(|| {
+        context
+            .host
+            .cast::<Element>()
+            .expect("PopoverContent must be a child of Popover")
+    });
+
+    let dom_rect = host.get_bounding_client_rect();
 
     let style = stringify!(
         position: fixed;
@@ -215,8 +215,6 @@ pub fn popover_content(props: &PopoverContentProps) -> Html {
     )
     .to_string();
 
-    let dom_rect = host.get_bounding_client_rect();
-
     let transform = format!(
         "transform: translate({}, {});",
         match props.side {
@@ -224,10 +222,9 @@ pub fn popover_content(props: &PopoverContentProps) -> Html {
             PopoverSide::Top | PopoverSide::Bottom => match props.align {
                 PopoverAlign::Start => format!("calc({}px - 100%)", dom_rect.x()),
                 PopoverAlign::Center => format!(
-                    "calc({}px - (max(100%, {}px) - min(100%, {}px)) / 2)",
+                    "calc({}px - (100% - {}px) / 2)",
                     dom_rect.x(),
                     dom_rect.width(),
-                    dom_rect.width()
                 ),
                 PopoverAlign::End => format!("calc({}px + {}px)", dom_rect.x(), dom_rect.width()),
             },
@@ -244,6 +241,8 @@ pub fn popover_content(props: &PopoverContentProps) -> Html {
             },
         },
     );
+
+    log::debug!("dom_rect: {:?}", dom_rect.width());
 
     let style = format!("{} {}", style, transform);
 
@@ -267,5 +266,5 @@ pub fn popover_content(props: &PopoverContentProps) -> Html {
         }
     };
 
-    create_portal(html! {{ result }}, (*host).clone())
+    create_portal(html! {{ result }}, host)
 }
