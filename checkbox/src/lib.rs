@@ -86,6 +86,15 @@ pub fn checkbox(props: &CheckboxProps) -> Html {
         disabled: props.disabled,
     });
 
+    use_effect_with(
+        ((*checked).clone().borrow().clone(), context_value.clone()),
+        |(checked, context_value)| {
+            if *checked != context_value.checked {
+                context_value.dispatch(CheckboxAction::Toggle);
+            }
+        },
+    );
+
     let toggle = use_callback(
         (dispatch.clone(), context_value.clone()),
         move |_: MouseEvent, (dispatch, context_value)| {

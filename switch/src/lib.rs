@@ -70,6 +70,15 @@ pub fn switch(props: &SwitchProps) -> Html {
         disabled: props.disabled,
     });
 
+    use_effect_with(
+        (*checked.borrow(), context_value.clone()),
+        |(checked, context_value)| {
+            if *checked != context_value.checked {
+                context_value.dispatch(SwitchAction::Toggle);
+            }
+        },
+    );
+
     let toggle = use_callback(
         context_value.clone(),
         move |_event: MouseEvent, context_value| {
@@ -111,10 +120,18 @@ pub fn switch_thumb(props: &SwitchThumbProps) -> Html {
     let context =
         use_context::<ReducibleSwitchContext>().expect("SwitchThumb must be a child of Switch");
 
+    let data_state = use_memo(context.checked, |checked| {
+        if *checked {
+            "checked"
+        } else {
+            "unchecked"
+        }
+    });
+
     html! {
         <div
             class={&props.class}
-            data-state={if context.checked { "checked" } else { "unchecked" }}
+            data-state={*data_state}
             data-disabled={context.disabled.to_string()}
         ></div>
     }

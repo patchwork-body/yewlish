@@ -1,15 +1,16 @@
 use attr_passer::*;
 use presence::*;
 use std::rc::Rc;
-use utils::hooks::use_controllable_state::use_controllable_state;
-use web_sys::Element;
+use utils::hooks::use_controllable_state;
+use web_sys::wasm_bindgen::JsCast;
+use web_sys::{wasm_bindgen::prelude::Closure, Element};
 use yew::prelude::*;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct PopoverContext {
     pub host: NodeRef,
     pub is_open: bool,
-    pub on_toggle: Callback<MouseEvent>,
+    pub on_toggle: Callback<Event>,
 }
 
 pub enum PopoverAction {
@@ -62,7 +63,7 @@ pub fn popover(props: &PopoverProps) -> Html {
     );
 
     let on_toggle = use_callback(dispatch.clone(), {
-        move |_event: MouseEvent, dispatch| {
+        move |_event: Event, dispatch| {
             dispatch.emit(Box::new(|prev_state| !prev_state));
         }
     });
@@ -84,14 +85,13 @@ pub fn popover(props: &PopoverProps) -> Html {
 
 #[derive(Clone, Debug, PartialEq, Properties)]
 pub struct PopoverTriggerRenderAsProps {
+    pub toggle: Callback<MouseEvent>,
+    pub is_open: bool,
+    pub data_state: &'static str,
     #[prop_or_default]
     pub children: Children,
     #[prop_or_default]
     pub class: Option<AttrValue>,
-    #[prop_or_default]
-    pub toggle: Callback<MouseEvent>,
-    #[prop_or_default]
-    pub data_state: &'static str,
 }
 
 #[derive(Clone, Debug, PartialEq, Properties)]
@@ -113,7 +113,7 @@ pub fn popover_trigger(props: &PopoverTriggerProps) -> Html {
         let context = context.clone();
 
         move |event: MouseEvent, _| {
-            context.on_toggle.emit(event);
+            context.on_toggle.emit(event.into());
 
             if context.is_open {
                 context.dispatch(PopoverAction::Close);
@@ -139,6 +139,7 @@ pub fn popover_trigger(props: &PopoverTriggerProps) -> Html {
             children: props.children.clone(),
             class: props.class.clone(),
             toggle,
+            is_open: context.is_open,
             data_state: *data_state,
         });
     }
@@ -191,6 +192,8 @@ pub struct PopoverContentProps {
     pub side: PopoverSide,
     #[prop_or_default]
     pub align: PopoverAlign,
+    #[prop_or_default]
+    pub on_esc_key_down: Callback<KeyboardEvent>,
 }
 
 #[function_component(PopoverContent)]
@@ -204,6 +207,29 @@ pub fn popover_content(props: &PopoverContentProps) -> Html {
             .cast::<Element>()
             .expect("PopoverContent must be a child of Popover")
     });
+
+    {
+        let context = context.clone();
+
+        use_effect_with(host.clone(), |host| {
+            let listener = Closure::wrap(Box::new(move |event: KeyboardEvent| {
+                event.stop_propagation();
+                context.on_toggle.emit(event.into());
+                context.dispatch(PopoverAction::Close);
+            }) as Box<dyn FnMut(_)>);
+
+            let _ =
+                host.add_event_listener_with_callback("keydown", listener.as_ref().unchecked_ref());
+            let host = host.clone();
+
+            move || {
+                let _ = host.remove_event_listener_with_callback(
+                    "keydown",
+                    listener.as_ref().unchecked_ref(),
+                );
+            }
+        });
+    }
 
     let dom_rect = host.get_bounding_client_rect();
 
@@ -242,8 +268,6 @@ pub fn popover_content(props: &PopoverContentProps) -> Html {
         },
     );
 
-    log::debug!("dom_rect: {:?}", dom_rect.width());
-
     let style = format!("{} {}", style, transform);
 
     let result = if let Some(render_as) = &props.render_as {
@@ -258,6 +282,7 @@ pub fn popover_content(props: &PopoverContentProps) -> Html {
             <AttrPasser ..attributify! {
                 "data-state" => if context.is_open { "open" } else { "closed" },
                 "style" => style,
+                "role" => "dialog",
             }>
                 <Presence present={context.is_open} class={&props.class}>
                     {props.children.clone()}
