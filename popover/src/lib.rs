@@ -211,24 +211,36 @@ pub fn popover_content(props: &PopoverContentProps) -> Html {
     {
         let context = context.clone();
 
-        use_effect_with(host.clone(), |host| {
-            let listener = Closure::wrap(Box::new(move |event: KeyboardEvent| {
-                event.stop_propagation();
-                context.on_toggle.emit(event.into());
-                context.dispatch(PopoverAction::Close);
-            }) as Box<dyn FnMut(_)>);
+        use_effect_with(
+            (host.clone(), props.on_esc_key_down.clone()),
+            |(host, on_esc_key_down)| {
+                let on_esc_key_down = on_esc_key_down.clone();
 
-            let _ =
-                host.add_event_listener_with_callback("keydown", listener.as_ref().unchecked_ref());
-            let host = host.clone();
+                let listener = Closure::wrap(Box::new(move |event: KeyboardEvent| {
+                    event.stop_propagation();
+                    on_esc_key_down.emit(event.clone());
 
-            move || {
-                let _ = host.remove_event_listener_with_callback(
-                    "keydown",
-                    listener.as_ref().unchecked_ref(),
-                );
-            }
-        });
+                    if event.default_prevented() {
+                        return;
+                    }
+
+                    context.on_toggle.emit(event.into());
+                    context.dispatch(PopoverAction::Close);
+                }) as Box<dyn FnMut(_)>);
+
+                let _ = host
+                    .add_event_listener_with_callback("keydown", listener.as_ref().unchecked_ref());
+
+                let host = host.clone();
+
+                move || {
+                    let _ = host.remove_event_listener_with_callback(
+                        "keydown",
+                        listener.as_ref().unchecked_ref(),
+                    );
+                }
+            },
+        );
     }
 
     let dom_rect = host.get_bounding_client_rect();

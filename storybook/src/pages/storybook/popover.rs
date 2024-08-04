@@ -193,8 +193,9 @@ pub fn popover_page() -> Html {
                         {"Open"}
                     </PopoverTrigger>
 
-
-                    <PopoverContent render_as={Callback::from(move |PopoverContentRenderAsProps { children, class, is_open, style }| {
+                    <PopoverContent on_esc_key_down={Callback::from(move |event: KeyboardEvent| {
+                        event.prevent_default();
+                    })} render_as={Callback::from(move |PopoverContentRenderAsProps { children, class, is_open, style }| {
                         if is_open {
                             return html! {
                                 <div class={class} style={style}>
