@@ -495,6 +495,36 @@ pub fn app() -> Html {
                         <PopoverContent class="data-[state=open]:animate-fade-in data-[state=closed]:animate-fade-out">
                             <div class="p-5 bg-neutral-800 rounded-md">
                                 <p class="text-neutral-200">{"Hello, World!"}</p>
+
+                                <div class="flex flex-row items-center gap-x-2">
+                                    <Checkbox id="popover-checkbox#1" class={checkbox_class} default_checked={CheckedState::Checked}>
+                                        <CheckboxIndicator class={checkbox_indicator_class} show_when={CheckedState::Checked}>
+                                            <CheckIcon />
+                                        </CheckboxIndicator>
+                                    </Checkbox>
+
+                                    <label for="popover-checkbox#1" class={checkbox_label_class}>{"Accept terms and conditions"}</label>
+                                </div>
+
+                                <div class="flex flex-row items-center gap-x-2">
+                                    <Checkbox id="popover-checkbox#2" class={checkbox_class}>
+                                        <CheckboxIndicator class={checkbox_indicator_class} show_when={CheckedState::Checked}>
+                                            <CheckIcon />
+                                        </CheckboxIndicator>
+                                    </Checkbox>
+
+                                    <label for="popover-checkbox#2" class={checkbox_label_class}>{"Accept terms and conditions"}</label>
+                                </div>
+
+                                <div class="flex flex-row items-center gap-x-2">
+                                    <Checkbox id="popover-checkbox#3" class={checkbox_class}>
+                                        <CheckboxIndicator class={checkbox_indicator_class} show_when={CheckedState::Checked}>
+                                            <CheckIcon />
+                                        </CheckboxIndicator>
+                                    </Checkbox>
+
+                                    <label for="popover-checkbox#3" class={checkbox_label_class}>{"Accept terms and conditions"}</label>
+                                </div>
                             </div>
                         </PopoverContent>
                     </Popover>
@@ -521,6 +551,36 @@ pub fn app() -> Html {
                         <PopoverContent container={(*popover_container).clone()} class="data-[state=open]:animate-fade-in data-[state=closed]:animate-fade-out">
                             <div class="p-5 bg-neutral-800 rounded-md">
                                 <p class="text-neutral-200">{"Hello, World!"}</p>
+
+                                <div class="flex flex-row items-center gap-x-2">
+                                    <Checkbox id="popover-checkbox#1" class={checkbox_class} default_checked={CheckedState::Checked}>
+                                        <CheckboxIndicator class={checkbox_indicator_class} show_when={CheckedState::Checked}>
+                                            <CheckIcon />
+                                        </CheckboxIndicator>
+                                    </Checkbox>
+
+                                    <label for="popover-checkbox#1" class={checkbox_label_class}>{"Accept terms and conditions"}</label>
+                                </div>
+
+                                <div class="flex flex-row items-center gap-x-2">
+                                    <Checkbox id="popover-checkbox#2" class={checkbox_class}>
+                                        <CheckboxIndicator class={checkbox_indicator_class} show_when={CheckedState::Checked}>
+                                            <CheckIcon />
+                                        </CheckboxIndicator>
+                                    </Checkbox>
+
+                                    <label for="popover-checkbox#2" class={checkbox_label_class}>{"Accept terms and conditions"}</label>
+                                </div>
+
+                                <div class="flex flex-row items-center gap-x-2">
+                                    <Checkbox id="popover-checkbox#3" class={checkbox_class}>
+                                        <CheckboxIndicator class={checkbox_indicator_class} show_when={CheckedState::Checked}>
+                                            <CheckIcon />
+                                        </CheckboxIndicator>
+                                    </Checkbox>
+
+                                    <label for="popover-checkbox#3" class={checkbox_label_class}>{"Accept terms and conditions"}</label>
+                                </div>
                             </div>
                         </PopoverContent>
                     </Popover>
@@ -563,6 +623,36 @@ pub fn app() -> Html {
                         })} class="data-[state=open]:animate-fade-in data-[state=closed]:animate-fade-out">
                             <div class="p-5 bg-neutral-800 rounded-md">
                                 <p class="text-neutral-200">{"Hello, World!"}</p>
+
+                                <div class="flex flex-row items-center gap-x-2">
+                                    <Checkbox id="popover-checkbox#1" class={checkbox_class} default_checked={CheckedState::Checked}>
+                                        <CheckboxIndicator class={checkbox_indicator_class} show_when={CheckedState::Checked}>
+                                            <CheckIcon />
+                                        </CheckboxIndicator>
+                                    </Checkbox>
+
+                                    <label for="popover-checkbox#1" class={checkbox_label_class}>{"Accept terms and conditions"}</label>
+                                </div>
+
+                                <div class="flex flex-row items-center gap-x-2">
+                                    <Checkbox id="popover-checkbox#2" class={checkbox_class}>
+                                        <CheckboxIndicator class={checkbox_indicator_class} show_when={CheckedState::Checked}>
+                                            <CheckIcon />
+                                        </CheckboxIndicator>
+                                    </Checkbox>
+
+                                    <label for="popover-checkbox#2" class={checkbox_label_class}>{"Accept terms and conditions"}</label>
+                                </div>
+
+                                <div class="flex flex-row items-center gap-x-2">
+                                    <Checkbox id="popover-checkbox#3" class={checkbox_class}>
+                                        <CheckboxIndicator class={checkbox_indicator_class} show_when={CheckedState::Checked}>
+                                            <CheckIcon />
+                                        </CheckboxIndicator>
+                                    </Checkbox>
+
+                                    <label for="popover-checkbox#3" class={checkbox_label_class}>{"Accept terms and conditions"}</label>
+                                </div>
                             </div>
                         </PopoverContent>
                     </Popover>
