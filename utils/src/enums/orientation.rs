@@ -1,15 +1,10 @@
 use yew::{html::IntoPropValue, AttrValue};
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Default, Debug, PartialEq)]
 pub enum Orientation {
+    #[default]
     Horizontal,
     Vertical,
-}
-
-impl Default for Orientation {
-    fn default() -> Self {
-        Self::Horizontal
-    }
 }
 
 impl IntoPropValue<Option<AttrValue>> for Orientation {
