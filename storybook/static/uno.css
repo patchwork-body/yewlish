@@ -87,6 +87,8 @@
 .p-1{padding:0.25rem;}
 .p-20{padding:5rem;}
 .p-5{padding:1.25rem;}
+.px-2{padding-left:0.5rem;padding-right:0.5rem;}
+.py-1{padding-top:0.25rem;padding-bottom:0.25rem;}
 .text-nowrap{text-wrap:nowrap;}
 .text-lg{font-size:1.125rem;line-height:1.75rem;}
 .text-xl{font-size:1.25rem;line-height:1.75rem;}
