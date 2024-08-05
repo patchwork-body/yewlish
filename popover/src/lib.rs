@@ -4,7 +4,7 @@ use std::{
     fmt::{Display, Formatter},
     rc::Rc,
 };
-use utils::hooks::{use_click_outside, use_controllable_state};
+use utils::hooks::{use_controllable_state, use_interaction_outside};
 use web_sys::wasm_bindgen::JsCast;
 use web_sys::{wasm_bindgen::prelude::Closure, Element};
 use yew::prelude::*;
@@ -226,6 +226,8 @@ pub struct PopoverContentProps {
     pub align: PopoverAlign,
     #[prop_or_default]
     pub on_esc_key_down: Callback<KeyboardEvent>,
+    #[prop_or_default]
+    pub on_interaction_outside: Callback<Event>,
 }
 
 #[function_component(PopoverContent)]
@@ -240,7 +242,7 @@ pub fn popover_content(props: &PopoverContentProps) -> Html {
             .expect("PopoverContent must be a child of Popover")
     });
 
-    use_click_outside(
+    use_interaction_outside(
         {
             let mut nodes = vec![];
             nodes.push((&host).into());
@@ -253,8 +255,16 @@ pub fn popover_content(props: &PopoverContentProps) -> Html {
         },
         {
             let context = context.clone();
+            let on_click_outside = props.on_interaction_outside.clone();
 
-            move |_: Event| {
+            move |event: Event| {
+                on_click_outside.emit(event.clone());
+
+                if event.default_prevented() {
+                    return;
+                }
+
+                context.on_toggle.emit(event.clone());
                 context.dispatch(PopoverAction::Close);
             }
         },
