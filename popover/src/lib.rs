@@ -269,7 +269,10 @@ pub fn popover_content(props: &PopoverContentProps) -> Html {
                 let on_esc_key_down = on_esc_key_down.clone();
 
                 let listener = Closure::wrap(Box::new(move |event: KeyboardEvent| {
-                    event.stop_propagation();
+                    if event.key() != "Escape" {
+                        return;
+                    }
+
                     on_esc_key_down.emit(event.clone());
 
                     if event.default_prevented() {
