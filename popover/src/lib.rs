@@ -4,7 +4,7 @@ use std::{
     fmt::{Display, Formatter},
     rc::Rc,
 };
-use utils::hooks::use_controllable_state;
+use utils::hooks::{use_click_outside, use_controllable_state};
 use web_sys::wasm_bindgen::JsCast;
 use web_sys::{wasm_bindgen::prelude::Closure, Element};
 use yew::prelude::*;
@@ -239,6 +239,26 @@ pub fn popover_content(props: &PopoverContentProps) -> Html {
             .cast::<Element>()
             .expect("PopoverContent must be a child of Popover")
     });
+
+    use_click_outside(
+        {
+            let mut nodes = vec![];
+            nodes.push((&host).into());
+
+            if props.container.is_some() {
+                nodes.push((&context.host.clone()).into());
+            }
+
+            nodes
+        },
+        {
+            let context = context.clone();
+
+            move |_: Event| {
+                context.dispatch(PopoverAction::Close);
+            }
+        },
+    );
 
     {
         let context = context.clone();

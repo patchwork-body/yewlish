@@ -7,4 +7,5 @@ edition = "2021"
 
 [dependencies]
 log = "0.4.21"
+web-sys = "0.3.69"
 yew = "0.21.0"
