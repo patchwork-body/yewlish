@@ -84,7 +84,6 @@ pub fn popover_page() -> Html {
                         {"Open"}
                     </PopoverTrigger>
 
-
                     <PopoverContent class="data-[state=open]:animate-fade-in data-[state=closed]:animate-fade-out">
                         <div class="p-5 bg-neutral-800 rounded-md">
                             <p class="text-neutral-200">{"Hello, World!"}</p>
@@ -146,33 +145,33 @@ pub fn popover_page() -> Html {
                             <p class="text-neutral-200">{"Hello, World!"}</p>
 
                             <div class="flex flex-row items-center gap-x-2">
-                                <Checkbox id="popover-checkbox#1" class={checkbox_class} default_checked={CheckedState::Checked}>
+                                <Checkbox id="popover-checkbox#4" class={checkbox_class} default_checked={CheckedState::Checked}>
                                     <CheckboxIndicator class={checkbox_indicator_class} show_when={CheckedState::Checked}>
                                         <CheckIcon />
                                     </CheckboxIndicator>
                                 </Checkbox>
 
-                                <label for="popover-checkbox#1" class={checkbox_label_class}>{"Accept terms and conditions"}</label>
+                                <label for="popover-checkbox#4" class={checkbox_label_class}>{"Accept terms and conditions"}</label>
                             </div>
 
                             <div class="flex flex-row items-center gap-x-2">
-                                <Checkbox id="popover-checkbox#2" class={checkbox_class}>
+                                <Checkbox id="popover-checkbox#5" class={checkbox_class}>
                                     <CheckboxIndicator class={checkbox_indicator_class} show_when={CheckedState::Checked}>
                                         <CheckIcon />
                                     </CheckboxIndicator>
                                 </Checkbox>
 
-                                <label for="popover-checkbox#2" class={checkbox_label_class}>{"Accept terms and conditions"}</label>
+                                <label for="popover-checkbox#5" class={checkbox_label_class}>{"Accept terms and conditions"}</label>
                             </div>
 
                             <div class="flex flex-row items-center gap-x-2">
-                                <Checkbox id="popover-checkbox#3" class={checkbox_class}>
+                                <Checkbox id="popover-checkbox#6" class={checkbox_class}>
                                     <CheckboxIndicator class={checkbox_indicator_class} show_when={CheckedState::Checked}>
                                         <CheckIcon />
                                     </CheckboxIndicator>
                                 </Checkbox>
 
-                                <label for="popover-checkbox#3" class={checkbox_label_class}>{"Accept terms and conditions"}</label>
+                                <label for="popover-checkbox#6" class={checkbox_label_class}>{"Accept terms and conditions"}</label>
                             </div>
                         </div>
                     </PopoverContent>
@@ -222,33 +221,33 @@ pub fn popover_page() -> Html {
                             <p class="text-neutral-200">{"Hello, World!"}</p>
 
                             <div class="flex flex-row items-center gap-x-2">
-                                <Checkbox id="popover-checkbox#1" class={checkbox_class} default_checked={CheckedState::Checked}>
+                                <Checkbox id="popover-checkbox#7" class={checkbox_class} default_checked={CheckedState::Checked}>
                                     <CheckboxIndicator class={checkbox_indicator_class} show_when={CheckedState::Checked}>
                                         <CheckIcon />
                                     </CheckboxIndicator>
                                 </Checkbox>
 
-                                <label for="popover-checkbox#1" class={checkbox_label_class}>{"Accept terms and conditions"}</label>
+                                <label for="popover-checkbox#7" class={checkbox_label_class}>{"Accept terms and conditions"}</label>
                             </div>
 
                             <div class="flex flex-row items-center gap-x-2">
-                                <Checkbox id="popover-checkbox#2" class={checkbox_class}>
+                                <Checkbox id="popover-checkbox#8" class={checkbox_class}>
                                     <CheckboxIndicator class={checkbox_indicator_class} show_when={CheckedState::Checked}>
                                         <CheckIcon />
                                     </CheckboxIndicator>
                                 </Checkbox>
 
-                                <label for="popover-checkbox#2" class={checkbox_label_class}>{"Accept terms and conditions"}</label>
+                                <label for="popover-checkbox#8" class={checkbox_label_class}>{"Accept terms and conditions"}</label>
                             </div>
 
                             <div class="flex flex-row items-center gap-x-2">
-                                <Checkbox id="popover-checkbox#3" class={checkbox_class}>
+                                <Checkbox id="popover-checkbox#9" class={checkbox_class}>
                                     <CheckboxIndicator class={checkbox_indicator_class} show_when={CheckedState::Checked}>
                                         <CheckIcon />
                                     </CheckboxIndicator>
                                 </Checkbox>
 
-                                <label for="popover-checkbox#3" class={checkbox_label_class}>{"Accept terms and conditions"}</label>
+                                <label for="popover-checkbox#9" class={checkbox_label_class}>{"Accept terms and conditions"}</label>
                             </div>
                         </div>
                     </PopoverContent>
