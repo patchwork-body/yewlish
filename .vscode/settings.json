@@ -13,6 +13,7 @@
     "focusin",
     "keydown",
     "labelledby",
+    "mousedown",
     "onclick",
     "onfocus",
     "onfocusin",
@@ -23,6 +24,7 @@
     "Slottable",
     "structopt",
     "tabindex",
+    "touchstart",
     "unocss",
     "unsync"
   ]
