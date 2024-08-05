@@ -30,6 +30,7 @@ switch = { path = "../switch" }
 checkbox = { path = "../checkbox" }
 radio_group = { path = "../radio_group" }
 popover = { path = "../popover" }
+attr_passer = { path = "../attr_passer" }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 wasm-bindgen-futures = "0.4.42"

@@ -1,6 +1,9 @@
 use attr_passer::*;
 use presence::*;
-use std::rc::Rc;
+use std::{
+    fmt::{Display, Formatter},
+    rc::Rc,
+};
 use utils::hooks::use_controllable_state;
 use web_sys::wasm_bindgen::JsCast;
 use web_sys::{wasm_bindgen::prelude::Closure, Element};
@@ -87,7 +90,6 @@ pub fn popover(props: &PopoverProps) -> Html {
 pub struct PopoverTriggerRenderAsProps {
     pub toggle: Callback<MouseEvent>,
     pub is_open: bool,
-    pub data_state: &'static str,
     #[prop_or_default]
     pub children: Children,
     #[prop_or_default]
@@ -134,20 +136,30 @@ pub fn popover_trigger(props: &PopoverTriggerProps) -> Html {
         },
     );
 
-    if let Some(render_as) = &props.render_as {
-        return render_as.emit(PopoverTriggerRenderAsProps {
-            children: props.children.clone(),
-            class: props.class.clone(),
-            toggle,
-            is_open: context.is_open,
-            data_state: *data_state,
-        });
-    }
+    let element = if let Some(render_as) = &props.render_as {
+        html! {{
+            render_as.emit(PopoverTriggerRenderAsProps {
+                children: props.children.clone(),
+                class: props.class.clone(),
+                toggle,
+                is_open: context.is_open,
+            })
+        }}
+    } else {
+        html! {
+            <button class={&props.class} onclick={&toggle}>
+                {props.children.clone()}
+            </button>
+        }
+    };
 
     html! {
-        <button data-state={*data_state} class={&props.class} onclick={&toggle}>
-            {props.children.clone()}
-        </button>
+        <AttrPasser ..attributify! {
+            "data-state" => *data_state,
+            "role" => "button",
+        }>
+            { element }
+        </AttrPasser>
     }
 }
 
@@ -160,6 +172,17 @@ pub enum PopoverSide {
     Left,
 }
 
+impl Display for PopoverSide {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            PopoverSide::Top => write!(f, "top"),
+            PopoverSide::Right => write!(f, "right"),
+            PopoverSide::Bottom => write!(f, "bottom"),
+            PopoverSide::Left => write!(f, "left"),
+        }
+    }
+}
+
 #[derive(Clone, Debug, PartialEq, Default)]
 pub enum PopoverAlign {
     Start,
@@ -168,10 +191,19 @@ pub enum PopoverAlign {
     End,
 }
 
+impl Display for PopoverAlign {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            PopoverAlign::Start => write!(f, "start"),
+            PopoverAlign::Center => write!(f, "center"),
+            PopoverAlign::End => write!(f, "end"),
+        }
+    }
+}
+
 #[derive(Clone, Debug, PartialEq, Properties)]
 pub struct PopoverContentRenderAsProps {
     pub is_open: bool,
-    pub style: AttrValue,
     #[prop_or_default]
     pub children: Children,
     #[prop_or_default]
@@ -282,26 +314,34 @@ pub fn popover_content(props: &PopoverContentProps) -> Html {
 
     let style = format!("{} {}", style, transform);
 
-    let result = if let Some(render_as) = &props.render_as {
-        return render_as.emit(PopoverContentRenderAsProps {
-            children: props.children.clone(),
-            class: props.class.clone(),
-            is_open: context.is_open,
-            style: style.into(),
-        });
+    let element = if let Some(render_as) = &props.render_as {
+        html! {{
+            render_as.emit(PopoverContentRenderAsProps {
+                children: props.children.clone(),
+                class: props.class.clone(),
+                is_open: context.is_open,
+            })
+        }}
     } else {
         html! {
-            <AttrPasser ..attributify! {
-                "data-state" => if context.is_open { "open" } else { "closed" },
-                "style" => style,
-                "role" => "dialog",
-            }>
-                <Presence present={context.is_open} class={&props.class}>
-                    {props.children.clone()}
-                </Presence>
-            </AttrPasser>
+            <Presence present={context.is_open} class={&props.class}>
+                {props.children.clone()}
+            </Presence>
         }
     };
 
-    create_portal(html! {{ result }}, host)
+    create_portal(
+        html! {
+            <AttrPasser ..attributify! {
+                "data-state" => if context.is_open { "open" } else { "closed" },
+                "data-side" => props.side.to_string(),
+                "data-align" => props.align.to_string(),
+                "style" => style,
+                "role" => "dialog",
+            }>
+                { element }
+            </AttrPasser>
+        },
+        host,
+    )
 }
