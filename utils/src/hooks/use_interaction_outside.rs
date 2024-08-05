@@ -19,7 +19,7 @@ impl From<&NodeRef> for Node {
 }
 
 #[hook]
-pub fn use_click_outside<T>(nodes: Vec<Node>, callback: T)
+pub fn use_interaction_outside<T>(nodes: Vec<Node>, callback: T)
 where
     T: Fn(Event) + 'static,
 {
@@ -57,6 +57,9 @@ where
 
             let _ = window
                 .add_event_listener_with_callback("touchstart", closure.as_ref().unchecked_ref());
+
+            let _ = window
+                .add_event_listener_with_callback("focusin", closure.as_ref().unchecked_ref());
         }
 
         move || {
@@ -69,6 +72,11 @@ where
 
                     let _ = window.remove_event_listener_with_callback(
                         "touchstart",
+                        closure.as_ref().unchecked_ref(),
+                    );
+
+                    let _ = window.remove_event_listener_with_callback(
+                        "focusin",
                         closure.as_ref().unchecked_ref(),
                     );
                 }
