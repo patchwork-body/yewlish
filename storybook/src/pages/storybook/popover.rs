@@ -2,6 +2,7 @@ use super::common::*;
 use attr_passer::*;
 use checkbox::*;
 use icons::*;
+use listbox::*;
 use popover::*;
 use switch::*;
 use yew::prelude::*;
@@ -250,6 +251,22 @@ pub fn popover_page() -> Html {
                                 <label for="popover-checkbox#9" class={checkbox_label_class}>{"Accept terms and conditions"}</label>
                             </div>
                         </div>
+                    </PopoverContent>
+                </Popover>
+            </Section>
+
+            <Section title="Combobox">
+                <Popover>
+                    <PopoverTrigger class="flex justify-center gap-x-2 text-white border rounded-md px-2 py-1">
+                        {"Open"}
+                    </PopoverTrigger>
+
+                    <PopoverContent class="data-[state=open]:animate-fade-in data-[state=closed]:animate-fade-out">
+                        <Listbox>
+                            <ListboxOption id="listbox-option-#1">
+                                {"Option 1"}
+                            </ListboxOption>
+                        </Listbox>
                     </PopoverContent>
                 </Popover>
             </Section>
