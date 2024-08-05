@@ -32,78 +32,73 @@ pub fn roving_focus(props: &RovingFocusProps) -> Html {
     let children_as_html_collection = use_children_as_html_collection(node_ref.clone());
     let is_focus_entered = use_mut_ref(|| false);
 
-    let navigation_handler = use_callback(
-        (
-            props.dir.clone(),
-            props.orientation.clone(),
-            roving_iterator.clone(),
-            children_as_html_collection.clone(),
-        ),
-        {
-            let is_focus_entered = is_focus_entered.clone();
+    let navigation_handler = {
+        let is_focus_entered = is_focus_entered.clone();
+        let children_as_html_collection = children_as_html_collection.clone();
+        let roving_iterator = roving_iterator.clone();
+        let orientation = props.orientation.clone();
+        let dir = props.dir.clone();
 
-            move |event: KeyboardEvent,
-                  (dir, orientation, roving_iterator, children_as_html_collection)| {
-                let children_as_html_collection = children_as_html_collection.borrow();
-                let children = children_as_html_collection.as_ref();
+        move |event: KeyboardEvent| {
+            let children_as_html_collection = children_as_html_collection.borrow();
+            let children = children_as_html_collection.as_ref();
 
-                if children.is_none() {
-                    return;
-                }
-
-                let children = children.unwrap();
-
-                let next_index = match event.key().as_str() {
-                    "ArrowDown" => match orientation {
-                        Orientation::Vertical => roving_iterator.borrow_mut().next(dir),
-                        Orientation::Horizontal => roving_iterator.borrow_mut().prev(dir),
-                    },
-                    "ArrowUp" => match orientation {
-                        Orientation::Vertical => roving_iterator.borrow_mut().prev(dir),
-                        Orientation::Horizontal => roving_iterator.borrow_mut().next(dir),
-                    },
-                    "ArrowLeft" => roving_iterator.borrow_mut().prev(dir),
-                    "ArrowRight" => roving_iterator.borrow_mut().next(dir),
-                    "Home" => roving_iterator.borrow_mut().first(dir),
-                    "End" => roving_iterator.borrow_mut().last(dir),
-                    "Tab" => {
-                        let last_focusable_element_index = if event.shift_key() {
-                            0
-                        } else {
-                            roving_iterator.borrow().length - 1
-                        };
-
-                        children
-                            .item(last_focusable_element_index)
-                            .and_then(|element| element.dyn_into::<HtmlElement>().ok())
-                            .and_then(|html_element| get_focusable_element(&html_element))
-                            .map(|html_element| {
-                                if event.shift_key() {
-                                    get_prev_focusable_element(html_element)
-                                } else {
-                                    get_next_focusable_element(html_element)
-                                }
-                            })
-                            .and_then(|next_outside_focusable_element| {
-                                next_outside_focusable_element.focus().err()
-                            })
-                            .map_or_else(
-                                || {},
-                                |error| log::error!("Failed to focus the element: {:?}", error),
-                            );
-
-                        *is_focus_entered.borrow_mut() = false;
-                        None
-                    }
-                    _ => None,
-                };
-
-                if let Some(next_index) = next_index {
-                    focus_child(children.item(next_index));
-                }
+            if children.is_none() {
+                return;
             }
-        },
-    );
+
+            let children = children.unwrap();
+
+            let next_index = match event.key().as_str() {
+                "ArrowDown" => match orientation {
+                    Orientation::Vertical => roving_iterator.borrow_mut().next(&dir),
+                    Orientation::Horizontal => roving_iterator.borrow_mut().prev(&dir),
+                },
+                "ArrowUp" => match orientation {
+                    Orientation::Vertical => roving_iterator.borrow_mut().prev(&dir),
+                    Orientation::Horizontal => roving_iterator.borrow_mut().next(&dir),
+                },
+                "ArrowLeft" => roving_iterator.borrow_mut().prev(&dir),
+                "ArrowRight" => roving_iterator.borrow_mut().next(&dir),
+                "Home" => roving_iterator.borrow_mut().first(&dir),
+                "End" => roving_iterator.borrow_mut().last(&dir),
+                "Tab" => {
+                    let last_focusable_element_index = if event.shift_key() {
+                        0
+                    } else {
+                        roving_iterator.borrow().length - 1
+                    };
+
+                    children
+                        .item(last_focusable_element_index)
+                        .and_then(|element| element.dyn_into::<HtmlElement>().ok())
+                        .and_then(|html_element| get_focusable_element(&html_element))
+                        .map(|html_element| {
+                            if event.shift_key() {
+                                get_prev_focusable_element(html_element)
+                            } else {
+                                get_next_focusable_element(html_element)
+                            }
+                        })
+                        .and_then(|next_outside_focusable_element| {
+                            next_outside_focusable_element.focus().err()
+                        })
+                        .map_or_else(
+                            || {},
+                            |error| log::error!("Failed to focus the element: {:?}", error),
+                        );
+
+                    *is_focus_entered.borrow_mut() = false;
+                    None
+                }
+                _ => None,
+            };
+
+            if let Some(next_index) = next_index {
+                focus_child(children.item(next_index));
+            }
+        }
+    };
 
     let navigate_through_children = use_keydown(
         vec![

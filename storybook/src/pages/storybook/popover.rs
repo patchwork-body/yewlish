@@ -1,4 +1,5 @@
 use super::common::*;
+use attr_passer::*;
 use checkbox::*;
 use icons::*;
 use popover::*;
@@ -67,19 +68,22 @@ pub fn popover_page() -> Html {
         <Wrapper title="Popover">
             <Section title="Default">
                 <Popover>
-                    <PopoverTrigger class="flex justify-center gap-x-2" render_as={Callback::from(move |PopoverTriggerRenderAsProps { class, children, toggle, is_open, data_state }| {
+                    <PopoverTrigger class="flex justify-center gap-x-2" render_as={Callback::from(move |PopoverTriggerRenderAsProps { class, children, toggle, is_open }| {
                         html! {
-                                <label class={&class} data-state={data_state}>
-                                <Switch class={switch_class} onclick={toggle} checked={is_open}>
-                                    <SwitchThumb class={switch_thumb_class} />
-                                </Switch>
+                            <AttrReceiver>
+                                <label class={&class}>
+                                    <Switch class={switch_class} onclick={toggle} checked={is_open}>
+                                        <SwitchThumb class={switch_thumb_class} />
+                                    </Switch>
 
-                                {children}
+                                    {children}
                                 </label>
+                            </AttrReceiver>
                         }
                     })}>
                         {"Open"}
                     </PopoverTrigger>
+
 
                     <PopoverContent class="data-[state=open]:animate-fade-in data-[state=closed]:animate-fade-out">
                         <div class="p-5 bg-neutral-800 rounded-md">
@@ -121,15 +125,17 @@ pub fn popover_page() -> Html {
 
             <Section title="With container">
                 <Popover>
-                    <PopoverTrigger class="flex justify-center gap-x-2" render_as={Callback::from(move |PopoverTriggerRenderAsProps { class, children, toggle, is_open, data_state }| {
+                    <PopoverTrigger class="flex justify-center gap-x-2" render_as={Callback::from(move |PopoverTriggerRenderAsProps { class, children, toggle, is_open }| {
                         html! {
-                                <label class={&class} data-state={data_state}>
-                                <Switch class={switch_class} onclick={toggle} checked={is_open}>
-                                    <SwitchThumb class={switch_thumb_class} />
-                                </Switch>
+                            <AttrReceiver>
+                                <label class={&class}>
+                                    <Switch class={switch_class} onclick={toggle} checked={is_open}>
+                                        <SwitchThumb class={switch_thumb_class} />
+                                    </Switch>
 
-                                {children}
+                                    {children}
                                 </label>
+                            </AttrReceiver>
                         }
                     })}>
                         {"Open"}
@@ -179,15 +185,17 @@ pub fn popover_page() -> Html {
 
             <Section title="With render_as">
                 <Popover>
-                    <PopoverTrigger class="flex justify-center gap-x-2" render_as={Callback::from(move |PopoverTriggerRenderAsProps { class, children, toggle, is_open, data_state }| {
+                    <PopoverTrigger class="flex justify-center gap-x-2" render_as={Callback::from(move |PopoverTriggerRenderAsProps { class, children, toggle, is_open }| {
                         html! {
-                                <label class={&class} data-state={data_state}>
-                                <Switch class={switch_class} onclick={toggle} checked={is_open}>
-                                    <SwitchThumb class={switch_thumb_class} />
-                                </Switch>
+                            <AttrReceiver>
+                                <label class={&class}>
+                                    <Switch class={switch_class} onclick={toggle} checked={is_open}>
+                                        <SwitchThumb class={switch_thumb_class} />
+                                    </Switch>
 
-                                {children}
+                                    {children}
                                 </label>
+                            </AttrReceiver>
                         }
                     })}>
                         {"Open"}
@@ -195,12 +203,14 @@ pub fn popover_page() -> Html {
 
                     <PopoverContent on_esc_key_down={Callback::from(move |event: KeyboardEvent| {
                         event.prevent_default();
-                    })} render_as={Callback::from(move |PopoverContentRenderAsProps { children, class, is_open, style }| {
+                    })} render_as={Callback::from(move |PopoverContentRenderAsProps { children, class, is_open }| {
                         if is_open {
                             return html! {
-                                <div class={class} style={style}>
-                                    {children}
-                                </div>
+                                <AttrReceiver>
+                                    <div class={class}>
+                                        {children}
+                                    </div>
+                                </AttrReceiver>
                             };
                         }
 
