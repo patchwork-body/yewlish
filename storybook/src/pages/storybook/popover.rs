@@ -212,11 +212,11 @@ pub fn popover_page() -> Html {
 
                     <PopoverContent on_esc_key_down={Callback::from(move |event: KeyboardEvent| {
                         event.prevent_default();
-                    })} render_as={Callback::from(move |PopoverContentRenderAsProps { children, class, is_open }| {
+                    })} render_as={Callback::from(move |PopoverContentRenderAsProps { r#ref, children, class, is_open }| {
                         if is_open {
                             return html! {
                                 <AttrReceiver>
-                                    <div class={class}>
+                                    <div ref={r#ref} class={class}>
                                         {children}
                                     </div>
                                 </AttrReceiver>

@@ -17,6 +17,8 @@ pub struct PresenceRenderAsProps {
 #[derive(Debug, Clone, PartialEq, Properties)]
 pub struct PresenceProps {
     #[prop_or_default]
+    pub r#ref: NodeRef,
+    #[prop_or_default]
     pub name: &'static str,
     #[prop_or_default]
     pub children: Children,
@@ -26,18 +28,19 @@ pub struct PresenceProps {
     pub class: Option<AttrValue>,
     #[prop_or_default]
     pub render_as: Option<Callback<PresenceRenderAsProps, Html>>,
+    #[prop_or_default]
+    pub on_present: Option<Callback<()>>,
 }
 
 #[function_component(Presence)]
 pub fn presence(props: &PresenceProps) -> Html {
-    let node_ref = use_node_ref();
-    let presence = use_presence(props.present, node_ref.clone());
+    let presence = use_presence(props.present, props.r#ref.clone());
 
     let element = if let Some(render_as) = &props.render_as {
         html! {{
             render_as.emit(PresenceRenderAsProps {
                 presence: *presence,
-                r#ref: node_ref.clone(),
+                r#ref: props.r#ref.clone(),
                 children: props.children.clone(),
                 class: props.class.clone(),
             })
@@ -47,8 +50,12 @@ pub fn presence(props: &PresenceProps) -> Html {
             return html! {};
         }
 
+        if let Some(on_present) = &props.on_present {
+            on_present.emit(());
+        }
+
         html! {
-            <div ref={node_ref} class={props.class.clone()}>
+            <div ref={props.r#ref.clone()} class={props.class.clone()}>
                 {props.children.clone()}
             </div>
         }
