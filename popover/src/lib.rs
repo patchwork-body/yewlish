@@ -1,5 +1,6 @@
 use attr_passer::*;
 use presence::*;
+use roving_focus::helpers::get_focusable_element;
 use std::{
     fmt::{Display, Formatter},
     rc::Rc,
@@ -203,6 +204,7 @@ impl Display for PopoverAlign {
 
 #[derive(Clone, Debug, PartialEq, Properties)]
 pub struct PopoverContentRenderAsProps {
+    pub r#ref: NodeRef,
     pub is_open: bool,
     #[prop_or_default]
     pub children: Children,
@@ -346,10 +348,25 @@ pub fn popover_content(props: &PopoverContentProps) -> Html {
     );
 
     let style = format!("{} {}", style, transform);
+    let content_ref = use_node_ref();
+
+    let focus_on_present = use_callback(content_ref.clone(), |_, content_ref| {
+        if let Some(content) = content_ref.cast::<Element>() {
+            if let Some(element) = get_focusable_element(&content) {
+                match element.focus() {
+                    Ok(_) => {}
+                    Err(error) => {
+                        log::error!("Failed to focus the popover content: {error:?}");
+                    }
+                }
+            }
+        }
+    });
 
     let element = if let Some(render_as) = &props.render_as {
         html! {{
             render_as.emit(PopoverContentRenderAsProps {
+                r#ref: content_ref.clone(),
                 children: props.children.clone(),
                 class: props.class.clone(),
                 is_open: context.is_open,
@@ -357,7 +374,13 @@ pub fn popover_content(props: &PopoverContentProps) -> Html {
         }}
     } else {
         html! {
-            <Presence name="popover" present={context.is_open} class={&props.class}>
+            <Presence
+                r#ref={content_ref.clone()}
+                name="popover"
+                present={context.is_open}
+                class={&props.class}
+                on_present={focus_on_present}
+            >
                 {props.children.clone()}
             </Presence>
         }
