@@ -1,0 +1,11 @@
+[tasks.css]
+command = "bunx"
+args = ["unocss", "--watch", "**/*.rs", "-o", "./static/uno.css"]
+
+
+[tasks.serve]
+command = "trunk"
+args = ["serve", "--features", "hydrate", "-w", "./"]
+
+[tasks.dev]
+run_task = { name = ["css", "serve"], parallel = true }
