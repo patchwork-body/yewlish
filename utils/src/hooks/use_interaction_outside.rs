@@ -1,3 +1,5 @@
+use std::rc::Rc;
+use web_sys::wasm_bindgen::prelude::Closure;
 use web_sys::wasm_bindgen::JsCast;
 use yew::prelude::*;
 
@@ -23,10 +25,6 @@ pub fn use_interaction_outside<T>(nodes: Vec<Node>, callback: T)
 where
     T: Fn(Event) + 'static,
 {
-    use std::rc::Rc;
-
-    use web_sys::wasm_bindgen::prelude::Closure;
-
     let callback = Callback::from(callback);
     let callback_ref = Rc::new(callback);
 
