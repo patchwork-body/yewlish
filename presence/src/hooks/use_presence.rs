@@ -73,9 +73,7 @@ impl Reducible for PresenceState {
 }
 
 #[hook]
-pub fn use_presence(present: bool) -> (Rc<bool>, NodeRef) {
-    let node_ref = use_node_ref();
-
+pub fn use_presence(present: bool, node_ref: NodeRef) -> Rc<bool> {
     let state = use_reducer(|| {
         if present {
             PresenceState {
@@ -91,7 +89,7 @@ pub fn use_presence(present: bool) -> (Rc<bool>, NodeRef) {
     let styles_ref = use_mut_ref(|| None::<web_sys::CssStyleDeclaration>);
 
     use_effect_with(
-        (node_ref.clone(), styles_ref.clone(), present),
+        (node_ref.clone(), styles_ref.clone(), state.clone()),
         |(node_ref, styles_ref, _)| {
             let window = match web_sys::window() {
                 Some(window) => window,
@@ -130,11 +128,11 @@ pub fn use_presence(present: bool) -> (Rc<bool>, NodeRef) {
     }
 
     {
-        let state = state.clone();
         let current_animation_name = current_animation_name.clone();
         let prev_animation_name = prev_animation_name.clone();
 
-        use_effect_with(node_ref.clone(), |node_ref| {
+        use_effect_with((state.clone(), node_ref.clone()), |(state, node_ref)| {
+            let state = state.clone();
             let node = node_ref.cast::<web_sys::HtmlElement>();
 
             let animationstart_handler = Closure::wrap(Box::new(move |event: Event| {
@@ -228,5 +226,5 @@ pub fn use_presence(present: bool) -> (Rc<bool>, NodeRef) {
 
     let current = use_memo(state.clone(), |state| state.borrow().current != "unmounted");
 
-    (current, node_ref)
+    current
 }
