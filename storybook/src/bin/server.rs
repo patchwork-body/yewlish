@@ -27,8 +27,6 @@ async fn index(
     let index_html_head = index_html.head.clone();
     let index_html_body = index_html.body.clone();
 
-    log::info!("index_html_head: {}", index_html_head);
-
     RawHtml(TextStream! {
         yield index_html_head;
         yield renderer.render().await;
