@@ -357,7 +357,7 @@ pub fn popover_content(props: &PopoverContentProps) -> Html {
         }}
     } else {
         html! {
-            <Presence present={context.is_open} class={&props.class}>
+            <Presence name="popover" present={context.is_open} class={&props.class}>
                 {props.children.clone()}
             </Presence>
         }
@@ -365,7 +365,7 @@ pub fn popover_content(props: &PopoverContentProps) -> Html {
 
     create_portal(
         html! {
-            <AttrPasser ..attributify! {
+            <AttrPasser name="popover" ..attributify! {
                 "data-state" => if context.is_open { "open" } else { "closed" },
                 "data-side" => props.side.to_string(),
                 "data-align" => props.align.to_string(),
