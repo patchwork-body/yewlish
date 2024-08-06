@@ -66,7 +66,8 @@ pub fn popover_page() -> Html {
     }
 
     let listbox_option_class = r##"
-        flex items-center gap-2 p-2 aria-checked:bg-neutral-800
+        flex items-center gap-2 p-2 hover:bg-neutral-700 hover:text-neutral-100 cursor-pointer
+        aria-[checked=true]:bg-neutral-850 data-[active="true"]:bg-neutral-800
     "##;
 
     let listbox_option_indicator_class = r##"
@@ -270,7 +271,9 @@ pub fn popover_page() -> Html {
                     </PopoverTrigger>
 
                     <PopoverContent class="data-[state=open]:animate-fade-in data-[state=closed]:animate-fade-out bg-neutral-900 rounded-md shadow-sm">
-                        <Listbox multiple={true} class="min-w-[200px]">
+                        <Listbox multiple={true} class="min-w-[200px]" on_selected_change={Callback::from(|selected| {
+                            log::info!("Selected: {:?}", selected);
+                        })}>
                             <ListboxOption id="listbox-option-#1" class={listbox_option_class}>
                                 <ListboxOptionIndicator class={listbox_option_indicator_class}>
                                     <CheckIcon />
