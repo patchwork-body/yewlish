@@ -3,9 +3,12 @@ pub mod hooks;
 
 use dir::Dir;
 use helpers::*;
-use hooks::{use_children_as_html_collection::*, use_roving_iterator::*};
+use hooks::use_roving_iterator::*;
 use orientation::Orientation;
-use utils::{enums::*, hooks::use_keydown};
+use utils::{
+    enums::*,
+    hooks::{use_children_as_html_collection, use_keydown},
+};
 use web_sys::{wasm_bindgen::JsCast, HtmlElement};
 use yew::prelude::*;
 

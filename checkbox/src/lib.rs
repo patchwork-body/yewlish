@@ -2,7 +2,7 @@ use std::default::Default;
 use std::rc::Rc;
 
 use html::IntoPropValue;
-use utils::hooks::use_controllable_state::use_controllable_state;
+use utils::hooks::use_controllable_state;
 use yew::prelude::*;
 
 #[derive(Clone, Default, Debug, PartialEq)]
