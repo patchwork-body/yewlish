@@ -2,8 +2,15 @@ use yew::{prelude::*, virtual_dom::VNode};
 
 type Attributes = Vec<(&'static str, AttrValue)>;
 
+#[derive(Debug, Clone, PartialEq)]
+pub struct AttrPasserContext {
+    pub name: AttrValue,
+    pub attributes: Attributes,
+}
+
 #[derive(Debug, Clone, PartialEq, Properties)]
 pub struct AttrPasserProps {
+    pub name: AttrValue,
     #[prop_or_default]
     pub children: Children,
     #[prop_or_default]
@@ -13,21 +20,40 @@ pub struct AttrPasserProps {
 #[function_component(AttrPasser)]
 pub fn attr_passer(props: &AttrPasserProps) -> Html {
     html! {
-        <ContextProvider<Attributes> context={props.attributes.clone()}>
+        <ContextProvider<AttrPasserContext> context={AttrPasserContext {
+            name: props.name.clone(),
+            attributes: props.attributes.clone(),
+        }}>
             {props.children.clone()}
-        </ContextProvider<Attributes>>
+        </ContextProvider<AttrPasserContext>>
     }
 }
 
 #[derive(Debug, Clone, PartialEq, Properties)]
 pub struct AttrReceiverProps {
     #[prop_or_default]
+    pub name: &'static str,
+    #[prop_or_default]
     pub children: Children,
 }
 
 #[function_component(AttrReceiver)]
 pub fn attr_receiver(props: &AttrReceiverProps) -> Html {
-    let attributes = use_context::<Attributes>().unwrap_or_default();
+    let context = use_context::<AttrPasserContext>();
+
+    if context.is_none() {
+        return html! {
+            <>{props.children.clone()}</>
+        };
+    }
+
+    let context = context.unwrap();
+
+    if props.name != context.name.as_ref() {
+        return html! {
+            <>{props.children.clone()}</>
+        };
+    }
 
     if props.children.is_empty() {
         return html! {};
@@ -43,7 +69,7 @@ pub fn attr_receiver(props: &AttrReceiverProps) -> Html {
     if let VNode::VTag(tag) = element.clone() {
         let mut tag = (*tag).clone();
 
-        for (key, value) in attributes.as_slice() {
+        for (key, value) in context.attributes.as_slice() {
             tag.add_attribute(key, value);
         }
 
@@ -72,6 +98,7 @@ macro_rules! attributify {
 
         props! {
             AttrPasserProps {
+                name: "",
                 attributes,
             }
         }
