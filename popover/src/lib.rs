@@ -255,10 +255,10 @@ pub fn popover_content(props: &PopoverContentProps) -> Html {
         },
         {
             let context = context.clone();
-            let on_click_outside = props.on_interaction_outside.clone();
+            let on_interaction_outside = props.on_interaction_outside.clone();
 
             move |event: Event| {
-                on_click_outside.emit(event.clone());
+                on_interaction_outside.emit(event.clone());
 
                 if event.default_prevented() {
                     return;
