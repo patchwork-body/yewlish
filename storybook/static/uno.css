@@ -77,14 +77,15 @@
 .rounded-md{border-radius:0.375rem;}
 .rounded-sm{border-radius:0.125rem;}
 .after\:rounded-\[50\%\]::after{border-radius:50%;}
-.aria-checked\:bg-neutral-800[aria-checked="true"],
 .bg-neutral-800,
+.data-\[active\=\"true\"\]\:bg-neutral-800[data-active="true"],
 .data-\[state\=on\]\:bg-neutral-800[data-state=on],
 .data-\[state\=unchecked\]\:bg-neutral-800[data-state=unchecked]{--un-bg-opacity:1;background-color:rgb(38 38 38 / var(--un-bg-opacity));}
 .bg-neutral-900{--un-bg-opacity:1;background-color:rgb(23 23 23 / var(--un-bg-opacity));}
 .bg-neutral-950{--un-bg-opacity:1;background-color:rgb(10 10 10 / var(--un-bg-opacity));}
 .bg-transparent{background-color:transparent;}
 .data-\[state\=checked\]\:bg-neutral-100[data-state=checked]{--un-bg-opacity:1;background-color:rgb(245 245 245 / var(--un-bg-opacity));}
+.hover\:bg-neutral-700:hover{--un-bg-opacity:1;background-color:rgb(64 64 64 / var(--un-bg-opacity));}
 .hover\:bg-neutral-800:hover{--un-bg-opacity:1;background-color:rgb(38 38 38 / var(--un-bg-opacity));}
 .disabled\:hover\:bg-transparent:hover:disabled{background-color:transparent;}
 .after\:bg-neutral-100::after{--un-bg-opacity:1;background-color:rgb(245 245 245 / var(--un-bg-opacity));}
