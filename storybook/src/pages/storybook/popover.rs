@@ -65,6 +65,14 @@ pub fn popover_page() -> Html {
         });
     }
 
+    let listbox_option_class = r##"
+        flex items-center gap-2 p-2 aria-checked:bg-neutral-800
+    "##;
+
+    let listbox_option_indicator_class = r##"
+        flex items-center justify-center text-current ring-1 rounded-md ring-white w-5 h-5
+    "##;
+
     html! {
         <Wrapper title="Popover">
             <Section title="Default">
@@ -261,10 +269,30 @@ pub fn popover_page() -> Html {
                         {"Open"}
                     </PopoverTrigger>
 
-                    <PopoverContent class="data-[state=open]:animate-fade-in data-[state=closed]:animate-fade-out">
-                        <Listbox>
-                            <ListboxOption id="listbox-option-#1">
+                    <PopoverContent class="data-[state=open]:animate-fade-in data-[state=closed]:animate-fade-out bg-neutral-900 rounded-md shadow-sm">
+                        <Listbox multiple={true} class="min-w-[200px]">
+                            <ListboxOption id="listbox-option-#1" class={listbox_option_class}>
+                                <ListboxOptionIndicator class={listbox_option_indicator_class}>
+                                    <CheckIcon />
+                                </ListboxOptionIndicator>
+
                                 {"Option 1"}
+                            </ListboxOption>
+
+                            <ListboxOption id="listbox-option-#2" class={listbox_option_class}>
+                                <ListboxOptionIndicator class={listbox_option_indicator_class}>
+                                    <CheckIcon />
+                                </ListboxOptionIndicator>
+
+                                {"Option 2"}
+                            </ListboxOption>
+
+                            <ListboxOption id="listbox-option-#3" class={listbox_option_class}>
+                                <ListboxOptionIndicator class={listbox_option_indicator_class}>
+                                    <CheckIcon />
+                                </ListboxOptionIndicator>
+
+                                {"Option 3"}
                             </ListboxOption>
                         </Listbox>
                     </PopoverContent>
