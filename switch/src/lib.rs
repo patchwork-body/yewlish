@@ -1,9 +1,6 @@
 use std::rc::Rc;
 
-use utils::{
-    helpers::combine_handlers::combine_handlers,
-    hooks::use_controllable_state::use_controllable_state,
-};
+use utils::{helpers::combine_handlers::combine_handlers, hooks::use_controllable_state};
 use yew::prelude::*;
 
 #[derive(Clone, Debug, PartialEq, Properties)]
