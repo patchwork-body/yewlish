@@ -1,5 +1,6 @@
 use std::rc::Rc;
 
+use presence::*;
 use utils::hooks::use_controllable_state::use_controllable_state;
 use yew::prelude::*;
 
@@ -94,13 +95,39 @@ pub struct ListboxProps {
     pub on_selected_change: Callback<ListboxSelected>,
     #[prop_or_default]
     pub multiple: bool,
+    #[prop_or_default]
+    pub class: Option<AttrValue>,
 }
 
 #[function_component(Listbox)]
 pub fn listbox(props: &ListboxProps) -> Html {
+    let default_selected = use_memo(
+        (props.default_selected.clone(), props.multiple),
+        |(default_selected, multiple)| {
+            if default_selected.is_some() {
+                default_selected.clone()
+            } else if *multiple {
+                Some(ListboxSelected::Multiple(Vec::new()))
+            } else {
+                Some(ListboxSelected::Single(None))
+            }
+        },
+    );
+
+    let selected = use_memo(
+        (props.selected.clone(), default_selected.clone()),
+        |(selected, default_selected)| {
+            if selected.is_some() {
+                selected.clone()
+            } else {
+                (**default_selected).clone()
+            }
+        },
+    );
+
     let (selected, dispatch) = use_controllable_state(
-        props.default_selected.clone(),
-        props.selected.clone(),
+        (*default_selected).clone(),
+        (*selected).clone(),
         props.on_selected_change.clone(),
     );
 
@@ -135,17 +162,24 @@ pub fn listbox(props: &ListboxProps) -> Html {
 
     html! {
         <ContextProvider<MutableListboxContext> context={context_value}>
-            <ul role="listbox" aria-multiselectable={if props.multiple { "true" } else { "false" }}>
+            <ul role="listbox" tabindex="0" class={props.class.clone()} aria-multiselectable={if props.multiple { "true" } else { "false" }}>
                 {for props.children.iter()}
             </ul>
         </ContextProvider<MutableListboxContext>>
     }
 }
 
+#[derive(Clone, PartialEq)]
+pub struct ListboxOptionContext {
+    pub is_selected: Rc<bool>,
+}
+
 #[derive(Clone, PartialEq, Properties)]
 pub struct ListboxOptionProps {
     pub id: &'static str,
     pub children: Children,
+    #[prop_or_default]
+    pub class: Option<AttrValue>,
 }
 
 #[function_component(ListboxOption)]
@@ -160,6 +194,10 @@ pub fn listbox_option(props: &ListboxOptionProps) -> Html {
             ListboxSelected::Multiple(selected) => selected.contains(&AttrValue::from(*id)),
         },
     );
+
+    let context_value = ListboxOptionContext {
+        is_selected: is_selected.clone(),
+    };
 
     let aria_selected = use_memo(is_selected.clone(), |is_selected| {
         if **is_selected {
@@ -191,17 +229,57 @@ pub fn listbox_option(props: &ListboxOptionProps) -> Html {
         },
     );
 
-    if *is_multiple {
+    let element = if *is_multiple {
         html! {
-            <li id={props.id} role="option" aria-checked={*aria_selected} onclick={select_on_click} onfocus={select_on_focus}>
+            <li id={props.id} role="option" class={props.class.clone()} aria-checked={*aria_selected} onclick={select_on_click} onfocus={select_on_focus}>
                 {for props.children.iter()}
             </li>
         }
     } else {
         html! {
-            <li id={props.id} role="option" aria-selected={*aria_selected} onclick={select_on_click}>
+            <li id={props.id} role="option" class={props.class.clone()} aria-selected={*aria_selected} onclick={select_on_click}>
                 {for props.children.iter()}
             </li>
         }
+    };
+
+    html! {
+        <ContextProvider<ListboxOptionContext> context={context_value}>
+            {element}
+        </ContextProvider<ListboxOptionContext>>
+    }
+}
+
+#[derive(Clone, PartialEq, Properties)]
+pub struct ListboxOptionIndicatorProps {
+    #[prop_or_default]
+    pub children: Children,
+    #[prop_or_default]
+    pub class: Option<AttrValue>,
+}
+
+#[function_component(ListboxOptionIndicator)]
+pub fn listbox_option_indicator(props: &ListboxOptionIndicatorProps) -> Html {
+    let context = use_context::<ListboxOptionContext>()
+        .expect("ListboxOptionIndicator must be a child of ListboxOption");
+
+    html! {
+        <Presence name="listbox-option-indicator" present={*context.is_selected} class={props.class.clone()} render_as={
+            Callback::from(|props: PresenceRenderAsProps| {
+                if !props.presence {
+                    return html! {
+                        <span ref={props.r#ref} class={&props.class} aria-hidden="true"/>
+                    };
+                }
+
+                html! {
+                    <span ref={props.r#ref} class={&props.class} aria-hidden="true">
+                        {props.children.clone()}
+                    </span>
+                }
+            })
+        }>
+            {props.children.clone()}
+        </Presence>
     }
 }
