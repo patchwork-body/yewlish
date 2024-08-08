@@ -376,7 +376,7 @@ pub fn popover_content(props: &PopoverContentProps) -> Html {
         html! {
             <Presence
                 r#ref={content_ref.clone()}
-                name="popover"
+                name="popover-content"
                 present={context.is_open}
                 class={&props.class}
                 on_present={focus_on_present}
@@ -388,7 +388,7 @@ pub fn popover_content(props: &PopoverContentProps) -> Html {
 
     create_portal(
         html! {
-            <AttrPasser name="popover" ..attributify! {
+            <AttrPasser name="popover-content" ..attributify! {
                 "data-state" => if context.is_open { "open" } else { "closed" },
                 "data-side" => props.side.to_string(),
                 "data-align" => props.align.to_string(),
