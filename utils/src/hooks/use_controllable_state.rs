@@ -17,14 +17,14 @@ pub fn use_controllable_state<T: Debug + Default + PartialEq + Clone + 'static>(
             .unwrap_or_else(|| initial.unwrap_or_default())
     });
 
-    let is_controlled = controlled.is_some();
     let trigger = use_force_update();
 
-    let dispatch = use_callback((value.clone(), on_change), {
+    let dispatch = use_callback((value.clone(), controlled.is_some(), on_change), {
         let trigger = trigger.clone();
 
-        move |new_state: Box<dyn Fn(T) -> T>, (value, on_change)| {
+        move |new_state: Box<dyn Fn(T) -> T>, (value, is_controlled, on_change)| {
             let new_state = new_state(value.borrow().clone());
+
             value.replace(new_state.clone());
             on_change.emit(new_state);
 

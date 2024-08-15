@@ -14,12 +14,13 @@ use yew::prelude::*;
 pub struct PopoverContext {
     pub host: NodeRef,
     pub is_open: bool,
-    pub on_toggle: Callback<Event>,
+    pub on_toggle: Callback<bool>,
 }
 
 pub enum PopoverAction {
     Open,
     Close,
+    Toggle,
 }
 
 impl Reducible for PopoverContext {
@@ -37,6 +38,11 @@ impl Reducible for PopoverContext {
                 ..(*self).clone()
             }
             .into(),
+            PopoverAction::Toggle => PopoverContext {
+                is_open: !self.is_open,
+                ..(*self).clone()
+            }
+            .into(),
         }
     }
 }
@@ -47,7 +53,7 @@ pub type ReduciblePopoverContext = UseReducerHandle<PopoverContext>;
 pub struct PopoverProps {
     pub children: Children,
     #[prop_or_default]
-    pub open: bool,
+    pub open: Option<bool>,
     #[prop_or_default]
     pub on_open_change: Callback<bool>,
     #[prop_or_default]
@@ -62,13 +68,13 @@ pub fn popover(props: &PopoverProps) -> Html {
 
     let (is_open, dispatch) = use_controllable_state(
         props.default_open.into(),
-        props.open.into(),
+        props.open,
         props.on_open_change.clone(),
     );
 
     let on_toggle = use_callback(dispatch.clone(), {
-        move |_event: Event, dispatch| {
-            dispatch.emit(Box::new(|prev_state| !prev_state));
+        move |new_state, dispatch| {
+            dispatch.emit(Box::new(move |_| new_state));
         }
     });
 
@@ -77,6 +83,15 @@ pub fn popover(props: &PopoverProps) -> Html {
         is_open: *is_open.borrow(),
         on_toggle,
     });
+
+    use_effect_with(
+        (*(*is_open).borrow(), context_value.clone()),
+        |(is_open, context_value)| {
+            if *is_open != context_value.is_open {
+                context_value.dispatch(PopoverAction::Toggle);
+            }
+        },
+    );
 
     html! {
         <ContextProvider<ReduciblePopoverContext> context={context_value}>
@@ -115,14 +130,8 @@ pub fn popover_trigger(props: &PopoverTriggerProps) -> Html {
     let toggle = use_callback(context.is_open, {
         let context = context.clone();
 
-        move |event: MouseEvent, _| {
-            context.on_toggle.emit(event.into());
-
-            if context.is_open {
-                context.dispatch(PopoverAction::Close);
-            } else {
-                context.dispatch(PopoverAction::Open);
-            }
+        move |_event: MouseEvent, is_open| {
+            context.on_toggle.emit(!is_open);
         }
     });
 
@@ -266,8 +275,7 @@ pub fn popover_content(props: &PopoverContentProps) -> Html {
                     return;
                 }
 
-                context.on_toggle.emit(event.clone());
-                context.dispatch(PopoverAction::Close);
+                context.on_toggle.emit(false);
             }
         },
     );
@@ -291,8 +299,7 @@ pub fn popover_content(props: &PopoverContentProps) -> Html {
                         return;
                     }
 
-                    context.on_toggle.emit(event.into());
-                    context.dispatch(PopoverAction::Close);
+                    context.on_toggle.emit(false);
                 }) as Box<dyn FnMut(_)>);
 
                 let _ = host
