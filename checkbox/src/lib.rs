@@ -1,8 +1,10 @@
 use std::default::Default;
 use std::rc::Rc;
 
+use attr_passer::*;
 use html::IntoPropValue;
-use utils::hooks::use_controllable_state;
+use presence::*;
+use utils::hooks::{use_conditional_attr, use_controllable_state};
 use yew::prelude::*;
 
 #[derive(Clone, Default, Debug, PartialEq)]
@@ -53,6 +55,8 @@ type ReducibleCheckboxContext = UseReducerHandle<CheckboxContext>;
 #[derive(Clone, Debug, PartialEq, Properties)]
 pub struct CheckboxProps {
     pub children: ChildrenWithProps<CheckboxIndicator>,
+    #[prop_or_default]
+    pub r#ref: NodeRef,
     #[prop_or_default]
     pub id: Option<AttrValue>,
     #[prop_or_default]
@@ -113,9 +117,13 @@ pub fn checkbox(props: &CheckboxProps) -> Html {
         }
     });
 
+    let node_ref = use_node_ref();
+    use_conditional_attr(node_ref.clone(), "data-disabled", props.disabled);
+
     html! {
         <ContextProvider<ReducibleCheckboxContext> context={context_value}>
             <button
+                ref={node_ref.clone()}
                 id={props.id.clone()}
                 class={&props.class}
                 type="button"
@@ -123,7 +131,6 @@ pub fn checkbox(props: &CheckboxProps) -> Html {
                 aria-checked={if *checked.borrow() == CheckedState::Checked { "true" } else { "false" }}
                 aria-required={if props.required { "true" } else { "false" }}
                 data-state={checked.borrow().clone()}
-                data-disabled={if props.disabled { Some(String::new()) } else { None::<String> }}
                 disabled={props.disabled}
                 name={props.name.clone()}
                 value={props.value.clone()}
@@ -137,15 +144,29 @@ pub fn checkbox(props: &CheckboxProps) -> Html {
 }
 
 #[derive(Clone, Debug, PartialEq, Properties)]
-pub struct CheckboxIndicatorProps {
+pub struct CheckboxIndicatorRenderAsProps {
     #[prop_or_default]
-    pub id: Option<AttrValue>,
+    pub r#ref: NodeRef,
     #[prop_or_default]
     pub class: Option<AttrValue>,
     #[prop_or_default]
     pub children: Children,
     #[prop_or_default]
+    pub checked: CheckedState,
+}
+
+#[derive(Clone, Debug, PartialEq, Properties)]
+pub struct CheckboxIndicatorProps {
+    #[prop_or_default]
+    pub r#ref: NodeRef,
+    #[prop_or_default]
+    pub class: Option<AttrValue>,
+    #[prop_or_default]
+    pub children: Children,
+    #[prop_or(CheckedState::Checked)]
     pub show_when: CheckedState,
+    #[prop_or_default]
+    pub render_as: Option<Callback<CheckboxIndicatorRenderAsProps, Html>>,
 }
 
 #[function_component(CheckboxIndicator)]
@@ -153,17 +174,310 @@ pub fn checkbox_indicator(props: &CheckboxIndicatorProps) -> Html {
     let context = use_context::<ReducibleCheckboxContext>()
         .expect("CheckboxIndicator must be a child of Checkbox");
 
-    if context.checked != props.show_when {
-        return html! {};
-    }
+    let node_ref = use_node_ref();
+    use_conditional_attr(node_ref.clone(), "data-disabled", context.disabled);
+
+    let element = if let Some(render_as) = &props.render_as {
+        html! {
+            render_as.emit(CheckboxIndicatorRenderAsProps {
+                r#ref: props.r#ref.clone(),
+                class: props.class.clone(),
+                children: props.children.clone(),
+                checked: context.checked.clone(),
+            })
+        }
+    } else {
+        html! {
+            <Presence name="checkbox-indicator-state" r#ref={node_ref} class={&props.class} present={context.checked == props.show_when} render_as={
+                Callback::from(|PresenceRenderAsProps { r#ref, class, presence, children }| {
+                    html! {
+                        // <AttrReceiver name="checkbox-indicator">
+                            <span
+                                ref={r#ref.clone()}
+                                class={&class}
+                            >
+                                { if presence {
+                                    html! { {for children.iter()} }
+                                } else {
+                                    html! {}
+                                } }
+                            </span>
+                        // </AttrReceiver>
+                    }
+                })
+            }>
+                {for props.children.iter()}
+            </Presence>
+        }
+    };
 
     html! {
-        <span
-            class={&props.class}
-            data-state={if context.checked == CheckedState::Checked { "checked" } else { "unchecked" }}
-            data-disabled={if context.disabled { Some(String::new()) } else { None::<String> }}
-        >
-            {for props.children.iter()}
-        </span>
+        <AttrPasser name="checkbox-indicator-state" ..attributify! {
+            "data-state" => if context.checked == CheckedState::Checked { "checked" } else { "unchecked" },
+        }>
+            {element}
+        </AttrPasser>
     }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use testing_tools::Event;
+    use testing_tools::*;
+    use wasm_bindgen_test::*;
+
+    wasm_bindgen_test::wasm_bindgen_test_configure!(run_in_browser);
+
+    #[wasm_bindgen_test]
+    async fn test_checkbox_should_toggle() {
+        let t = render! {
+            <Checkbox>
+                <CheckboxIndicator show_when={CheckedState::Checked}>{"X"}</CheckboxIndicator>
+            </Checkbox>
+        }
+        .await;
+
+        // The checkbox should be unchecked by default
+        let checkbox = t.query_by_role("checkbox");
+        assert!(checkbox.exists());
+
+        assert_eq!(checkbox.attribute("disabled"), None);
+        assert_eq!(checkbox.attribute("data-disabled"), None);
+
+        assert_eq!(
+            checkbox.attribute("aria-checked"),
+            "false".to_string().into()
+        );
+
+        assert_eq!(
+            checkbox.attribute("data-state"),
+            "unchecked".to_string().into()
+        );
+
+        assert!(!t.query_by_text("X").exists());
+
+        // After clicking, the state should be checked
+        let checkbox = checkbox.click().await;
+
+        assert_eq!(
+            checkbox.attribute("aria-checked"),
+            "true".to_string().into()
+        );
+
+        assert_eq!(
+            checkbox.attribute("data-state"),
+            "checked".to_string().into()
+        );
+
+        assert!(t.query_by_text("X").exists());
+
+        // After clicking again, the state should be unchecked
+        let checkbox = checkbox.click().await;
+
+        assert_eq!(
+            checkbox.attribute("aria-checked"),
+            "false".to_string().into()
+        );
+
+        assert_eq!(
+            checkbox.attribute("data-state"),
+            "unchecked".to_string().into()
+        );
+
+        assert!(!t.query_by_text("X").exists());
+    }
+
+    #[wasm_bindgen_test]
+    async fn test_checkbox_default_checked() {
+        let t = render! {
+            <Checkbox default_checked={CheckedState::Checked}>
+                <CheckboxIndicator show_when={CheckedState::Checked}>{"X"}</CheckboxIndicator>
+            </Checkbox>
+        }
+        .await;
+
+        let checkbox = t.query_by_role("checkbox");
+
+        assert_eq!(
+            checkbox.attribute("aria-checked"),
+            "true".to_string().into()
+        );
+
+        assert_eq!(
+            checkbox.attribute("data-state"),
+            "checked".to_string().into()
+        );
+
+        assert!(t.query_by_text("X").exists());
+    }
+
+    #[wasm_bindgen_test]
+    async fn test_checkbox_default_unchecked() {
+        let t = render! {
+            <Checkbox checked={CheckedState::Unchecked}>
+                <CheckboxIndicator show_when={CheckedState::Checked}>{"X"}</CheckboxIndicator>
+            </Checkbox>
+        }
+        .await;
+
+        let checkbox = t.query_by_role("checkbox");
+
+        assert_eq!(
+            checkbox.attribute("aria-checked"),
+            "false".to_string().into()
+        );
+
+        assert_eq!(
+            checkbox.attribute("data-state"),
+            "unchecked".to_string().into()
+        );
+
+        assert!(!t.query_by_text("X").exists());
+    }
+
+    #[wasm_bindgen_test]
+    async fn checkbox_should_be_disabled_test() {
+        let t = render! {
+            <Checkbox disabled={true}>
+                <CheckboxIndicator show_when={CheckedState::Checked}>{"X"}</CheckboxIndicator>
+            </Checkbox>
+        }
+        .await;
+
+        let checkbox = t.query_by_role("checkbox");
+
+        assert_eq!(
+            checkbox.attribute("disabled"),
+            "disabled".to_string().into()
+        );
+
+        assert_eq!(checkbox.attribute("data-disabled"), "".to_string().into());
+
+        assert_eq!(
+            checkbox.attribute("aria-checked"),
+            "false".to_string().into()
+        );
+
+        assert_eq!(
+            checkbox.attribute("data-state"),
+            "unchecked".to_string().into()
+        );
+
+        assert!(!t.query_by_text("X").exists());
+
+        // The checkbox should not toggle when disabled
+        let checkbox = checkbox.click().await;
+
+        assert_eq!(
+            checkbox.attribute("disabled"),
+            "disabled".to_string().into()
+        );
+
+        assert_eq!(checkbox.attribute("data-disabled"), "".to_string().into());
+
+        assert_eq!(
+            checkbox.attribute("aria-checked"),
+            "false".to_string().into()
+        );
+
+        assert_eq!(
+            checkbox.attribute("data-state"),
+            "unchecked".to_string().into()
+        );
+
+        assert!(!t.query_by_text("X").exists());
+    }
+
+    #[wasm_bindgen_test]
+    async fn test_checkbox_attr_passer() {
+        let t = render! {
+            <AttrPasser name="checkbox-indicator" ..attributify!{
+                "testid" => "checkbox-indicator-id",
+            }>
+                <Checkbox>
+                    <CheckboxIndicator></CheckboxIndicator>
+                </Checkbox>
+            </AttrPasser>
+        }
+        .await;
+
+        // assert!(t.query_by_testid("checkbox-indicator-id").exists());
+    }
+
+    // #[wasm_bindgen_test]
+    // async fn checkbox_should_be_required_test() {
+    //     let t = render! {
+    //         <Checkbox required={true}>
+    //             <CheckboxIndicator show_when={CheckedState::Checked}>{"X"}</CheckboxIndicator>
+    //         </Checkbox>
+    //     }
+    //     .await;
+
+    //     t.query_by_selector("button[role=\"checkbox\"]")
+    //         .exists()
+    //         .has_attribute_value("aria-required", "true");
+    // }
+
+    // #[wasm_bindgen_test]
+    // async fn checkbox_should_have_name_test() {
+    //     let t = render! {
+    //         <Checkbox name={"name"}>
+    //             <CheckboxIndicator show_when={CheckedState::Checked}>{"X"}</CheckboxIndicator>
+    //         </Checkbox>
+    //     }
+    //     .await;
+
+    //     t.query_by_selector("button[role=\"checkbox\"]")
+    //         .exists()
+    //         .has_attribute_value("name", "name");
+    // }
+
+    // #[wasm_bindgen_test]
+    // async fn checkbox_should_have_value_test() {
+    //     let t = render! {
+    //         <Checkbox value={"value"}>
+    //             <CheckboxIndicator show_when={CheckedState::Checked}>{"X"}</CheckboxIndicator>
+    //         </Checkbox>
+    //     }
+    //     .await;
+
+    //     t.query_by_selector("button[role=\"checkbox\"]")
+    //         .exists()
+    //         .has_attribute_value("value", "value");
+    // }
+
+    // #[wasm_bindgen_test]
+    // async fn checkbox_should_not_toggle_on_enter_test() {
+    //     let t = render! {
+    //         <Checkbox>
+    //             <CheckboxIndicator show_when={CheckedState::Checked}>{"X"}</CheckboxIndicator>
+    //         </Checkbox>
+    //     }
+    //     .await;
+
+    //     t.query_by_selector("button[role=\"checkbox\"]")
+    //         .exists()
+    //         .has_attribute_value("aria-checked", "false")
+    //         .keydown("Enter")
+    //         .await
+    //         .has_attribute_value("aria-checked", "false");
+    // }
+
+    // #[wasm_bindgen_test]
+    // async fn checkbox_should_toggle_on_space_test() {
+    //     let t = render! {
+    //         <Checkbox>
+    //             <CheckboxIndicator show_when={CheckedState::Checked}>{"X"}</CheckboxIndicator>
+    //         </Checkbox>
+    //     }
+    //     .await;
+
+    //     t.query_by_selector("button[role=\"checkbox\"]")
+    //         .exists()
+    //         .has_attribute_value("aria-checked", "false")
+    //         .keydown(" ")
+    //         .await
+    //         .has_attribute_value("aria-checked", "true");
+    // }
 }

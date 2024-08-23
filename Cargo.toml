@@ -1,3 +1,3 @@
 [workspace]
-members = [ "popover", "primitives", "storybook", "storybook_utils", "toggle", "utils", "icons", "toggle_group", "roving_focus", "switch", "separator", "checkbox", "radio_group", "attr_passer", "presence", "listbox"]
+members = [ "popover", "primitives", "storybook", "storybook_utils", "toggle", "utils", "icons", "toggle_group", "roving_focus", "switch", "separator", "checkbox", "radio_group", "attr_passer", "presence", "listbox", "testing_tools"]
 resolver = "2"

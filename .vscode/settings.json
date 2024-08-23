@@ -13,6 +13,7 @@
     "describedby",
     "evenodd",
     "focusin",
+    "gloo",
     "keydown",
     "labelledby",
     "Listbox",
@@ -27,6 +28,7 @@
     "Routable",
     "structopt",
     "tabindex",
+    "testid",
     "touchstart",
     "unocss",
     "unsync"
