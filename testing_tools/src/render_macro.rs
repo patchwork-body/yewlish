@@ -2,8 +2,6 @@
 macro_rules! render {
     ($($html:tt)*) => {{
         use yew::prelude::*;
-        use yew::function_component;
-        use yew::html;
         use std::time::Duration;
         use yew::platform::time::sleep;
 

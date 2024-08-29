@@ -1,5 +1,5 @@
-use std::default::Default;
 use std::rc::Rc;
+use std::{any::Any, cell::RefCell, default::Default};
 
 use attr_passer::*;
 use html::IntoPropValue;
@@ -216,6 +216,13 @@ pub fn checkbox_indicator(props: &CheckboxIndicatorProps) -> Html {
             {element}
         </AttrPasser>
     }
+}
+
+type ResultRef = Rc<RefCell<Option<Box<dyn Any>>>>;
+
+#[derive(Properties, Clone, PartialEq)]
+struct TestRendererProps {
+    get_result_ref: Callback<(), ResultRef>,
 }
 
 #[cfg(test)]
