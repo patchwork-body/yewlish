@@ -1,4 +1,4 @@
-use std::fmt::Debug;
+use std::{fmt::Debug, time::Instant};
 use std::{fmt::Formatter, future::Future, pin::Pin, time::Duration};
 use web_sys::wasm_bindgen::JsCast;
 use web_sys::wasm_bindgen::UnwrapThrowExt;
@@ -67,6 +67,23 @@ impl Tester {
 
     pub fn exists(&self) -> bool {
         self.root.is_some()
+    }
+
+    pub async fn wait_for<F>(&self, timeout: u64, check_fn: F) -> bool
+    where
+        F: Fn() -> bool,
+    {
+        let start = Instant::now();
+
+        while start.elapsed() < Duration::from_millis(timeout) {
+            if check_fn() {
+                return true;
+            }
+
+            sleep(Duration::from_millis(100)).await;
+        }
+
+        false
     }
 
     pub fn query_by_selector(&self, selector: &str) -> Self {
@@ -146,11 +163,11 @@ impl Event for Tester {
                     });
                 }
 
-                let mut click_event_init_dict = web_sys::MouseEventInit::new();
-                click_event_init_dict.bubbles(true);
-                click_event_init_dict.cancelable(true);
-                click_event_init_dict.composed(true);
-                click_event_init_dict.button(0);
+                let click_event_init_dict = web_sys::MouseEventInit::new();
+                click_event_init_dict.set_bubbles(true);
+                click_event_init_dict.set_cancelable(true);
+                click_event_init_dict.set_composed(true);
+                click_event_init_dict.set_button(0);
 
                 let click_event = web_sys::MouseEvent::new_with_mouse_event_init_dict(
                     "click",
@@ -178,11 +195,11 @@ impl Event for Tester {
     fn keydown(self, key: &str) -> Pin<Box<dyn Future<Output = Self>>> {
         match &self.root {
             Some(root) => {
-                let mut keydown_event_init_dict = web_sys::KeyboardEventInit::new();
-                keydown_event_init_dict.bubbles(true);
-                keydown_event_init_dict.cancelable(true);
-                keydown_event_init_dict.composed(true);
-                keydown_event_init_dict.key(key);
+                let keydown_event_init_dict = web_sys::KeyboardEventInit::new();
+                keydown_event_init_dict.set_bubbles(true);
+                keydown_event_init_dict.set_cancelable(true);
+                keydown_event_init_dict.set_composed(true);
+                keydown_event_init_dict.set_key(key);
 
                 let keydown_event = web_sys::KeyboardEvent::new_with_keyboard_event_init_dict(
                     "keydown",

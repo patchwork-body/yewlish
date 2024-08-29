@@ -1,3 +1,4 @@
+use synchi::*;
 use yew::{prelude::*, virtual_dom::VNode};
 use yewlish_synchi::*;
 
