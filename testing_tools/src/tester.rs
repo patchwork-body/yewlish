@@ -245,9 +245,7 @@ impl Extractor for Tester {
 #[cfg(test)]
 mod tests {
     use crate::{render, render_hook, Event, Extractor, Query};
-    use std::cell::RefCell;
-    use std::rc::Rc;
-    use wasm_bindgen_test::{console_log, *};
+    use wasm_bindgen_test::*;
     use web_sys::wasm_bindgen::JsCast;
     use yew::prelude::*;
 
@@ -369,5 +367,25 @@ mod tests {
         .await;
 
         assert_eq!(*h, true);
+    }
+
+    #[wasm_bindgen_test]
+    async fn test_render_hook_with_effect() {
+        let h = render_hook!(UseStateHandle<i32>, {
+            let a = use_state(|| 0);
+
+            {
+                let a = a.clone();
+
+                use_effect_with((), move |_| {
+                    a.set(100);
+                });
+            }
+
+            a
+        })
+        .await;
+
+        assert_eq!(*h, 100);
     }
 }

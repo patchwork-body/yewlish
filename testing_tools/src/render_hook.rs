@@ -9,12 +9,6 @@ macro_rules! render_hook {
         use yew::prelude::*;
         use yew::props;
 
-        #[cfg(not(feature = "internal"))]
-        use testing_tools::Tester;
-
-        #[cfg(feature = "internal")]
-        use $crate::Tester;
-
         type ResultRef = Rc<RefCell<Option<Box<dyn Any>>>>;
 
         #[derive(Properties, Clone, PartialEq)]
