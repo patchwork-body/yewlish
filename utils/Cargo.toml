@@ -6,6 +6,12 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-log = "0.4.21"
-web-sys = "0.3.69"
+log = "0.4.22"
+web-sys = "0.3.70"
 yew = "0.21.0"
+
+[dev-dependencies]
+wasm-bindgen-test = "0.3.43"
+wasm-bindgen-futures = "0.4.43"
+testing-tools = { path = "../testing_tools" }
+ 

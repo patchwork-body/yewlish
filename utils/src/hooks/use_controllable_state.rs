@@ -6,11 +6,14 @@ use yew::prelude::*;
 type Dispatch<T> = Callback<Box<dyn Fn(T) -> T>>;
 
 #[hook]
-pub fn use_controllable_state<T: Debug + Default + PartialEq + Clone + 'static>(
+pub fn use_controllable_state<T>(
     initial: Option<T>,
     controlled: Option<T>,
     on_change: Callback<T>,
-) -> (Rc<RefCell<T>>, Dispatch<T>) {
+) -> (Rc<RefCell<T>>, Dispatch<T>)
+where
+    T: Debug + Default + PartialEq + Clone + 'static,
+{
     let value: Rc<RefCell<T>> = use_mut_ref(|| {
         controlled
             .clone()

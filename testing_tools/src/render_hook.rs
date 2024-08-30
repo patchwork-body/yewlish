@@ -1,13 +1,7 @@
 #[macro_export]
 macro_rules! render_hook {
-    ($type:ty, $hook:expr) => {{
-        use std::any::Any;
-        use std::cell::RefCell;
-        use std::rc::Rc;
-        use std::time::Duration;
-        use yew::platform::time::sleep;
-        use yew::prelude::*;
-        use yew::props;
+    ($type:ty, $hook:expr, $view:expr) => {{
+        use $crate::*;
 
         type ResultRef = Rc<RefCell<Option<Box<dyn Any>>>>;
 
@@ -21,6 +15,7 @@ macro_rules! render_hook {
             let result = $hook;
 
             use_effect({
+                let result = result.clone();
                 let get_result_ref = props.get_result_ref.clone();
 
                 move || {
@@ -28,10 +23,10 @@ macro_rules! render_hook {
                 }
             });
 
-            html! {}
+            ($view)(result)
         }
 
-        async fn render_and_parse() -> $type {
+        async fn render_and_parse() -> HookTester<$type> {
             let result_ref: ResultRef = Rc::new(RefCell::new(None));
 
             {
@@ -49,10 +44,16 @@ macro_rules! render_hook {
             sleep(Duration::new(0, 0)).await;
 
             let x = result_ref.borrow_mut().take();
-            x.and_then(|boxed| boxed.downcast::<$type>().ok().map(|boxed| *boxed))
-                .unwrap()
+
+            HookTester::new(x.and_then(|boxed| boxed.downcast::<$type>().ok().map(|boxed| *boxed))
+                .expect(r#"Failed to downcast to the expected type. Do you have the correct type in the render_hook! macro, or is the hook returning the wrong type?"#))
         }
 
         render_and_parse()
+    }};
+    ($type:ty, $hook:expr) => {{
+        use $crate::*;
+
+        render_hook!($type, $hook, |_| html! {})
     }};
 }

@@ -17,3 +17,54 @@ pub fn use_conditional_attr(node_ref: NodeRef, attr_name: &'static str, cond: bo
         move || {}
     });
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use testing_tools::*;
+    use wasm_bindgen_test::*;
+
+    wasm_bindgen_test::wasm_bindgen_test_configure!(run_in_browser);
+
+    #[wasm_bindgen_test]
+    async fn test_use_conditional_attr_set_when_true() {
+        let h = render_hook!(
+            NodeRef,
+            {
+                let node_ref = use_node_ref();
+                use_conditional_attr(node_ref.clone(), "disabled", true);
+                node_ref
+            },
+            |node_ref: NodeRef| {
+                html! {
+                    <button ref={node_ref.clone()}>{ "TEXT" }</button>
+                }
+            }
+        )
+        .await;
+
+        let button = h.cast::<HtmlElement>().unwrap_throw();
+        assert_eq!(button.get_attribute("disabled"), Some("".to_string()));
+    }
+
+    #[wasm_bindgen_test]
+    async fn test_use_conditional_attr_unset_when_false() {
+        let h = render_hook!(
+            NodeRef,
+            {
+                let node_ref = use_node_ref();
+                use_conditional_attr(node_ref.clone(), "disabled", false);
+                node_ref
+            },
+            |node_ref: NodeRef| {
+                html! {
+                    <button disabled={true} ref={node_ref.clone()}>{ "TEXT" }</button>
+                }
+            }
+        )
+        .await;
+
+        let button = h.cast::<HtmlElement>().unwrap_throw();
+        assert_eq!(button.get_attribute("disabled"), None);
+    }
+}

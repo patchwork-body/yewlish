@@ -241,10 +241,9 @@ impl Extractor for Tester {
     }
 }
 
-#[cfg(feature = "internal")]
 #[cfg(test)]
 mod tests {
-    use crate::{render, render_hook, Event, Extractor, Query};
+    use crate::{render, Event, Extractor, Query};
     use wasm_bindgen_test::*;
     use web_sys::wasm_bindgen::JsCast;
     use yew::prelude::*;
@@ -356,36 +355,5 @@ mod tests {
         .await;
 
         assert!(!t.query_by_text("World").exists());
-    }
-
-    #[wasm_bindgen_test]
-    async fn test_render_hook() {
-        let h = render_hook!(UseStateHandle<bool>, {
-            let a = use_state(|| true);
-            a
-        })
-        .await;
-
-        assert_eq!(*h, true);
-    }
-
-    #[wasm_bindgen_test]
-    async fn test_render_hook_with_effect() {
-        let h = render_hook!(UseStateHandle<i32>, {
-            let a = use_state(|| 0);
-
-            {
-                let a = a.clone();
-
-                use_effect_with((), move |_| {
-                    a.set(100);
-                });
-            }
-
-            a
-        })
-        .await;
-
-        assert_eq!(*h, 100);
     }
 }
