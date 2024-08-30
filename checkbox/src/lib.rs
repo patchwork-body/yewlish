@@ -188,22 +188,28 @@ pub fn checkbox_indicator(props: &CheckboxIndicatorProps) -> Html {
         }
     } else {
         html! {
-            <Presence name="checkbox-indicator" r#ref={node_ref} class={&props.class} present={context.checked == props.show_when} render_as={
-                Callback::from(|PresenceRenderAsProps { r#ref, class, presence, children }| {
-                    html! {
-                        <span
-                            ref={r#ref.clone()}
-                            class={&class}
-                        >
-                            { if presence {
-                                html! { {for children.iter()} }
-                            } else {
-                                html! {}
-                            } }
-                        </span>
-                    }
-                })
-            }>
+            <Presence
+                name="checkbox-indicator"
+                r#ref={node_ref}
+                class={&props.class}
+                present={context.checked == props.show_when}
+                render_as={
+                    Callback::from(|PresenceRenderAsProps { r#ref, class, presence, children }| {
+                        html! {
+                            <span
+                                ref={r#ref.clone()}
+                                class={&class}
+                            >
+                                { if presence {
+                                    html! { {for children.iter()} }
+                                } else {
+                                    html! {}
+                                } }
+                            </span>
+                        }
+                    })
+                }
+            >
                 {for props.children.iter()}
             </Presence>
         }
@@ -216,13 +222,6 @@ pub fn checkbox_indicator(props: &CheckboxIndicatorProps) -> Html {
             {element}
         </AttrPasser>
     }
-}
-
-type ResultRef = Rc<RefCell<Option<Box<dyn Any>>>>;
-
-#[derive(Properties, Clone, PartialEq)]
-struct TestRendererProps {
-    get_result_ref: Callback<(), ResultRef>,
 }
 
 #[cfg(test)]
