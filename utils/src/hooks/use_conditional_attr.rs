@@ -28,7 +28,7 @@ mod tests {
 
     #[wasm_bindgen_test]
     async fn test_use_conditional_attr_set_when_true() {
-        let h = render_hook!(
+        let (h, _) = render_hook!(
             NodeRef,
             {
                 let node_ref = use_node_ref();
@@ -43,13 +43,13 @@ mod tests {
         )
         .await;
 
-        let button = h.cast::<HtmlElement>().unwrap_throw();
+        let button = h.get().cast::<HtmlElement>().unwrap_throw();
         assert_eq!(button.get_attribute("disabled"), Some("".to_string()));
     }
 
     #[wasm_bindgen_test]
     async fn test_use_conditional_attr_unset_when_false() {
-        let h = render_hook!(
+        let (h, _) = render_hook!(
             NodeRef,
             {
                 let node_ref = use_node_ref();
@@ -64,7 +64,7 @@ mod tests {
         )
         .await;
 
-        let button = h.cast::<HtmlElement>().unwrap_throw();
+        let button = h.get().cast::<HtmlElement>().unwrap_throw();
         assert_eq!(button.get_attribute("disabled"), None);
     }
 }

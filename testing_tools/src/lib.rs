@@ -4,7 +4,7 @@ mod render_hook;
 mod tester;
 
 pub use gloo_utils;
-pub use hook_tester::HookTester;
+pub use hook_tester::{HookTester, ResultRef};
 pub use std::any::Any;
 pub use std::cell::RefCell;
 pub use std::rc::Rc;

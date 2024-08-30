@@ -3,8 +3,6 @@ macro_rules! render_hook {
     ($type:ty, $hook:expr, $view:expr) => {{
         use $crate::*;
 
-        type ResultRef = Rc<RefCell<Option<Box<dyn Any>>>>;
-
         #[derive(Properties, Clone, PartialEq)]
         struct TestRendererProps {
             get_result_ref: Callback<(), ResultRef>,
@@ -26,7 +24,7 @@ macro_rules! render_hook {
             ($view)(result)
         }
 
-        async fn render_and_parse() -> HookTester<$type> {
+        async fn render_and_parse() -> (HookTester<$type>, Tester) {
             let result_ref: ResultRef = Rc::new(RefCell::new(None));
 
             {
@@ -43,10 +41,10 @@ macro_rules! render_hook {
 
             sleep(Duration::new(0, 0)).await;
 
-            let x = result_ref.borrow_mut().take();
+            let h = HookTester::new(result_ref);
+            let t = Tester::new(gloo_utils::document().get_element_by_id("output").unwrap());
 
-            HookTester::new(x.and_then(|boxed| boxed.downcast::<$type>().ok().map(|boxed| *boxed))
-                .expect(r#"Failed to downcast to the expected type. Do you have the correct type in the render_hook! macro, or is the hook returning the wrong type?"#))
+            (h, t)
         }
 
         render_and_parse()

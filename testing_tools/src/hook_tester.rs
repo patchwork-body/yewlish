@@ -1,20 +1,25 @@
-use std::ops::Deref;
+use std::{any::Any, cell::RefCell, rc::Rc};
+
+pub type ResultRef = Rc<RefCell<Option<Box<dyn Any>>>>;
 
 pub struct HookTester<T> {
-    inner: T,
+    inner: ResultRef,
+    _phantom: std::marker::PhantomData<T>,
 }
 
-impl<T> Deref for HookTester<T> {
-    type Target = T;
-
-    fn deref(&self) -> &Self::Target {
-        &self.inner
+impl<T: 'static> HookTester<T> {
+    pub fn new(inner: ResultRef) -> Self {
+        Self {
+            inner,
+            _phantom: std::marker::PhantomData,
+        }
     }
-}
 
-impl<T> HookTester<T> {
-    pub fn new(inner: T) -> Self {
-        Self { inner }
+    pub fn get(&self) -> T {
+        let x = self.inner.borrow_mut().take();
+
+        x.and_then(|boxed| boxed.downcast::<T>().ok().map(|boxed| *boxed))
+            .expect(r#"Failed to downcast to the expected type. Do you have the correct type in the render_hook! macro, or is the hook returning the wrong type?"#)
     }
 }
 
@@ -28,18 +33,18 @@ mod test {
 
     #[wasm_bindgen_test]
     async fn test_render_hook() {
-        let h = render_hook!(UseStateHandle<bool>, {
+        let (h, _) = render_hook!(UseStateHandle<bool>, {
             let a = use_state(|| true);
             a
         })
         .await;
 
-        assert!(**h);
+        assert!(*h.get());
     }
 
     #[wasm_bindgen_test]
     async fn test_render_hook_with_effect() {
-        let h = render_hook!(UseStateHandle<i32>, {
+        let (h, _) = render_hook!(UseStateHandle<i32>, {
             let a = use_state(|| 0);
 
             {
@@ -54,6 +59,6 @@ mod test {
         })
         .await;
 
-        assert_eq!(**h, 100);
+        assert_eq!(*h.get(), 100);
     }
 }
