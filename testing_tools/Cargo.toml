@@ -2,7 +2,11 @@
 name = "yewlish-testing-tools"
 version = "0.1.0"
 edition = "2021"
-
+authors = ["Kirill Korotkov <gugfug.personal@gmail.com>"]
+license = "MIT OR Apache-2.0"
+description = "A set of testing tools for the Yew framework."
+repository = "https://github.com/patchwork-body/yewlish.git"
+documentation = "https://docs.rs/yewlish-testing-tools"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
