@@ -117,13 +117,12 @@ pub fn checkbox(props: &CheckboxProps) -> Html {
         }
     });
 
-    let node_ref = use_node_ref();
-    use_conditional_attr(node_ref.clone(), "data-disabled", props.disabled);
+    use_conditional_attr(props.r#ref.clone(), "data-disabled", props.disabled);
 
     html! {
         <ContextProvider<ReducibleCheckboxContext> context={context_value}>
             <button
-                ref={node_ref.clone()}
+                ref={props.r#ref.clone()}
                 id={props.id.clone()}
                 class={&props.class}
                 type="button"
@@ -174,8 +173,7 @@ pub fn checkbox_indicator(props: &CheckboxIndicatorProps) -> Html {
     let context = use_context::<ReducibleCheckboxContext>()
         .expect("CheckboxIndicator must be a child of Checkbox");
 
-    let node_ref = use_node_ref();
-    use_conditional_attr(node_ref.clone(), "data-disabled", context.disabled);
+    use_conditional_attr(props.r#ref.clone(), "data-disabled", context.disabled);
 
     let element = if let Some(render_as) = &props.render_as {
         html! {
@@ -190,7 +188,7 @@ pub fn checkbox_indicator(props: &CheckboxIndicatorProps) -> Html {
         html! {
             <Presence
                 name="checkbox-indicator"
-                r#ref={node_ref}
+                r#ref={props.r#ref.clone()}
                 class={&props.class}
                 present={context.checked == props.show_when}
                 render_as={
