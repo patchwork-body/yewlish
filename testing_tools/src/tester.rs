@@ -241,7 +241,6 @@ impl Extractor for Tester {
     }
 }
 
-#[cfg(feature = "internal")]
 #[cfg(test)]
 mod tests {
     use crate::{render, Event, Extractor, Query};
