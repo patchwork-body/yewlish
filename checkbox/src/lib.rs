@@ -225,8 +225,8 @@ pub fn checkbox_indicator(props: &CheckboxIndicatorProps) -> Html {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use testing_tools::Event;
-    use testing_tools::*;
+    use yewlish_testing_tools::Event;
+    use yewlish_testing_tools::*;
     use wasm_bindgen_test::*;
 
     wasm_bindgen_test::wasm_bindgen_test_configure!(run_in_browser);

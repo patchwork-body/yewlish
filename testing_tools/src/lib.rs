@@ -1,16 +1,10 @@
-mod hook_tester;
+pub mod hook_tester;
 mod render;
 mod render_hook;
-mod tester;
+pub mod tester;
 
-pub use gloo_utils;
-pub use hook_tester::{HookTester, ResultRef};
-pub use std::any::Any;
-pub use std::cell::RefCell;
-pub use std::rc::Rc;
-pub use std::time::Duration;
+pub extern crate gloo_utils;
+pub extern crate yew;
+
+pub use hook_tester::HookTester;
 pub use tester::{Event, Extractor, Query, Tester};
-pub use yew::platform::time::sleep;
-pub use yew::prelude::{function_component, Html};
-pub use yew::props;
-pub use yew::Renderer;

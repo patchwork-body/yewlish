@@ -1,6 +1,14 @@
 #[macro_export]
 macro_rules! render_hook {
     ($type:ty, $hook:expr, $view:expr) => {{
+        use std::any::Any;
+        use std::cell::RefCell;
+        use std::rc::Rc;
+        use std::time::Duration;
+        use $crate::gloo_utils;
+        use $crate::hook_tester::ResultRef;
+        use $crate::yew::platform::time::sleep;
+        use $crate::yew::props;
         use $crate::*;
 
         #[derive(Properties, Clone, PartialEq)]
@@ -30,7 +38,7 @@ macro_rules! render_hook {
             {
                 let result_ref = result_ref.clone();
 
-                yew::Renderer::<TestRenderer>::with_root_and_props(
+                $crate::yew::Renderer::<TestRenderer>::with_root_and_props(
                     gloo_utils::document().get_element_by_id("output").unwrap(),
                     props!(TestRendererProps {
                         get_result_ref: Callback::from(move |_| result_ref.clone()),

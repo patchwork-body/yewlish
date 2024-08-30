@@ -125,8 +125,8 @@ macro_rules! attributify {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use testing_tools::*;
     use wasm_bindgen_test::*;
+    use yewlish_testing_tools::*;
 
     wasm_bindgen_test::wasm_bindgen_test_configure!(run_in_browser);
 

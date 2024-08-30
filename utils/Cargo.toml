@@ -13,5 +13,5 @@ yew = "0.21.0"
 [dev-dependencies]
 wasm-bindgen-test = "0.3.43"
 wasm-bindgen-futures = "0.4.43"
-testing-tools = { path = "../testing_tools" }
+yewlish-testing-tools = { path = "../testing_tools" }
  
