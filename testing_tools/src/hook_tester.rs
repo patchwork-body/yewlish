@@ -25,7 +25,7 @@ impl<T: 'static> HookTester<T> {
 
 #[cfg(test)]
 mod test {
-    use crate::render_hook;
+    use crate::*;
     use wasm_bindgen_test::*;
     use yew::prelude::*;
 
