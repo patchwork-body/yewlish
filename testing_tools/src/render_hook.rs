@@ -20,12 +20,12 @@ macro_rules! render_hook {
         fn test_renderer(props: &TestRendererProps) -> Html {
             let result = $hook;
 
-            use_effect({
-                let result = result.clone();
+            use_effect_with(result.clone(), {
                 let get_result_ref = props.get_result_ref.clone();
 
-                move || {
-                    *get_result_ref.emit(()).borrow_mut() = Some(Box::new(result) as Box<dyn Any>);
+                move |result| {
+                    *get_result_ref.emit(()).borrow_mut() =
+                        Some(Box::new(result.clone()) as Box<dyn Any>);
                 }
             });
 
