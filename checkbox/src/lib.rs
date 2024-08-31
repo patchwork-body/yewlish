@@ -591,5 +591,14 @@ mod tests {
         );
 
         assert_eq!(*h.get().0, CheckedState::Checked);
+
+        let checkbox = checkbox.click().await;
+
+        assert_eq!(
+            checkbox.attribute("aria-checked"),
+            "false".to_string().into()
+        );
+
+        assert_eq!(*h.get().0, CheckedState::Unchecked);
     }
 }
