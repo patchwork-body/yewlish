@@ -2,7 +2,7 @@
 name = "yewlish-presence"
 version = "0.1.0"
 edition = "2021"
-authors = ["Kirill Korotkov <gugfug.personal@gmail.com>"]
+authors = ["Kirill Korotkov <personal.gugfug@gmail.com>"]
 license = "MIT OR Apache-2.0"
 description = "A Yew component for managing the mount state of its child."
 repository = "https://github.com/patchwork-body/yewlish.git"

@@ -164,4 +164,4 @@ This project is inspired by the need for robust testing tools in the Yew ecosyst
 For any questions or inquiries, feel free to reach out to the author:
 
 **Kirill Korotkov**  
-Email: [gugfug.personal@gmail.com](mailto:gugfug.personal@gmail.com)
+Email: [personal.gugfug@gmail.com](mailto:personal.gugfug@gmail.com)

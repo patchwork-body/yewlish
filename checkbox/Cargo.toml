@@ -1,13 +1,17 @@
 [package]
-name = "checkbox"
+name = "yewlish-checkbox"
 version = "0.1.0"
 edition = "2021"
-
+authors = ["Kirill Korotkov <personal.gugfug@gmail.com>"]
+license = "MIT OR Apache-2.0"
+description = "A Yew component that represents a checkbox."
+repository = "https://github.com/patchwork-body/yewlish.git"
+documentation = "https://docs.rs/yewlish-checkbox"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 yew = "0.21.0"
-presence = { path = "../presence" }
+yewlish-presence = "0.1.0"
 yewlish-attr-passer = "0.1.0"
 yewlish-utils = "0.1.0"
 log = "0.4.22"
