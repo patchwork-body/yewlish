@@ -9,9 +9,9 @@ edition = "2021"
 log = "0.4.22"
 yew = "0.21.0"
 synchi = { path = "../synchi" }
-wasm-bindgen-test = "0.3.42"
 
 [dev-dependencies]
+wasm-bindgen-test = "0.3.42"
 wasm-bindgen-futures = "0.4.42"
 gloo-utils = "0.2.0"
-yewlish-testing-tools = { path = "../testing_tools" }
+yewlish-testing-tools = "0.1.3"
