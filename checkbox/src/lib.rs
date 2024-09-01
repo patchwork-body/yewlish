@@ -1,9 +1,8 @@
 use std::default::Default;
 use std::rc::Rc;
-
-use attr_passer::*;
+use yewlish_attr_passer::*;
 use html::IntoPropValue;
-use presence::*;
+use yewlish_presence::*;
 use utils::hooks::{use_conditional_attr, use_controllable_state};
 use yew::prelude::*;
 
