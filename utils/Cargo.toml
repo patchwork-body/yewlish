@@ -1,7 +1,12 @@
 [package]
-name = "utils"
+name = "yewlish-utils"
 version = "0.1.0"
 edition = "2021"
+authors = ["Kirill Korotkov <gugfug.personal@gmail.com>"]
+license = "MIT OR Apache-2.0"
+description = "Comomn utils for yewlish component set"
+repository = "https://github.com/patchwork-body/yewlish.git"
+documentation = "https://docs.rs/yewlish-utils"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
