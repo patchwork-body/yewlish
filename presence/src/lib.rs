@@ -1,6 +1,6 @@
-use attr_passer::AttrReceiver;
 use hooks::use_presence::use_presence;
 use yew::prelude::*;
+use yewlish_attr_passer::AttrReceiver;
 
 mod hooks;
 
