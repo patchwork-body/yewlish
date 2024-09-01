@@ -8,7 +8,7 @@ edition = "2021"
 [dependencies]
 yew = "0.21.0"
 presence = { path = "../presence" }
-attr_passer = { path = "../attr_passer" }
+yewlish-attr-passer = "0.1.0"
 yewlish-utils = "0.1.0"
 log = "0.4.22"
 
