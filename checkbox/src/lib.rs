@@ -3,7 +3,7 @@ use std::rc::Rc;
 use yewlish_attr_passer::*;
 use html::IntoPropValue;
 use yewlish_presence::*;
-use utils::hooks::{use_conditional_attr, use_controllable_state};
+use yewlish_utils::hooks::{use_conditional_attr, use_controllable_state};
 use yew::prelude::*;
 
 #[derive(Clone, Default, Debug, PartialEq)]
