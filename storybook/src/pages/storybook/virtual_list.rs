@@ -57,7 +57,7 @@ pub fn virtual_list_page() -> Html {
                             total_items={total_items}
                             item_height={item_height}
                             viewport_height={viewport_height}
-                            render_item={render_item.clone()}
+                            render_item={&render_item}
                         />
                     </PopoverContent>
                 </Popover>
