@@ -85,6 +85,9 @@ pub fn app(props: &AppProps) -> Html {
                             <li>
                                 <a href="/popover">{"Popover"}</a>
                             </li>
+                            <li>
+                                <a href="/virtual-list">{"Virtual List"}</a>
+                            </li>
                         </ul>
                     </nav>
                 </aside>

@@ -20,6 +20,7 @@
 /* layer: default */
 .pointer-events-none{pointer-events:none;}
 .relative{position:relative;}
+.mt-2{margin-top:0.5rem;}
 .block{display:block;}
 .after\:block::after{display:block;}
 .aspect-square{aspect-ratio:1/1;}
@@ -29,6 +30,7 @@
 .h-full{height:100%;}
 .min-h-screen{min-height:100vh;}
 .min-w-\[200px\]{min-width:200px;}
+.min-w-md{min-width:28rem;}
 .min-w-screen{min-width:100vw;}
 .w-11{width:2.75rem;}
 .w-4{width:1rem;}

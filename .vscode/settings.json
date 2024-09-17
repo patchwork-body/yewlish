@@ -23,6 +23,7 @@
     "onfocusin",
     "onkeydown",
     "onlcick",
+    "onscroll",
     "radiogroup",
     "Routable",
     "structopt",

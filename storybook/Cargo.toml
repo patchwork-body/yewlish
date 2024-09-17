@@ -32,6 +32,7 @@ radio_group = { path = "../radio_group" }
 popover = { path = "../popover" }
 attr_passer = { path = "../attr_passer" }
 listbox = { path = "../listbox" }
+virtual-list = { path = "../virtual_list" }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 wasm-bindgen-futures = "0.4.42"
