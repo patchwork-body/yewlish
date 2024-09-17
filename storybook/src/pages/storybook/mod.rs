@@ -4,6 +4,7 @@ use radio_group::RadioGroupPage;
 use switch::SwitchPage;
 use toggle::TogglePage;
 use toggle_group::ToggleGroupPage;
+use virtual_list::VirtualListPage;
 use yew::prelude::*;
 
 use crate::Router;
@@ -15,6 +16,7 @@ mod radio_group;
 mod switch;
 mod toggle;
 mod toggle_group;
+mod virtual_list;
 
 #[derive(Debug, Clone, PartialEq, Properties)]
 pub struct StorybookProps {}
@@ -30,6 +32,7 @@ pub fn storybook_page(_props: &StorybookProps) -> Html {
         "radio-group" | "/radio-group" => html! { <RadioGroupPage /> },
         "toggle-group" | "/toggle-group" => html! { <ToggleGroupPage /> },
         "popover" | "/popover" => html! { <PopoverPage /> },
+        "virtual-list" | "/virtual-list" => html! { <VirtualListPage /> },
         _ => html! {{ "Not Found!" }},
     }
 }
