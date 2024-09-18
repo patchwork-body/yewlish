@@ -2,7 +2,7 @@ mod event;
 mod extractor;
 mod query;
 
-pub use event::Event;
+pub use event::TesterEvent;
 pub use extractor::Extractor;
 pub use query::Query;
 
@@ -135,7 +135,7 @@ impl Query for Tester {
     }
 }
 
-impl Event for Tester {
+impl TesterEvent for Tester {
     fn click(self) -> Pin<Box<dyn Future<Output = Self>>> {
         match &self.root {
             Some(root) => {
@@ -226,7 +226,7 @@ impl Extractor for Tester {
 
 #[cfg(test)]
 mod tests {
-    use crate::{render, Event, Extractor, Query};
+    use crate::{render, Extractor, Query, TesterEvent};
     use wasm_bindgen_test::*;
     use web_sys::wasm_bindgen::JsCast;
     use yew::prelude::*;

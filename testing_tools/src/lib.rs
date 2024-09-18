@@ -7,4 +7,4 @@ pub extern crate gloo_utils;
 pub extern crate yew;
 
 pub use hook_tester::HookTester;
-pub use tester::{Event, Extractor, Query, Tester};
+pub use tester::{Extractor, Query, Tester, TesterEvent};
