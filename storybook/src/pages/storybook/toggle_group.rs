@@ -1,7 +1,7 @@
 use super::common::*;
 use icons::*;
 use toggle_group::*;
-use utils::enums::orientation::Orientation;
+use yewlish_utils::enums::orientation::Orientation;
 use yew::prelude::*;
 
 #[function_component(ToggleGroupPage)]

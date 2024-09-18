@@ -1,7 +1,7 @@
 use super::common::*;
-use checkbox::*;
 use icons::*;
 use yew::prelude::*;
+use yewlish_checkbox::*;
 
 #[function_component(CheckboxPage)]
 pub fn checkbox_page() -> Html {
@@ -23,7 +23,8 @@ pub fn checkbox_page() -> Html {
         flex items-center justify-center text-current
     "##;
 
-    let checkbox_state = use_state(|| CheckedState::Unchecked);
+    let checkbox_state_1 = use_state(|| CheckedState::Unchecked);
+    let checkbox_state_2 = use_state(|| CheckedState::Checked);
 
     html! {
         <Wrapper title="Checkbox">
@@ -53,8 +54,8 @@ pub fn checkbox_page() -> Html {
 
             <Section title="Controlled">
                 <div class={checkbox_container_class}>
-                    <Checkbox id="checkbox#3" class={checkbox_class} checked={(*checkbox_state).clone()} on_checked_change={{
-                        let checkbox_state = checkbox_state.clone();
+                    <Checkbox id="checkbox#3" class={checkbox_class} checked={(*checkbox_state_1).clone()} on_checked_change={{
+                        let checkbox_state = checkbox_state_1.clone();
                         Callback::from(move |checked: CheckedState| checkbox_state.set(checked))
                     }}>
                         <CheckboxIndicator class={checkbox_indicator_class} show_when={CheckedState::Checked}>
@@ -63,11 +64,11 @@ pub fn checkbox_page() -> Html {
                     </Checkbox>
 
                     <label for="checkbox#3" class={checkbox_label_class}>
-                        {"Accept terms and conditions: "} {if *checkbox_state == CheckedState::Checked {"+"} else {"-"}}
+                        {"Accept terms and conditions: "} {if *checkbox_state_1 == CheckedState::Checked {"+"} else {"-"}}
                     </label>
 
-                    <button onclick={Callback::from(move |_| checkbox_state.set(
-                        match *checkbox_state {
+                    <button onclick={Callback::from(move |_| checkbox_state_1.set(
+                        match *checkbox_state_1 {
                             CheckedState::Checked => CheckedState::Unchecked,
                             CheckedState::Unchecked => CheckedState::Checked,
                         }
@@ -86,6 +87,51 @@ pub fn checkbox_page() -> Html {
                     </Checkbox>
 
                     <label for="checkbox#4" class={checkbox_label_class}>{"Accept terms and conditions: "}</label>
+                </div>
+            </Section>
+
+            <Section title="RenderAs">
+                <div class={checkbox_container_class}>
+                    <Checkbox
+                        id="checkbox#5"
+                        class={checkbox_class}
+                        checked={(*checkbox_state_2).clone()}
+                        on_checked_change={{
+                            let checkbox_state = checkbox_state_2.clone();
+                            Callback::from(move |checked: CheckedState| checkbox_state.set(checked))
+                        }}
+                        render_as={
+                            Callback::from(move |props: CheckboxRenderAsProps| {
+                                let toggle = {
+                                    let on_checked_change = props.on_checked_change.clone();
+
+                                    Callback::from(move |event: Event| {
+                                        let target = event.target_unchecked_into::<web_sys::HtmlInputElement>();
+
+                                        if target.checked() {
+                                            on_checked_change.emit(CheckedState::Checked);
+                                        } else {
+                                            on_checked_change.emit(CheckedState::Unchecked);
+                                        }
+                                    })
+                                };
+
+                                html! {
+                                    <input
+                                        ref={props.r#ref}
+                                        id={props.id}
+                                        disabled={props.disabled}
+                                        class={props.class}
+                                        type="checkbox"
+                                        checked={props.checked == Some(CheckedState::Checked)}
+                                        onchange={&toggle}
+                                    />
+                                }
+                            })
+                        }
+                    />
+
+                    <label for="checkbox#5" class={checkbox_label_class}>{"Accept terms and conditions: "}</label>
                 </div>
             </Section>
         </Wrapper>

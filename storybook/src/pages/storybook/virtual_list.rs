@@ -1,9 +1,9 @@
 use super::common::*;
-use attr_passer::AttrReceiver;
 use popover::*;
 use switch::{Switch, SwitchThumb};
 use virtual_list::VirtualList;
 use yew::prelude::*;
+use yewlish_attr_passer::AttrReceiver;
 
 #[function_component(VirtualListPage)]
 pub fn virtual_list_page() -> Html {

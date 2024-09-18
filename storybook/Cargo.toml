@@ -24,13 +24,13 @@ toggle_group = { path = "../toggle_group" }
 icons = { path = "../icons" }
 primitives = { path = "../primitives" }
 roving_focus = { path = "../roving_focus" }
-utils = { path = "../utils" }
+yewlish-utils = { path = "../utils" }
 separator = { path = "../separator" }
 switch = { path = "../switch" }
-checkbox = { path = "../checkbox" }
+yewlish-checkbox = { path = "../checkbox" }
 radio_group = { path = "../radio_group" }
 popover = { path = "../popover" }
-attr_passer = { path = "../attr_passer" }
+yewlish-attr-passer = { path = "../attr_passer" }
 listbox = { path = "../listbox" }
 virtual-list = { path = "../virtual_list" }
 

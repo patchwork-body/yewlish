@@ -1,11 +1,10 @@
 use super::common::*;
-use attr_passer::*;
-use checkbox::*;
 use icons::*;
-use listbox::*;
 use popover::*;
 use switch::*;
 use yew::prelude::*;
+use yewlish_attr_passer::*;
+use yewlish_checkbox::*;
 
 #[function_component(PopoverPage)]
 pub fn popover_page() -> Html {
