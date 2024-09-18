@@ -52,7 +52,8 @@ impl Reducible for CheckboxContext {
 type ReducibleCheckboxContext = UseReducerHandle<CheckboxContext>;
 
 #[derive(Clone, Debug, PartialEq, Properties)]
-pub struct CheckboxProps {
+pub struct CheckboxRenderAsProps {
+    #[prop_or_default]
     pub children: ChildrenWithProps<CheckboxIndicator>,
     #[prop_or_default]
     pub r#ref: NodeRef,
@@ -74,6 +75,34 @@ pub struct CheckboxProps {
     pub name: Option<AttrValue>,
     #[prop_or_default]
     pub value: Option<AttrValue>,
+}
+
+#[derive(Clone, Debug, PartialEq, Properties)]
+pub struct CheckboxProps {
+    #[prop_or_default]
+    pub children: ChildrenWithProps<CheckboxIndicator>,
+    #[prop_or_default]
+    pub r#ref: NodeRef,
+    #[prop_or_default]
+    pub id: Option<AttrValue>,
+    #[prop_or_default]
+    pub class: Option<AttrValue>,
+    #[prop_or_default]
+    pub default_checked: Option<CheckedState>,
+    #[prop_or_default]
+    pub checked: Option<CheckedState>,
+    #[prop_or_default]
+    pub disabled: bool,
+    #[prop_or_default]
+    pub on_checked_change: Callback<CheckedState>,
+    #[prop_or_default]
+    pub required: bool,
+    #[prop_or_default]
+    pub name: Option<AttrValue>,
+    #[prop_or_default]
+    pub value: Option<AttrValue>,
+    #[prop_or_default]
+    pub render_as: Option<Callback<CheckboxRenderAsProps, Html>>,
 }
 
 #[function_component(Checkbox)]
@@ -117,6 +146,24 @@ pub fn checkbox(props: &CheckboxProps) -> Html {
     });
 
     use_conditional_attr(props.r#ref.clone(), "data-disabled", props.disabled);
+
+    if let Some(render_as) = &props.render_as {
+        return html! {
+            render_as.emit(CheckboxRenderAsProps {
+                children: props.children.clone(),
+                r#ref: props.r#ref.clone(),
+                id: props.id.clone(),
+                class: props.class.clone(),
+                default_checked: props.default_checked.clone(),
+                checked: props.checked.clone(),
+                disabled: props.disabled,
+                on_checked_change: props.on_checked_change.clone(),
+                required: props.required,
+                name: props.name.clone(),
+                value: props.value.clone(),
+            })
+        };
+    }
 
     html! {
         <ContextProvider<ReducibleCheckboxContext> context={context_value}>
@@ -224,7 +271,7 @@ pub fn checkbox_indicator(props: &CheckboxIndicatorProps) -> Html {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use yewlish_testing_tools::Event;
+    use yewlish_testing_tools::TesterEvent;
     use yewlish_testing_tools::*;
     use wasm_bindgen_test::*;
 
@@ -599,5 +646,76 @@ mod tests {
         );
 
         assert_eq!(*h.get().0, CheckedState::Unchecked);
+    }
+
+    #[wasm_bindgen_test]
+    async fn test_checkbox_render_as_input_checkbox() {
+        let (_, t) = render_hook!((Callback<CheckboxRenderAsProps, Html>, UseStateHandle<CheckedState>), {
+            let checked = use_state(|| CheckedState::Unchecked);
+
+            (Callback::from(|props: CheckboxRenderAsProps| {
+                let checked = props.checked == Some(CheckedState::Checked);
+                let onchange = {
+                    let on_checked_change = props.on_checked_change.clone();
+                    Callback::from(move |event: Event| {
+                        let input = event.target_unchecked_into::<web_sys::HtmlInputElement>();
+                        let new_state = if input.checked() {
+                            CheckedState::Checked
+                        } else {
+                            CheckedState::Unchecked
+                        };
+                        on_checked_change.emit(new_state);
+                    })
+                };
+
+                html! {
+                    <input
+                        ref={props.r#ref.clone()}
+                        id={props.id.clone()}
+                        class={props.class.clone()}
+                        type="checkbox"
+                        checked={checked}
+                        disabled={props.disabled}
+                        required={props.required}
+                        name={props.name.clone()}
+                        aria-checked={if checked { "true" } else { "false" }} 
+                        value={props.value.clone()}
+                        onchange={onchange}
+                    />
+                }
+            }), checked)
+        },
+        |(render_as, checked): (Callback<CheckboxRenderAsProps, Html>, UseStateHandle<CheckedState>)| {
+            html! {
+                <Checkbox{render_as} checked={(*checked).clone()} on_checked_change={Callback::from(move |next_state| checked.set(next_state))} />
+            }
+        })
+        .await;
+
+        // The checkbox should be unchecked by default
+        let checkbox = t.query_by_role("checkbox");
+        assert!(checkbox.exists());
+
+        assert_eq!(
+            checkbox.attribute("aria-checked"),
+            "false".to_string().into()
+        );
+
+        assert_eq!(checkbox.attribute("disabled"), None);
+
+        // After clicking, the checkbox should be checked
+        let checkbox = checkbox.click().await;
+
+        assert_eq!(
+            checkbox.attribute("aria-checked"),
+            "true".to_string().into()
+        );
+
+        // After clicking again, the checkbox should be unchecked
+        let checkbox = checkbox.click().await;
+        assert_eq!(
+            checkbox.attribute("aria-checked"),
+            "false".to_string().into()
+        );
     }
 }
