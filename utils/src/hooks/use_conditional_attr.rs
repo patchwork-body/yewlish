@@ -10,8 +10,6 @@ pub fn use_conditional_attr(node_ref: NodeRef, attr_name: &'static str, cond: bo
             } else {
                 node.remove_attribute(attr_name).unwrap_throw();
             }
-        } else {
-            log::warn!("use_conditional_attr received node_ref: {:?}", node_ref);
         }
 
         move || {}
