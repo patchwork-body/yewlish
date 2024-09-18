@@ -11,5 +11,10 @@ web-sys = { version = "0.3.69", features = ["Element", "DomRect"] }
 log = "0.4.21"
 yewlish-presence = "0.1.0"
 yewlish-attr-passer = "0.1.0"
-yewlish-utils = "0.1.0"
+yewlish-utils = "0.1.1"
 roving_focus = { path = "../roving_focus" }
+
+[patch.crates-io]
+yewlish-utils = { path = "../utils" }
+yewlish-presence = { path = "../presence" }
+yewlish-attr-passer = { path = "../attr_passer" }
