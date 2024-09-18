@@ -9,4 +9,4 @@ edition = "2021"
 log = "0.4.21"
 web-sys = {version = "0.3.69", features = ["KeyboardEventInit"]}
 yew = "0.21.0"
-utils = { path = "../utils" }
+yewlish-utils = { path = "../utils" }

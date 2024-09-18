@@ -2,9 +2,9 @@ use std::rc::Rc;
 
 use primitives::*;
 use roving_focus::*;
-use utils::enums::dir::Dir;
-use utils::enums::orientation::Orientation;
 use yew::prelude::*;
+use yewlish_utils::enums::dir::Dir;
+use yewlish_utils::enums::orientation::Orientation;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct RadioGroupContext {

@@ -7,4 +7,4 @@ edition = "2021"
 
 [dependencies]
 yew = "0.21.0"
-utils = { path = "../utils" }
+yewlish-utils = { path = "../utils" }

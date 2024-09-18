@@ -10,4 +10,4 @@ yew = "0.21.0"
 log = "0.4.21"
 primitives = { path = "../primitives" }
 roving_focus = { path = "../roving_focus" }
-utils = { path = "../utils" }
+yewlish-utils = { path = "../utils" }

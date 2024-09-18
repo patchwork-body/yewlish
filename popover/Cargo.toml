@@ -9,7 +9,7 @@ edition = "2021"
 yew = "0.21.0"
 web-sys = { version = "0.3.69", features = ["Element", "DomRect"] }
 log = "0.4.21"
-attr_passer = { path = "../attr_passer" }
-presence = { path = "../presence" }
+yewlish-presence = "0.1.0"
+yewlish-attr-passer = "0.1.0"
+yewlish-utils = "0.1.0"
 roving_focus = { path = "../roving_focus" }
-utils = { path = "../utils" }

@@ -1,4 +1,4 @@
-use utils::enums::orientation::Orientation;
+use yewlish_utils::enums::orientation::Orientation;
 use yew::prelude::*;
 
 #[derive(Clone, Debug, PartialEq, Properties)]

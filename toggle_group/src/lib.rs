@@ -2,7 +2,7 @@ use std::{cell::RefCell, rc::Rc};
 
 use roving_focus::RovingFocus;
 use toggle::*;
-use utils::enums::{dir::Dir, orientation::Orientation};
+use yewlish_utils::enums::{dir::Dir, orientation::Orientation};
 use yew::prelude::*;
 
 #[derive(Clone, Debug, PartialEq)]

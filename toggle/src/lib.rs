@@ -1,5 +1,5 @@
 use primitives::*;
-use utils::{enums::orientation::Orientation, hooks::*};
+use yewlish_utils::{enums::orientation::Orientation, hooks::*};
 use yew::prelude::*;
 
 #[derive(Clone, Debug, PartialEq, Properties)]

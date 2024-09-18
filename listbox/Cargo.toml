@@ -9,5 +9,5 @@ edition = "2021"
 log = "0.4.22"
 web-sys = "0.3.69"
 yew = "0.21.0"
-presence = { path = "../presence" }
-utils = { path = "../utils" }
+yewlish-presence = { path = "../presence" }
+yewlish-utils = { path = "../utils" }

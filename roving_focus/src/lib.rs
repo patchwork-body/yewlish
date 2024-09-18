@@ -5,12 +5,12 @@ use dir::Dir;
 use helpers::*;
 use hooks::use_roving_iterator::*;
 use orientation::Orientation;
-use utils::{
+use web_sys::{wasm_bindgen::JsCast, HtmlElement};
+use yew::prelude::*;
+use yewlish_utils::{
     enums::*,
     hooks::{use_children_as_html_collection, use_keydown},
 };
-use web_sys::{wasm_bindgen::JsCast, HtmlElement};
-use yew::prelude::*;
 
 #[derive(Clone, Debug, PartialEq, Properties)]
 pub struct RovingFocusProps {

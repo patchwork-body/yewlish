@@ -1,6 +1,6 @@
 use std::{cell::RefCell, rc::Rc};
-use utils::enums::dir::Dir;
 use yew::prelude::*;
+use yewlish_utils::enums::dir::Dir;
 
 pub trait RovingIterator {
     fn next(&mut self, dir: &Dir) -> Option<u32>;

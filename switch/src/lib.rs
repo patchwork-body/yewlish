@@ -1,7 +1,7 @@
 use std::rc::Rc;
 
-use utils::{helpers::combine_handlers::combine_handlers, hooks::use_controllable_state};
 use yew::prelude::*;
+use yewlish_utils::{helpers::combine_handlers::combine_handlers, hooks::use_controllable_state};
 
 #[derive(Clone, Debug, PartialEq, Properties)]
 pub struct SwitchProps {
