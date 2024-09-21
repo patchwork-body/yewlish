@@ -12,7 +12,7 @@ documentation = "https://docs.rs/yewlish-checkbox"
 [dependencies]
 yew = "0.21.0"
 yewlish-attr-passer = "0.1.2"
-yewlish-presence = "0.1.1"
+yewlish-presence = "0.1.2"
 yewlish-utils = "0.1.2"
 log = "0.4.22"
 
