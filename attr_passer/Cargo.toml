@@ -12,10 +12,14 @@ documentation = "https://docs.rs/yewlish-attr-passer"
 [dependencies]
 log = "0.4.22"
 yew = "0.21.0"
-yewlish-synchi = { path = "../synchi", version = "0.1.0" }
+yewlish-synchi = { version = "0.1.0" }
 
 [dev-dependencies]
 wasm-bindgen-test = "0.3.42"
 wasm-bindgen-futures = "0.4.42"
 gloo-utils = "0.2.0"
-yewlish-testing-tools = { path = "../testing-tools", version = "0.1.4" }
+yewlish-testing-tools = { version = "0.1.4" }
+
+[replace]
+"yewlish-synchi:0.1.0" = { path = "../synchi" }
+"yewlish-testing-tools:0.1.4" = { path = "../testing-tools" }
