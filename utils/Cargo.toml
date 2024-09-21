@@ -20,5 +20,3 @@ wasm-bindgen-test = "0.3.43"
 wasm-bindgen-futures = "0.4.43"
 yewlish-testing-tools = "0.1.4"
  
-[patch.crates-io]
-yewlish-testing-tools = { path = "../testing_tools" }

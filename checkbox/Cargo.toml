@@ -22,9 +22,3 @@ web-sys = "0.3.70"
 wasm-bindgen-test = "0.3.42"
 gloo-utils = "0.2.0"
 yewlish-testing-tools = "0.1.4"
-
-[replace]
-"yewlish-attr-passer:0.1.1" = { path = "../attr-passer" }
-"yewlish-presence:0.1.1" = { path = "../presence" }
-"yewlish-utils:0.1.2" = { path = "../utils" }
-"yewlish-testing-tools:0.1.4" = { path = "../testing-tools" }
