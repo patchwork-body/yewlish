@@ -62,13 +62,11 @@ pub struct CheckboxRenderAsProps {
     #[prop_or_default]
     pub class: Option<AttrValue>,
     #[prop_or_default]
-    pub default_checked: Option<CheckedState>,
+    pub checked: CheckedState,
     #[prop_or_default]
-    pub checked: Option<CheckedState>,
+    pub toggle: Callback<()>,
     #[prop_or_default]
     pub disabled: bool,
-    #[prop_or_default]
-    pub on_checked_change: Callback<CheckedState>,
     #[prop_or_default]
     pub required: bool,
     #[prop_or_default]
@@ -129,13 +127,20 @@ pub fn checkbox(props: &CheckboxProps) -> Html {
 
     let toggle = use_callback(
         (dispatch.clone(), context_value.clone()),
-        move |_: MouseEvent, (dispatch, context_value)| {
+        move |(), (dispatch, context_value)| {
             dispatch.emit(Box::new(|prev_state| match prev_state {
                 CheckedState::Checked => CheckedState::Unchecked,
                 CheckedState::Unchecked => CheckedState::Checked,
             }));
 
             context_value.dispatch(CheckboxAction::Toggle);
+        },
+    );
+
+    let toggle_on_click = use_callback(
+        toggle.clone(),
+        move |_: MouseEvent, toggle| {
+            toggle.emit(());
         },
     );
 
@@ -154,10 +159,9 @@ pub fn checkbox(props: &CheckboxProps) -> Html {
                 r#ref: props.r#ref.clone(),
                 id: props.id.clone(),
                 class: props.class.clone(),
-                default_checked: props.default_checked.clone(),
-                checked: props.checked.clone(),
+                checked: checked.borrow().clone(),
+                toggle: toggle.clone(),
                 disabled: props.disabled,
-                on_checked_change: props.on_checked_change.clone(),
                 required: props.required,
                 name: props.name.clone(),
                 value: props.value.clone(),
@@ -180,7 +184,7 @@ pub fn checkbox(props: &CheckboxProps) -> Html {
                 name={props.name.clone()}
                 value={props.value.clone()}
                 onkeydown={prevent_checked_by_enter}
-                onclick={toggle}
+                onclick={&toggle_on_click}
             >
                 {for props.children.iter()}
             </button>
@@ -654,17 +658,13 @@ mod tests {
             let checked = use_state(|| CheckedState::Unchecked);
 
             (Callback::from(|props: CheckboxRenderAsProps| {
-                let checked = props.checked == Some(CheckedState::Checked);
+                let checked = props.checked == CheckedState::Checked;
+
                 let onchange = {
-                    let on_checked_change = props.on_checked_change.clone();
-                    Callback::from(move |event: Event| {
-                        let input = event.target_unchecked_into::<web_sys::HtmlInputElement>();
-                        let new_state = if input.checked() {
-                            CheckedState::Checked
-                        } else {
-                            CheckedState::Unchecked
-                        };
-                        on_checked_change.emit(new_state);
+                    let toggle = props.toggle.clone();
+
+                    Callback::from(move |_event: Event| {
+                        toggle.emit(());
                     })
                 };
 

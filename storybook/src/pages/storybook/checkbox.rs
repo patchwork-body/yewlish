@@ -103,16 +103,10 @@ pub fn checkbox_page() -> Html {
                         render_as={
                             Callback::from(move |props: CheckboxRenderAsProps| {
                                 let toggle = {
-                                    let on_checked_change = props.on_checked_change.clone();
+                                    let toggle = props.toggle.clone();
 
-                                    Callback::from(move |event: Event| {
-                                        let target = event.target_unchecked_into::<web_sys::HtmlInputElement>();
-
-                                        if target.checked() {
-                                            on_checked_change.emit(CheckedState::Checked);
-                                        } else {
-                                            on_checked_change.emit(CheckedState::Unchecked);
-                                        }
+                                    Callback::from(move |_event: Event| {
+                                        toggle.emit(());
                                     })
                                 };
 
@@ -123,7 +117,7 @@ pub fn checkbox_page() -> Html {
                                         disabled={props.disabled}
                                         class={props.class}
                                         type="checkbox"
-                                        checked={props.checked == Some(CheckedState::Checked)}
+                                        checked={props.checked == CheckedState::Checked}
                                         onchange={&toggle}
                                     />
                                 }
