@@ -10,5 +10,5 @@ yew = "0.21.0"
 toggle = { path = "../toggle" }
 log = "0.4.21"
 web-sys = { version = "0.3.70", features = ["HtmlDivElement", "HtmlButtonElement"] }
-roving_focus = { path = "../roving_focus" }
+yewlish-roving-focus = { path = "../roving_focus" }
 yewlish-utils = { path = "../utils" }

@@ -1,5 +1,5 @@
 [package]
-name = "roving_focus"
+name = "yewlish-roving-focus"
 version = "0.1.0"
 edition = "2021"
 
@@ -7,6 +7,6 @@ edition = "2021"
 
 [dependencies]
 log = "0.4.21"
-web-sys = {version = "0.3.69", features = ["KeyboardEventInit"]}
+web-sys = {version = "0.3.70", features = ["KeyboardEventInit"]}
 yew = "0.21.0"
 yewlish-utils = { path = "../utils" }

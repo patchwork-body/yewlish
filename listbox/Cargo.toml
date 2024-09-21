@@ -7,7 +7,7 @@ edition = "2021"
 
 [dependencies]
 log = "0.4.22"
-web-sys = "0.3.69"
+web-sys = "0.3.70"
 yew = "0.21.0"
 yewlish-presence = { path = "../presence" }
 yewlish-utils = { path = "../utils" }
