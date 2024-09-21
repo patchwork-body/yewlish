@@ -10,6 +10,6 @@ yew = "0.21.0"
 web-sys = { version = "0.3.70", features = ["Element", "DomRect"] }
 log = "0.4.21"
 yewlish-presence = { version = "0.1.1" }
-yewlish-attr-passer = "0.1.1"
+yewlish-attr-passer = "0.1.2"
 yewlish-utils = { version = "0.1.2" }
 yewlish-roving-focus = { path = "../roving_focus" }
