@@ -33,6 +33,7 @@
     "onfocusin",
     "onkeydown",
     "onlcick",
+    "onchange",
     "optgroup",
     "progressbar",
     "onscroll",
