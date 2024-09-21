@@ -724,7 +724,7 @@ mod tests {
         },
         |(render_as, checked): (Callback<CheckboxRenderAsProps, Html>, UseStateHandle<CheckedState>)| {
             html! {
-                <Checkbox{render_as} checked={(*checked).clone()} on_checked_change={Callback::from(move |next_state| checked.set(next_state))} />
+                <Checkbox {render_as} checked={(*checked).clone()} on_checked_change={Callback::from(move |next_state| checked.set(next_state))} />
             }
         })
         .await;
