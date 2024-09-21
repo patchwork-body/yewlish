@@ -1,9 +1,9 @@
 use std::{cell::RefCell, rc::Rc};
 
-use roving_focus::RovingFocus;
 use toggle::*;
-use yewlish_utils::enums::{dir::Dir, orientation::Orientation};
 use yew::prelude::*;
+use yewlish_roving_focus::RovingFocus;
+use yewlish_utils::enums::{dir::Dir, orientation::Orientation};
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum ToggleGroupType {

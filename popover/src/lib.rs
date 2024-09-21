@@ -1,4 +1,4 @@
-use roving_focus::helpers::get_focusable_element;
+use yewlish_roving_focus::helpers::get_focusable_element;
 use std::{
     fmt::{Display, Formatter},
     rc::Rc,

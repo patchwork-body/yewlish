@@ -1,8 +1,8 @@
 use std::rc::Rc;
 
 use primitives::*;
-use roving_focus::*;
 use yew::prelude::*;
+use yewlish_roving_focus::*;
 use yewlish_utils::enums::dir::Dir;
 use yewlish_utils::enums::orientation::Orientation;
 
