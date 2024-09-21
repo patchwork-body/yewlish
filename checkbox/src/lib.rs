@@ -143,8 +143,12 @@ pub fn checkbox(props: &CheckboxProps) -> Html {
     );
 
     let toggle = use_callback(
-        (dispatch.clone(), context_value.clone()),
-        move |(), (dispatch, context_value)| {
+        (dispatch.clone(), context_value.clone(), props.readonly),
+        move |(), (dispatch, context_value, readonly)| {
+            if *readonly {
+                return;
+            }
+
             dispatch.emit(Box::new(|prev_state| match prev_state {
                 CheckedState::Checked => CheckedState::Unchecked,
                 CheckedState::Unchecked => CheckedState::Checked,
