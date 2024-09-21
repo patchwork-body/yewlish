@@ -1,6 +1,6 @@
 use super::common::*;
-use switch::*;
 use yew::prelude::*;
+use yewlish_switch::*;
 
 #[function_component(SwitchPage)]
 pub fn switch_page() -> Html {

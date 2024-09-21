@@ -2,10 +2,10 @@ use super::common::*;
 use icons::*;
 use listbox::{Listbox, ListboxOption, ListboxOptionIndicator};
 use popover::*;
-use switch::*;
 use yew::prelude::*;
 use yewlish_attr_passer::*;
 use yewlish_checkbox::*;
+use yewlish_switch::*;
 
 #[function_component(PopoverPage)]
 pub fn popover_page() -> Html {

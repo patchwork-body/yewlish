@@ -1,6 +1,6 @@
 use super::common::*;
 use popover::*;
-use switch::{Switch, SwitchThumb};
+use yewlish_switch::{Switch, SwitchThumb};
 use virtual_list::VirtualList;
 use yew::prelude::*;
 use yewlish_attr_passer::AttrReceiver;
