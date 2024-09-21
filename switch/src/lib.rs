@@ -205,3 +205,328 @@ pub fn switch_thumb(props: &SwitchThumbProps) -> Html {
         ></div>
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use wasm_bindgen_test::*;
+    use yewlish_testing_tools::TesterEvent;
+    use yewlish_testing_tools::*;
+
+    wasm_bindgen_test::wasm_bindgen_test_configure!(run_in_browser);
+
+    #[wasm_bindgen_test]
+    async fn test_switch_should_toggle() {
+        let t = render! {
+            <Switch>
+                <SwitchThumb />
+            </Switch>
+        }
+        .await;
+
+        // The switch should be unchecked by default
+        let switch = t.query_by_role("switch");
+        assert!(switch.exists());
+
+        assert_eq!(switch.attribute("aria-checked"), Some("false".into()));
+
+        // Click on the switch
+        let switch = switch.click().await;
+
+        // Now the switch should be checked
+        assert_eq!(switch.attribute("aria-checked"), Some("true".into()));
+
+        // Click again
+        let switch = switch.click().await;
+
+        // The switch should be unchecked again
+        assert_eq!(switch.attribute("aria-checked"), Some("false".into()));
+    }
+
+    // #[wasm_bindgen_test]
+    // async fn test_switch_default_checked() {
+    //     let t = render! {
+    //         <Switch default_checked={Some(true)}>
+    //             <SwitchThumb />
+    //         </Switch>
+    //     }
+    //     .await;
+
+    //     let switch = t.query_by_role("switch");
+    //     assert!(switch.exists());
+
+    //     assert_eq!(switch.attribute("aria-checked"), Some("true".into()));
+    // }
+
+    // #[wasm_bindgen_test]
+    // async fn test_switch_default_unchecked() {
+    //     let t = render! {
+    //         <Switch default_checked={false}>
+    //             <SwitchThumb />
+    //         </Switch>
+    //     }
+    //     .await;
+
+    //     let switch = t.query_by_role("switch");
+    //     assert!(switch.exists());
+
+    //     assert_eq!(switch.attribute("aria-checked"), Some("false".into()));
+    // }
+
+    // #[wasm_bindgen_test]
+    // async fn test_switch_checked_prop() {
+    //     let t = render! {
+    //         <Switch checked={true}>
+    //             <SwitchThumb />
+    //         </Switch>
+    //     }
+    //     .await;
+
+    //     let switch = t.query_by_role("switch");
+    //     assert!(switch.exists());
+
+    //     assert_eq!(switch.attribute("aria-checked"), Some("true".into()));
+    // }
+
+    // #[wasm_bindgen_test]
+    // async fn test_switch_is_disabled() {
+    //     let t = render! {
+    //         <Switch disabled={true}>
+    //             <SwitchThumb />
+    //         </Switch>
+    //     }
+    //     .await;
+
+    //     let switch = t.query_by_role("switch");
+    //     assert!(switch.exists());
+
+    //     assert_eq!(switch.attribute("disabled"), Some("disabled".into()));
+    //     assert_eq!(switch.attribute("data-disabled"), Some("true".into()));
+
+    //     // Try clicking the disabled switch
+    //     let switch = switch.click().await;
+
+    //     // The state should not have changed
+    //     assert_eq!(switch.attribute("aria-checked"), Some("false".into()));
+    // }
+
+    // #[wasm_bindgen_test]
+    // async fn test_switch_accept_id() {
+    //     let t = render! {
+    //         <Switch id={"switch-id"}>
+    //             <SwitchThumb />
+    //         </Switch>
+    //     }
+    //     .await;
+
+    //     let switch = t.query_by_role("switch");
+    //     assert!(switch.exists());
+    //     assert_eq!(switch.attribute("id"), Some("switch-id".into()));
+    // }
+
+    // #[wasm_bindgen_test]
+    // async fn test_switch_accept_class() {
+    //     let t = render! {
+    //         <Switch class={"switch-class"}>
+    //             <SwitchThumb />
+    //         </Switch>
+    //     }
+    //     .await;
+
+    //     let switch = t.query_by_role("switch");
+    //     assert!(switch.exists());
+    //     assert_eq!(switch.attribute("class"), Some("switch-class".into()));
+    // }
+
+    // #[wasm_bindgen_test]
+    // async fn test_switch_is_required() {
+    //     let t = render! {
+    //         <Switch required={true}>
+    //             <SwitchThumb />
+    //         </Switch>
+    //     }
+    //     .await;
+
+    //     let switch = t.query_by_role("switch");
+    //     assert!(switch.exists());
+    //     assert_eq!(switch.attribute("aria-required"), Some("true".into()));
+    // }
+
+    // #[wasm_bindgen_test]
+    // async fn test_switch_have_name() {
+    //     let t = render! {
+    //         <Switch name={"switch-name"}>
+    //             <SwitchThumb />
+    //         </Switch>
+    //     }
+    //     .await;
+
+    //     let switch = t.query_by_role("switch");
+    //     assert!(switch.exists());
+    //     assert_eq!(switch.attribute("name"), Some("switch-name".into()));
+    // }
+
+    // #[wasm_bindgen_test]
+    // async fn test_switch_have_value() {
+    //     let t = render! {
+    //         <Switch value={"switch-value"}>
+    //             <SwitchThumb />
+    //         </Switch>
+    //     }
+    //     .await;
+
+    //     let switch = t.query_by_role("switch");
+    //     assert!(switch.exists());
+    //     assert_eq!(switch.attribute("value"), Some("switch-value".into()));
+    // }
+
+    // #[wasm_bindgen_test]
+    // async fn test_switch_on_checked_change() {
+    //     let (h, t) = render_hook!(
+    //         (UseStateHandle<bool>, Callback<bool>),
+    //         {
+    //             let checked = use_state(|| false);
+
+    //             let on_checked_change = {
+    //                 let checked = checked.clone();
+    //                 Callback::from(move |new_checked: bool| {
+    //                     checked.set(new_checked);
+    //                 })
+    //             };
+
+    //             (checked, on_checked_change)
+    //         },
+    //         |(checked, on_checked_change): (UseStateHandle<bool>, Callback<bool>)| {
+    //             html! {
+    //                 <Switch checked={Some(*checked)} on_checked_change={on_checked_change.clone()}>
+    //                     <SwitchThumb />
+    //                 </Switch>
+    //             }
+    //         }
+    //     )
+    //     .await;
+
+    //     let switch = t.query_by_role("switch");
+    //     assert!(switch.exists());
+
+    //     // Initially unchecked
+    //     assert_eq!(switch.attribute("aria-checked"), Some("false".into()));
+    //     assert!(!*h.get().0);
+
+    //     // Click the switch
+    //     let switch = switch.click().await;
+
+    //     // Should now be checked
+    //     assert_eq!(switch.attribute("aria-checked"), Some("true".into()));
+    //     assert!(*h.get().0);
+
+    //     // Click again
+    //     let switch = switch.click().await;
+
+    //     // Should be unchecked again
+    //     assert_eq!(switch.attribute("aria-checked"), Some("false".into()));
+    //     assert!(!*h.get().0);
+    // }
+
+    // #[wasm_bindgen_test]
+    // async fn test_switch_render_as_input() {
+    //     let (_, t) = render_hook!(
+    //         Callback<SwitchRenderAsProps, Html>,
+    //         {
+    //             Callback::from(|props: SwitchRenderAsProps| {
+    //                 let onchange = {
+    //                     let toggle = props.toggle.clone();
+    //                     Callback::from(move |_| {
+    //                         toggle.emit(());
+    //                     })
+    //                 };
+
+    //                 html! {
+    //                     <input
+    //                         ref={props.r#ref.clone()}
+    //                         id={props.id.clone()}
+    //                         class={props.class.clone()}
+    //                         type="checkbox"
+    //                         checked={props.checked}
+    //                         disabled={props.disabled}
+    //                         required={props.required}
+    //                         name={props.name.clone()}
+    //                         value={props.value.clone()}
+    //                         onchange={onchange}
+    //                     />
+    //                 }
+    //             })
+    //         },
+    //         |render_as: Callback<SwitchRenderAsProps, Html>| {
+    //             html! {
+    //                 <Switch {render_as}>
+    //                     <SwitchThumb />
+    //                 </Switch>
+    //             }
+    //         }
+    //     )
+    //     .await;
+
+    //     let input = t.query_by_role("checkbox");
+    //     assert!(input.exists());
+
+    //     // Initially unchecked
+    //     assert_eq!(input.attribute("checked"), None);
+
+    //     // Click the input
+    //     let input = input.click().await;
+
+    //     // Should now be checked
+    //     assert_eq!(input.attribute("checked"), "true".to_string().into());
+
+    //     // Click again
+    //     let input = input.click().await;
+
+    //     // Should be unchecked again
+    //     assert_eq!(input.attribute("checked"), None);
+    // }
+
+    // #[wasm_bindgen_test]
+    // async fn test_switch_readonly() {
+    //     let t = render! {
+    //         <Switch readonly={true}>
+    //             <SwitchThumb />
+    //         </Switch>
+    //     }
+    //     .await;
+
+    //     let switch = t.query_by_role("switch");
+    //     assert!(switch.exists());
+
+    //     // Try clicking the readonly switch
+    //     let switch = switch.click().await;
+
+    //     // The state should not have changed
+    //     assert_eq!(switch.attribute("aria-checked"), "false".to_string().into());
+    // }
+
+    // #[wasm_bindgen_test]
+    // async fn test_switch_thumb_data_state() {
+    //     let t = render! {
+    //         <Switch>
+    //             <SwitchThumb class={"thumb-class"} />
+    //         </Switch>
+    //     }
+    //     .await;
+
+    //     let thumb = t.query_by_selector(".thumb-class");
+    //     assert!(thumb.exists());
+
+    //     // Initially unchecked
+    //     assert_eq!(
+    //         thumb.attribute("data-state"),
+    //         "unchecked".to_string().into()
+    //     );
+
+    //     // Click the switch
+    //     t.query_by_role("switch").click().await;
+
+    //     // Thumb should now reflect the checked state
+    //     assert_eq!(thumb.attribute("data-state"), "checked".to_string().into());
+    // }
+}
