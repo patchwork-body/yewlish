@@ -128,6 +128,7 @@ pub fn attr_receiver(props: &AttrReceiverProps) -> Html {
 macro_rules! attributify {
     ( $( $key:expr => $value:expr ),* $(,)? ) => {{
         use yew::props;
+        use $crate::AttrPasserProps;
 
         let mut attributes = vec![];
 
