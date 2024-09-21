@@ -11,6 +11,7 @@ pub enum CheckedState {
     Checked,
     #[default]
     Unchecked,
+    Indeterminate,
 }
 
 impl IntoPropValue<Option<AttrValue>> for CheckedState {
@@ -18,6 +19,17 @@ impl IntoPropValue<Option<AttrValue>> for CheckedState {
         match self {
             CheckedState::Checked => Some("checked".into()),
             CheckedState::Unchecked => Some("unchecked".into()),
+            CheckedState::Indeterminate => Some("indeterminate".into()),
+        }
+    }
+}
+
+impl std::fmt::Display for CheckedState {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            CheckedState::Checked => write!(f, "checked"),
+            CheckedState::Unchecked => write!(f, "unchecked"),
+            CheckedState::Indeterminate => write!(f, "indeterminate"),
         }
     }
 }
@@ -41,6 +53,7 @@ impl Reducible for CheckboxContext {
                 checked: match self.checked {
                     CheckedState::Checked => CheckedState::Unchecked,
                     CheckedState::Unchecked => CheckedState::Checked,
+                    CheckedState::Indeterminate => CheckedState::Checked,
                 },
                 ..(*self).clone()
             }
@@ -73,6 +86,8 @@ pub struct CheckboxRenderAsProps {
     pub name: Option<AttrValue>,
     #[prop_or_default]
     pub value: Option<AttrValue>,
+    #[prop_or_default]
+    pub readonly: bool,
 }
 
 #[derive(Clone, Debug, PartialEq, Properties)]
@@ -99,6 +114,8 @@ pub struct CheckboxProps {
     pub name: Option<AttrValue>,
     #[prop_or_default]
     pub value: Option<AttrValue>,
+    #[prop_or_default]
+    pub readonly: bool,
     #[prop_or_default]
     pub render_as: Option<Callback<CheckboxRenderAsProps, Html>>,
 }
@@ -131,6 +148,7 @@ pub fn checkbox(props: &CheckboxProps) -> Html {
             dispatch.emit(Box::new(|prev_state| match prev_state {
                 CheckedState::Checked => CheckedState::Unchecked,
                 CheckedState::Unchecked => CheckedState::Checked,
+                CheckedState::Indeterminate => CheckedState::Checked,
             }));
 
             context_value.dispatch(CheckboxAction::Toggle);
@@ -152,8 +170,8 @@ pub fn checkbox(props: &CheckboxProps) -> Html {
 
     use_conditional_attr(props.r#ref.clone(), "data-disabled", props.disabled);
 
-    if let Some(render_as) = &props.render_as {
-        return html! {
+    let element = if let Some(render_as) = &props.render_as {
+        html! {
             render_as.emit(CheckboxRenderAsProps {
                 children: props.children.clone(),
                 r#ref: props.r#ref.clone(),
@@ -165,29 +183,40 @@ pub fn checkbox(props: &CheckboxProps) -> Html {
                 required: props.required,
                 name: props.name.clone(),
                 value: props.value.clone(),
+                readonly: props.readonly,
             })
-        };
-    }
+        }
+    } else {
+        html! {
+            <AttrReceiver name="checkbox">
+                <button
+                    ref={props.r#ref.clone()}
+                    id={props.id.clone()}
+                    class={&props.class}
+                    type="button"
+                    role="checkbox"
+                    disabled={props.disabled}
+                    name={props.name.clone()}
+                    value={props.value.clone()}
+                    readonly={props.readonly}
+                    onkeydown={prevent_checked_by_enter}
+                    onclick={&toggle_on_click}
+                >
+                    {for props.children.iter()}
+                </button>
+            </AttrReceiver>
+        }
+    };
 
     html! {
         <ContextProvider<ReducibleCheckboxContext> context={context_value}>
-            <button
-                ref={props.r#ref.clone()}
-                id={props.id.clone()}
-                class={&props.class}
-                type="button"
-                role="checkbox"
-                aria-checked={if *checked.borrow() == CheckedState::Checked { "true" } else { "false" }}
-                aria-required={if props.required { "true" } else { "false" }}
-                data-state={checked.borrow().clone()}
-                disabled={props.disabled}
-                name={props.name.clone()}
-                value={props.value.clone()}
-                onkeydown={prevent_checked_by_enter}
-                onclick={&toggle_on_click}
-            >
-                {for props.children.iter()}
-            </button>
+            <AttrPasser name="checkbox" ..attributify! {
+                "aria-checked" => if *checked.borrow() == CheckedState::Indeterminate { "mixed".to_string() } else { checked.borrow().to_string() },
+                "aria-required" => if props.required { "true" } else { "false" },
+                "data-state" => checked.borrow().to_string(),
+            }>
+                {element}
+            </AttrPasser>
         </ContextProvider<ReducibleCheckboxContext>>
     }
 }

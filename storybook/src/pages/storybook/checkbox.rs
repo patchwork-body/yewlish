@@ -71,6 +71,7 @@ pub fn checkbox_page() -> Html {
                         match *checkbox_state_1 {
                             CheckedState::Checked => CheckedState::Unchecked,
                             CheckedState::Unchecked => CheckedState::Checked,
+                            CheckedState::Indeterminate => CheckedState::Checked,
                         }
                     ))}>
                         { "Toggle" }
