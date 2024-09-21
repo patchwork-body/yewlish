@@ -38,7 +38,7 @@ pub fn virtual_list_page() -> Html {
                 <Popover>
                     <PopoverTrigger class="flex justify-center gap-x-2" render_as={Callback::from(move |PopoverTriggerRenderAsProps { class, children, toggle, is_open }| {
                         html! {
-                            <AttrReceiver>
+                            <AttrReceiver name="popover-trigger">
                                 <label class={&class}>
                                     <Switch class={switch_class} onclick={toggle} checked={is_open}>
                                         <SwitchThumb class={switch_thumb_class} />
@@ -52,7 +52,9 @@ pub fn virtual_list_page() -> Html {
                         {"Open"}
                     </PopoverTrigger>
 
-                    <PopoverContent class="data-[state=open]:animate-fade-in data-[state=closed]:animate-fade-out bg-neutral-900 mt-2 min-w-md rounded-md p-2">
+                    <PopoverContent
+                        class="data-[state=open]:animate-fade-in data-[state=closed]:animate-fade-out bg-neutral-900 mt-2 min-w-md rounded-md p-2"
+                    >
                         <VirtualList
                             total_items={total_items}
                             item_height={item_height}
