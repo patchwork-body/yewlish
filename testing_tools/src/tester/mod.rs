@@ -105,6 +105,10 @@ impl Query for Tester {
         let implicit_selector = self.build_role_query(role);
         let explicit_selector = format!("[role='{}']", role);
 
+        if implicit_selector.is_empty() {
+            return self.query_by_selector(&explicit_selector);
+        }
+
         self.query_by_selector(&format!("{implicit_selector}, {explicit_selector}"))
     }
 
