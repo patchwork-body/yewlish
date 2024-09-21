@@ -2,7 +2,11 @@
 name = "yewlish-switch"
 version = "0.1.0"
 edition = "2021"
-
+authors = ["Kirill Korotkov <personal.gugfug@gmail.com>"]
+license = "MIT OR Apache-2.0"
+description = "A Yew component that represents a switch."
+repository = "https://github.com/patchwork-body/yewlish.git"
+documentation = "https://docs.rs/yewlish-switch"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
