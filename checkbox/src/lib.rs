@@ -211,7 +211,11 @@ pub fn checkbox(props: &CheckboxProps) -> Html {
     html! {
         <ContextProvider<ReducibleCheckboxContext> context={context_value}>
             <AttrPasser name="checkbox" ..attributify! {
-                "aria-checked" => if *checked.borrow() == CheckedState::Indeterminate { "mixed".to_string() } else { checked.borrow().to_string() },
+                "aria-checked" => match *checked.borrow() {
+                    CheckedState::Checked => "true",
+                    CheckedState::Unchecked => "false",
+                    CheckedState::Indeterminate => "mixed",
+                },
                 "aria-required" => if props.required { "true" } else { "false" },
                 "data-state" => checked.borrow().to_string(),
             }>
@@ -294,7 +298,7 @@ pub fn checkbox_indicator(props: &CheckboxIndicatorProps) -> Html {
 
     html! {
         <AttrPasser name="checkbox-indicator" ..attributify! {
-            "data-state" => if context.checked == CheckedState::Checked { "checked" } else { "unchecked" },
+            "data-state" => context.checked.to_string(),
         }>
             {element}
         </AttrPasser>
