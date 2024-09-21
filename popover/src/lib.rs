@@ -164,7 +164,7 @@ pub fn popover_trigger(props: &PopoverTriggerProps) -> Html {
     };
 
     html! {
-        <AttrPasser ..attributify! {
+        <AttrPasser name="popover-trigger" ..attributify! {
             "data-state" => *data_state,
             "role" => "button",
         }>
@@ -371,19 +371,19 @@ pub fn popover_content(props: &PopoverContentProps) -> Html {
     });
 
     let element = if let Some(render_as) = &props.render_as {
-        html! {{
+        html! {
             render_as.emit(PopoverContentRenderAsProps {
                 r#ref: content_ref.clone(),
                 children: props.children.clone(),
                 class: props.class.clone(),
                 is_open: context.is_open,
             })
-        }}
+        }
     } else {
         html! {
             <Presence
                 r#ref={content_ref.clone()}
-                name="popover"
+                name="popover-content"
                 present={context.is_open}
                 class={&props.class}
                 on_present={focus_on_present}
@@ -395,14 +395,14 @@ pub fn popover_content(props: &PopoverContentProps) -> Html {
 
     create_portal(
         html! {
-            <AttrPasser name="popover" ..attributify! {
+            <AttrPasser name="popover-content" ..attributify! {
                 "data-state" => if context.is_open { "open" } else { "closed" },
                 "data-side" => props.side.to_string(),
                 "data-align" => props.align.to_string(),
                 "style" => style,
                 "role" => "dialog",
             }>
-                { element }
+                {element}
             </AttrPasser>
         },
         host,
