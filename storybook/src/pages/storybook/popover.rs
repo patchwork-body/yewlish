@@ -1,5 +1,6 @@
 use super::common::*;
 use icons::*;
+use listbox::{Listbox, ListboxOption, ListboxOptionIndicator};
 use popover::*;
 use switch::*;
 use yew::prelude::*;
@@ -79,7 +80,7 @@ pub fn popover_page() -> Html {
                 <Popover>
                     <PopoverTrigger class="flex justify-center gap-x-2" render_as={Callback::from(move |PopoverTriggerRenderAsProps { class, children, toggle, is_open }| {
                         html! {
-                            <AttrReceiver>
+                            <AttrReceiver name="popover-trigger">
                                 <label class={&class}>
                                     <Switch class={switch_class} onclick={toggle} checked={is_open}>
                                         <SwitchThumb class={switch_thumb_class} />
@@ -135,7 +136,7 @@ pub fn popover_page() -> Html {
                 <Popover>
                     <PopoverTrigger class="flex justify-center gap-x-2" render_as={Callback::from(move |PopoverTriggerRenderAsProps { class, children, toggle, is_open }| {
                         html! {
-                            <AttrReceiver>
+                            <AttrReceiver name="popover-trigger">
                                 <label class={&class}>
                                     <Switch class={switch_class} onclick={toggle} checked={is_open}>
                                         <SwitchThumb class={switch_thumb_class} />
@@ -191,115 +192,115 @@ pub fn popover_page() -> Html {
                 </span>
             </Section>
 
-            // <Section title="With render_as">
-            //     <Popover>
-            //         <PopoverTrigger class="flex justify-center gap-x-2" render_as={Callback::from(move |PopoverTriggerRenderAsProps { class, children, toggle, is_open }| {
-            //             html! {
-            //                 <AttrReceiver>
-            //                     <label class={&class}>
-            //                         <Switch class={switch_class} onclick={toggle} checked={is_open}>
-            //                             <SwitchThumb class={switch_thumb_class} />
-            //                         </Switch>
+            <Section title="With render_as">
+                <Popover>
+                    <PopoverTrigger class="flex justify-center gap-x-2" render_as={Callback::from(move |PopoverTriggerRenderAsProps { class, children, toggle, is_open }| {
+                        html! {
+                            <AttrReceiver name="popover-trigger">
+                                <label class={&class}>
+                                    <Switch class={switch_class} onclick={toggle} checked={is_open}>
+                                        <SwitchThumb class={switch_thumb_class} />
+                                    </Switch>
 
-            //                         {children}
-            //                     </label>
-            //                 </AttrReceiver>
-            //             }
-            //         })}>
-            //             {"Open"}
-            //         </PopoverTrigger>
+                                    {children}
+                                </label>
+                            </AttrReceiver>
+                        }
+                    })}>
+                        {"Open"}
+                    </PopoverTrigger>
 
-            //         <PopoverContent on_esc_key_down={Callback::from(move |event: KeyboardEvent| {
-            //             event.prevent_default();
-            //         })} render_as={Callback::from(move |PopoverContentRenderAsProps { r#ref, children, class, is_open }| {
-            //             if is_open {
-            //                 return html! {
-            //                     <AttrReceiver>
-            //                         <div ref={r#ref} class={class}>
-            //                             {children}
-            //                         </div>
-            //                     </AttrReceiver>
-            //                 };
-            //             }
+                    <PopoverContent on_esc_key_down={Callback::from(move |event: KeyboardEvent| {
+                        event.prevent_default();
+                    })} render_as={Callback::from(move |PopoverContentRenderAsProps { r#ref, children, class, is_open }| {
+                        if is_open {
+                            return html! {
+                                <AttrReceiver name="popover-content">
+                                    <div ref={r#ref} class={class}>
+                                        {children}
+                                    </div>
+                                </AttrReceiver>
+                            };
+                        }
 
-            //             html! {
-            //                 { "Popover is closed" }
-            //             }
-            //         })} class="data-[state=open]:animate-fade-in data-[state=closed]:animate-fade-out">
-            //             <div class="p-5 bg-neutral-800 rounded-md">
-            //                 <p class="text-neutral-200">{"Hello, World!"}</p>
+                        html! {
+                            { "Popover is closed" }
+                        }
+                    })} class="data-[state=open]:animate-fade-in data-[state=closed]:animate-fade-out">
+                        <div class="p-5 bg-neutral-800 rounded-md">
+                            <p class="text-neutral-200">{"Hello, World!"}</p>
 
-            //                 <div class="flex flex-row items-center gap-x-2">
-            //                     <Checkbox id="popover-checkbox#7" class={checkbox_class} default_checked={CheckedState::Checked}>
-            //                         <CheckboxIndicator class={checkbox_indicator_class} show_when={CheckedState::Checked}>
-            //                             <CheckIcon />
-            //                         </CheckboxIndicator>
-            //                     </Checkbox>
+                            <div class="flex flex-row items-center gap-x-2">
+                                <Checkbox id="popover-checkbox#7" class={checkbox_class} default_checked={CheckedState::Checked}>
+                                    <CheckboxIndicator class={checkbox_indicator_class} show_when={CheckedState::Checked}>
+                                        <CheckIcon />
+                                    </CheckboxIndicator>
+                                </Checkbox>
 
-            //                     <label for="popover-checkbox#7" class={checkbox_label_class}>{"Accept terms and conditions"}</label>
-            //                 </div>
+                                <label for="popover-checkbox#7" class={checkbox_label_class}>{"Accept terms and conditions"}</label>
+                            </div>
 
-            //                 <div class="flex flex-row items-center gap-x-2">
-            //                     <Checkbox id="popover-checkbox#8" class={checkbox_class}>
-            //                         <CheckboxIndicator class={checkbox_indicator_class} show_when={CheckedState::Checked}>
-            //                             <CheckIcon />
-            //                         </CheckboxIndicator>
-            //                     </Checkbox>
+                            <div class="flex flex-row items-center gap-x-2">
+                                <Checkbox id="popover-checkbox#8" class={checkbox_class}>
+                                    <CheckboxIndicator class={checkbox_indicator_class} show_when={CheckedState::Checked}>
+                                        <CheckIcon />
+                                    </CheckboxIndicator>
+                                </Checkbox>
 
-            //                     <label for="popover-checkbox#8" class={checkbox_label_class}>{"Accept terms and conditions"}</label>
-            //                 </div>
+                                <label for="popover-checkbox#8" class={checkbox_label_class}>{"Accept terms and conditions"}</label>
+                            </div>
 
-            //                 <div class="flex flex-row items-center gap-x-2">
-            //                     <Checkbox id="popover-checkbox#9" class={checkbox_class}>
-            //                         <CheckboxIndicator class={checkbox_indicator_class} show_when={CheckedState::Checked}>
-            //                             <CheckIcon />
-            //                         </CheckboxIndicator>
-            //                     </Checkbox>
+                            <div class="flex flex-row items-center gap-x-2">
+                                <Checkbox id="popover-checkbox#9" class={checkbox_class}>
+                                    <CheckboxIndicator class={checkbox_indicator_class} show_when={CheckedState::Checked}>
+                                        <CheckIcon />
+                                    </CheckboxIndicator>
+                                </Checkbox>
 
-            //                     <label for="popover-checkbox#9" class={checkbox_label_class}>{"Accept terms and conditions"}</label>
-            //                 </div>
-            //             </div>
-            //         </PopoverContent>
-            //     </Popover>
-            // </Section>
+                                <label for="popover-checkbox#9" class={checkbox_label_class}>{"Accept terms and conditions"}</label>
+                            </div>
+                        </div>
+                    </PopoverContent>
+                </Popover>
+            </Section>
 
-            // <Section title="Combobox">
-            //     <Popover>
-            //         <PopoverTrigger class="flex justify-center gap-x-2 text-white border rounded-md px-2 py-1">
-            //             {"Open"}
-            //         </PopoverTrigger>
+            <Section title="Combobox">
+                <Popover>
+                    <PopoverTrigger class="flex justify-center gap-x-2 text-white border rounded-md px-2 py-1">
+                        {"Open"}
+                    </PopoverTrigger>
 
-            //         <PopoverContent class="data-[state=open]:animate-fade-in data-[state=closed]:animate-fade-out bg-neutral-900 rounded-md shadow-sm">
-            //             <Listbox multiple={true} class="min-w-[200px]" on_selected_change={Callback::from(|selected| {
-            //                 log::info!("Selected: {:?}", selected);
-            //             })}>
-            //                 <ListboxOption id="listbox-option-#1" class={listbox_option_class}>
-            //                     <ListboxOptionIndicator class={listbox_option_indicator_class}>
-            //                         <CheckIcon />
-            //                     </ListboxOptionIndicator>
+                    <PopoverContent class="data-[state=open]:animate-fade-in data-[state=closed]:animate-fade-out bg-neutral-900 rounded-md shadow-sm">
+                        <Listbox multiple={true} class="min-w-[200px]" on_selected_change={Callback::from(|selected| {
+                            log::info!("Selected: {:?}", selected);
+                        })}>
+                            <ListboxOption id="listbox-option-#1" class={listbox_option_class}>
+                                <ListboxOptionIndicator class={listbox_option_indicator_class}>
+                                    <CheckIcon />
+                                </ListboxOptionIndicator>
 
-            //                     {"Option 1"}
-            //                 </ListboxOption>
+                                {"Option 1"}
+                            </ListboxOption>
 
-            //                 <ListboxOption id="listbox-option-#2" class={listbox_option_class}>
-            //                     <ListboxOptionIndicator class={listbox_option_indicator_class}>
-            //                         <CheckIcon />
-            //                     </ListboxOptionIndicator>
+                            <ListboxOption id="listbox-option-#2" class={listbox_option_class}>
+                                <ListboxOptionIndicator class={listbox_option_indicator_class}>
+                                    <CheckIcon />
+                                </ListboxOptionIndicator>
 
-            //                     {"Option 2"}
-            //                 </ListboxOption>
+                                {"Option 2"}
+                            </ListboxOption>
 
-            //                 <ListboxOption id="listbox-option-#3" class={listbox_option_class}>
-            //                     <ListboxOptionIndicator class={listbox_option_indicator_class}>
-            //                         <CheckIcon />
-            //                     </ListboxOptionIndicator>
+                            <ListboxOption id="listbox-option-#3" class={listbox_option_class}>
+                                <ListboxOptionIndicator class={listbox_option_indicator_class}>
+                                    <CheckIcon />
+                                </ListboxOptionIndicator>
 
-            //                     {"Option 3"}
-            //                 </ListboxOption>
-            //             </Listbox>
-            //         </PopoverContent>
-            //     </Popover>
-            // </Section>
+                                {"Option 3"}
+                            </ListboxOption>
+                        </Listbox>
+                    </PopoverContent>
+                </Popover>
+            </Section>
         </Wrapper>
     }
 }
