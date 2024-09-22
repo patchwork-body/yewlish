@@ -1,10 +1,8 @@
 use std::rc::Rc;
 
-use primitives::*;
 use yew::prelude::*;
 use yewlish_roving_focus::*;
-use yewlish_utils::enums::dir::Dir;
-use yewlish_utils::enums::orientation::Orientation;
+use yewlish_utils::enums::{DataState, Dir, Orientation};
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct RadioGroupContext {
