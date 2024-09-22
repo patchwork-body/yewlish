@@ -1,14 +1,12 @@
 pub mod helpers;
 pub mod hooks;
 
-use dir::Dir;
 use helpers::*;
 use hooks::use_roving_iterator::*;
-use orientation::Orientation;
 use web_sys::{wasm_bindgen::JsCast, HtmlElement};
 use yew::prelude::*;
 use yewlish_utils::{
-    enums::*,
+    enums::{Dir, Orientation},
     hooks::{use_children_as_html_collection, use_keydown},
 };
 
