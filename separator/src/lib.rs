@@ -1,5 +1,5 @@
-use yewlish_utils::enums::orientation::Orientation;
 use yew::prelude::*;
+use yewlish_utils::enums::Orientation;
 
 #[derive(Clone, Debug, PartialEq, Properties)]
 pub struct SeparatorProps {

@@ -3,7 +3,7 @@ use std::{cell::RefCell, rc::Rc};
 use toggle::*;
 use yew::prelude::*;
 use yewlish_roving_focus::RovingFocus;
-use yewlish_utils::enums::{dir::Dir, orientation::Orientation};
+use yewlish_utils::enums::{Dir, Orientation};
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum ToggleGroupType {

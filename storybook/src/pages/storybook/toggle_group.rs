@@ -2,7 +2,7 @@ use super::common::*;
 use icons::*;
 use yew::prelude::*;
 use yewlish_toggle_group::*;
-use yewlish_utils::enums::orientation::Orientation;
+use yewlish_utils::enums::Orientation;
 
 #[function_component(ToggleGroupPage)]
 pub fn toggle_group_page() -> Html {

@@ -1,6 +1,6 @@
 use primitives::*;
-use yewlish_utils::{enums::orientation::Orientation, hooks::*};
 use yew::prelude::*;
+use yewlish_utils::{enums::Orientation, hooks::use_controllable_state};
 
 #[derive(Clone, Debug, PartialEq, Properties)]
 pub struct ToggleProps {
