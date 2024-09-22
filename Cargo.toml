@@ -8,3 +8,4 @@ yewlish-attr-passer = { path = "./attr_passer" }
 yewlish-utils = { path = "./utils" }
 yewlish-synchi = { path = "./synchi" }
 yewlish-testing-tools = { path = "./testing_tools" }
+yewlish-roving-focus = { path = "./roving_focus" }
