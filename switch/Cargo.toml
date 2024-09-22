@@ -1,6 +1,6 @@
 [package]
 name = "yewlish-switch"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 authors = ["Kirill Korotkov <personal.gugfug@gmail.com>"]
 license = "MIT OR Apache-2.0"
@@ -11,7 +11,7 @@ documentation = "https://docs.rs/yewlish-switch"
 
 [dependencies]
 yew = "0.21.0"
-yewlish-utils = "0.1.2"
+yewlish-utils = "0.1.4"
 yewlish-attr-passer = "0.1.2"
 log = "0.4.22"
 
