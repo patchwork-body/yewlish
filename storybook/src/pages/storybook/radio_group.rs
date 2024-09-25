@@ -1,6 +1,6 @@
 use super::common::*;
-use radio_group::*;
 use yew::prelude::*;
+use yewlish_radio_group::*;
 
 #[function_component(RadioGroupPage)]
 pub fn radio_group_page() -> Html {

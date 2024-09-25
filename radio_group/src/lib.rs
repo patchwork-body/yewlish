@@ -1,8 +1,12 @@
 use std::rc::Rc;
 
 use yew::prelude::*;
+use yewlish_attr_passer::{attributify, AttrPasser, AttrReceiver};
 use yewlish_roving_focus::*;
-use yewlish_utils::enums::{DataState, Dir, Orientation};
+use yewlish_utils::{
+    enums::{DataState, Dir, Orientation},
+    hooks::use_conditional_attr,
+};
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct RadioGroupContext {
@@ -116,8 +120,36 @@ impl Reducible for RadioGroupItemContext {
 
 type ReducibleRadioGroupItemContext = UseReducerHandle<RadioGroupItemContext>;
 
+#[derive(Clone, Debug, PartialEq, Properties)]
+pub struct RadioGroupItemRenderAsProps {
+    #[prop_or_default]
+    pub children: ChildrenWithProps<RadioGroupItemIndicator>,
+    #[prop_or_default]
+    pub r#ref: NodeRef,
+    #[prop_or_default]
+    pub id: Option<AttrValue>,
+    #[prop_or_default]
+    pub class: Option<AttrValue>,
+    #[prop_or_default]
+    pub checked: bool,
+    #[prop_or_default]
+    pub toggle: Callback<()>,
+    #[prop_or_default]
+    pub disabled: bool,
+    #[prop_or_default]
+    pub required: bool,
+    #[prop_or_default]
+    pub name: Option<AttrValue>,
+    #[prop_or_default]
+    pub value: Option<AttrValue>,
+    #[prop_or_default]
+    pub readonly: bool,
+}
+
 #[derive(Debug, Clone, PartialEq, Properties)]
 pub struct RadioGroupItemProps {
+    #[prop_or_default]
+    pub r#ref: NodeRef,
     #[prop_or_default]
     pub id: Option<AttrValue>,
     #[prop_or_default]
@@ -134,6 +166,10 @@ pub struct RadioGroupItemProps {
     pub children: ChildrenWithProps<RadioGroupItemIndicator>,
     #[prop_or_default]
     pub checked: Option<bool>,
+    #[prop_or_default]
+    pub readonly: bool,
+    #[prop_or_default]
+    pub render_as: Option<Callback<RadioGroupItemRenderAsProps, Html>>,
 }
 
 #[function_component(RadioGroupItem)]
@@ -165,9 +201,18 @@ pub fn radio_group_item(props: &RadioGroupItemProps) -> Html {
         },
     );
 
-    let check = use_callback(
-        (group_context.clone(), props.value.clone(), props.checked),
-        move |_, (group_context, value, checked)| {
+    let toggle = use_callback(
+        (
+            group_context.clone(),
+            props.value.clone(),
+            props.checked,
+            props.readonly,
+        ),
+        move |_, (group_context, value, checked, readonly)| {
+            if *readonly {
+                return;
+            }
+
             if checked.unwrap_or_default() {
                 return;
             }
@@ -178,50 +223,59 @@ pub fn radio_group_item(props: &RadioGroupItemProps) -> Html {
         },
     );
 
-    let check_by_click = use_callback(check.clone(), move |_: MouseEvent, check| {
-        check.emit(());
+    let toggle_by_click = use_callback(toggle.clone(), move |_: MouseEvent, toggle| {
+        toggle.emit(());
     });
 
-    let check_by_focus = use_callback(check.clone(), move |_: FocusEvent, check| {
-        check.emit(());
+    let toggle_by_focus = use_callback(toggle.clone(), move |_: FocusEvent, toggle| {
+        toggle.emit(());
     });
 
-    let aria_pressed: Option<AttrValue> = if *checked {
-        Some("true".into())
-    } else {
-        Some("false".into())
-    };
+    use_conditional_attr(props.r#ref.clone(), "data-disabled", props.disabled);
 
-    let data_state = if *checked {
-        DataState::On
+    let element = if let Some(render_as) = &props.render_as {
+        render_as.emit(RadioGroupItemRenderAsProps {
+            children: props.children.clone(),
+            r#ref: props.r#ref.clone(),
+            id: props.id.clone(),
+            class: props.class.clone(),
+            checked: *checked,
+            toggle: toggle.clone(),
+            disabled: props.disabled,
+            required: props.required.unwrap_or_default(),
+            name: props.name.clone(),
+            value: props.value.clone(),
+            readonly: props.readonly,
+        })
     } else {
-        DataState::Off
-    };
-
-    let disabled: Option<AttrValue> = if props.disabled {
-        Some("true".into())
-    } else {
-        None
+        html! {
+            <AttrReceiver name="radio-group-item">
+                <button
+                    ref={props.r#ref.clone()}
+                    role="radio"
+                    type="button"
+                    id={props.id.clone()}
+                    class={&props.class}
+                    name={props.name.clone().unwrap_or_else(|| group_context.name.clone().unwrap_or_default())}
+                    value={props.value.clone()}
+                    readonly={props.readonly}
+                    onclick={&toggle_by_click}
+                    onfocus={&toggle_by_focus}
+                >
+                    {for props.children.iter()}
+                </button>
+            </AttrReceiver>
+        }
     };
 
     html! {
         <ContextProvider<ReducibleRadioGroupItemContext> context={context_value}>
-            <button
-                role="radio"
-                type="button"
-                id={props.id.clone()}
-                class={&props.class}
-                name={props.name.clone().unwrap_or_else(|| group_context.name.clone().unwrap_or_default())}
-                value={props.value.clone()}
-                {aria_pressed}
-                {data_state}
-                data_disabled={&disabled}
-                aria_disabled={&disabled}
-                onclick={&check_by_click}
-                onfocus={&check_by_focus}
-            >
-                {for props.children.iter()}
-            </button>
+            <AttrPasser name="radio-group-item" ..attributify! {
+                "data-state" => if *checked { DataState::On } else { DataState::Off },
+                "aria-checked" => checked.to_string(),
+            }>
+                {element}
+            </AttrPasser>
         </ContextProvider<ReducibleRadioGroupItemContext>>
     }
 }

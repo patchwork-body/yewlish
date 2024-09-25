@@ -1,6 +1,6 @@
 [package]
 name = "yewlish-radio-group"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 authors = ["Kirill Korotkov <personal.gugfug@gmail.com>"]
 license = "MIT OR Apache-2.0"
@@ -12,5 +12,6 @@ documentation = "https://docs.rs/yewlish-radio-group"
 
 [dependencies]
 yew = "0.21.0"
-yewlish-utils = "0.1.4"
+yewlish-utils = "0.1.5"
 yewlish-roving-focus = "0.1.0"
+yewlish-attr-passer = "0.1.2"
