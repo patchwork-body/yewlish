@@ -1,6 +1,6 @@
 [package]
 name = "yewlish-checkbox"
-version = "0.1.7"
+version = "0.1.8"
 edition = "2021"
 authors = ["Kirill Korotkov <personal.gugfug@gmail.com>"]
 license = "MIT OR Apache-2.0"
@@ -13,7 +13,7 @@ documentation = "https://docs.rs/yewlish-checkbox"
 yew = "0.21.0"
 yewlish-attr-passer = "0.1.2"
 yewlish-presence = "0.1.2"
-yewlish-utils = "0.1.4"
+yewlish-utils = "0.1.5"
 log = "0.4.22"
 
 [dev-dependencies]

@@ -220,7 +220,7 @@ pub fn checkbox(props: &CheckboxProps) -> Html {
                     CheckedState::Unchecked => "false",
                     CheckedState::Indeterminate => "mixed",
                 },
-                "aria-required" => if props.required { "true" } else { "false" },
+                "aria-required" => props.required.to_string(),
                 "data-state" => checked.borrow().to_string(),
             }>
                 {element}
