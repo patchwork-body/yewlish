@@ -28,7 +28,7 @@ yewlish-utils = { path = "../utils" }
 separator = { path = "../separator" }
 yewlish-switch = { path = "../switch" }
 yewlish-checkbox = { path = "../checkbox" }
-radio_group = { path = "../radio_group" }
+yewlish-radio-group = { path = "../radio_group" }
 popover = { path = "../popover" }
 yewlish-attr-passer = { path = "../attr_passer" }
 listbox = { path = "../listbox" }

@@ -11,7 +11,7 @@ documentation = "https://docs.rs/yewlish-switch"
 
 [dependencies]
 yew = "0.21.0"
-yewlish-utils = "0.1.4"
+yewlish-utils = "0.1.5"
 yewlish-attr-passer = "0.1.2"
 log = "0.4.22"
 

@@ -11,5 +11,5 @@ web-sys = { version = "0.3.70", features = ["Element", "DomRect"] }
 log = "0.4.21"
 yewlish-presence = { version = "0.1.1" }
 yewlish-attr-passer = "0.1.2"
-yewlish-utils = "0.1.4"
+yewlish-utils = "0.1.5"
 yewlish-roving-focus = "0.1.0"
