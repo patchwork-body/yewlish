@@ -20,3 +20,12 @@ impl IntoPropValue<Option<AttrValue>> for DataState {
         }
     }
 }
+
+impl From<DataState> for AttrValue {
+    fn from(data_state: DataState) -> Self {
+        match data_state {
+            DataState::On => "on".into(),
+            DataState::Off => "off".into(),
+        }
+    }
+}
