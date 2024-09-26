@@ -20,7 +20,7 @@ To use Yewlish Testing Tools in your project, add the following to your `Cargo.t
 
 ```toml
 [dev-dependencies]
-yewlish-testing-tools = "0.1.1"
+yewlish-testing-tools = "0.1.4"
 ```
 
 ## Prerequisites
