@@ -29,9 +29,11 @@
 ///
 ///     #[wasm_bindgen_test]
 ///     async fn test_render() {
-///         let t = render! {
-///             <TestComponent text="Hello, World!" />
-///         }
+///         let t = render!({
+///             html! {
+///                 <TestComponent text="Hello, World!" />
+///             }
+///         })
 ///         .await;
 ///
 ///         assert!(t.query_by_text("Hello, World!").exists());

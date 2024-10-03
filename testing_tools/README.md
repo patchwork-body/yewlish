@@ -8,8 +8,7 @@
 
 ## Features
 
-- **Component Rendering**: Easily render Yew components for testing using the `render!` macro.
-- **Hook Testing**: Test custom hooks with the `render_hook!` macro.
+- **Component Rendering**: Easily render Yew components or custom hooks with using the `render!` macro.
 - **Querying**: Query elements by role, text, and custom test IDs.
 - **Events**: Simulate user interactions such as clicks and key presses.
 - **Attribute and Text Extraction**: Extract attributes and text content from elements.
@@ -20,7 +19,7 @@ To use Yewlish Testing Tools in your project, add the following to your `Cargo.t
 
 ```toml
 [dev-dependencies]
-yewlish-testing-tools = "0.1.4"
+yewlish-testing-tools = "1.0.0"
 ```
 
 ## Prerequisites
@@ -56,9 +55,11 @@ mod tests {
 
     #[wasm_bindgen_test]
     async fn test_render() {
-        let t = render! {
-            <TestComponent text="Hello, World!" />
-        }
+        let t = render!({
+            html! {
+                <TestComponent text="Hello, World!" />
+            }
+        })
         .await;
 
         assert!(t.query_by_text("Hello, World!").exists());
@@ -66,79 +67,152 @@ mod tests {
 }
 ```
 
-Hook Testing
+### Component Testing
 
-You can test custom hooks using the render_hook! macro:
+You can test Yew components using the render! macro:
 
 ```rust
-use yew::prelude::*;
-use yewlish_testing_tools::render_hook;
-
-#[hook]
-fn use_counter() -> i32 {
-use_state(|| 0)
-}
-
 #[cfg(test)]
 mod tests {
-use super::_;
-use wasm_bindgen_test::_;
-
-    wasm_bindgen_test::wasm_bindgen_test_configure!(run_in_browser);
-
-    #[wasm_bindgen_test]
-    async fn test_use_counter() {
-        let (hook, _) = render_hook!(i32, use_counter).await;
-        assert_eq!(*hook.current(), 0);
-    }
-
-}
-
-use yew::prelude::*;
-use yewlish_testing_tools::render_hook;
-
-#[hook]
-fn use_counter() -> i32 {
-use_state(|| 0)
-}
-
-#[cfg(test)]
-mod tests {
-    use yewlish_testing_tools::*;
+    use crate::{render, Query, TesterEvent};
     use wasm_bindgen_test::*;
     use yew::prelude::*;
 
     wasm_bindgen_test::wasm_bindgen_test_configure!(run_in_browser);
 
     #[wasm_bindgen_test]
-    async fn test_render_hook() {
-        let (h, _) = render_hook!(UseStateHandle<bool>, {
-            let a = use_state(|| true);
-            a
+    async fn test_render() {
+        let t = render!({
+            let counter = use_state(|| 0);
+
+            let increment = use_callback(counter.clone(), |_event: MouseEvent, counter| {
+                counter.set(**counter + 1);
+            });
+
+            use_remember_value(counter.clone());
+
+            html! {
+                <button onclick={&increment}>{"Click me "}{*counter}</button>
+            }
         })
         .await;
 
-        assert!(*h.get());
+        assert_eq!(*t.get_state::<UseStateHandle<i32>>(), 0);
+
+        let button = t.query_by_role("button");
+        assert!(button.exists());
+        assert!(button.text().contains("Click me 0"));
+
+        let button = button.click().await;
+        assert!(button.text().contains("Click me 1"));
+
+        assert_eq!(*t.get_state::<UseStateHandle<i32>>(), 1);
+    }
+}
+```
+
+### Hook Testing
+
+You can test custom hooks using the render_hook! macro:
+
+```rust
+#[cfg(test)]
+mod tests {
+    use crate::{render, Extractor, Query, TesterEvent};
+    use wasm_bindgen_test::*;
+    use yew::prelude::*;
+
+    wasm_bindgen_test::wasm_bindgen_test_configure!(run_in_browser);
+
+    #[wasm_bindgen_test]
+    async fn test_render_with_state() {
+        let t = render!({
+            let state = use_state(|| true);
+            use_remember_value(state);
+
+            html! {}
+        })
+        .await;
+
+        assert!(*t.get_state::<UseStateHandle<bool>>());
     }
 
     #[wasm_bindgen_test]
-    async fn test_render_hook_with_effect() {
-        let (h, _) = render_hook!(UseStateHandle<i32>, {
-            let a = use_state(|| 0);
+    async fn test_render_with_effect() {
+        let t = render!({
+            let state = use_state(|| 0);
 
             {
-                let a = a.clone();
+                let state = state.clone();
 
                 use_effect_with((), move |_| {
-                    a.set(100);
+                    state.set(100);
                 });
             }
 
-            a
+            use_remember_value(state.clone());
+
+            html! {}
         })
         .await;
 
-        assert_eq!(*h.get(), 100);
+        assert_eq!(*t.get_state::<UseStateHandle<i32>>(), 100);
+    }
+
+    #[wasm_bindgen_test]
+    async fn test_render_with_reducer() {
+        #[derive(Clone, PartialEq)]
+        struct Counter {
+            count: i32,
+        }
+
+        enum CounterAction {
+            Increment,
+            Decrement,
+        }
+
+        impl Reducible for Counter {
+            type Action = CounterAction;
+
+            fn reduce(self: Rc<Self>, action: Self::Action) -> Rc<Self> {
+                match action {
+                    CounterAction::Increment => Self {
+                        count: self.count + 1,
+                    }
+                    .into(),
+                    CounterAction::Decrement => Self {
+                        count: self.count - 1,
+                    }
+                    .into(),
+                }
+            }
+        }
+
+        let t = render!({
+            let state = use_reducer(|| Counter { count: 0 });
+            use_remember_value(state.clone());
+
+            html! {}
+        })
+        .await;
+
+        assert_eq!(t.get_state::<UseReducerHandle<Counter>>().count, 0);
+
+        t.act(|| {
+            t.get_state::<UseReducerHandle<Counter>>()
+                .dispatch(CounterAction::Increment);
+        })
+        .await;
+
+        assert_eq!(t.get_state::<UseReducerHandle<Counter>>().count, 1);
+
+        t.act(|| {
+            t.get_state::<UseReducerHandle<Counter>>()
+                .dispatch(CounterAction::Decrement);
+        })
+        .await;
+
+        assert_eq!(t.get_state::<UseReducerHandle<Counter>>().count, 0);
     }
 }
 ```
@@ -163,5 +237,5 @@ This project is inspired by the need for robust testing tools in the Yew ecosyst
 
 For any questions or inquiries, feel free to reach out to the author:
 
-**Kirill Korotkov**  
+**Kirill Korotkov**
 Email: [personal.gugfug@gmail.com](mailto:personal.gugfug@gmail.com)

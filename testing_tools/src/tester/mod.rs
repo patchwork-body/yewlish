@@ -2644,4 +2644,33 @@ mod tests {
 
         assert_eq!(t.get_state::<UseReducerHandle<Counter>>().count, 0);
     }
+
+    #[wasm_bindgen_test]
+    async fn test_render() {
+        let t = render!({
+            let counter = use_state(|| 0);
+
+            let increment = use_callback(counter.clone(), |_event: MouseEvent, counter| {
+                counter.set(**counter + 1);
+            });
+
+            use_remember_value(counter.clone());
+
+            html! {
+                <button onclick={&increment}>{"Click me "}{*counter}</button>
+            }
+        })
+        .await;
+
+        assert_eq!(*t.get_state::<UseStateHandle<i32>>(), 0);
+
+        let button = t.query_by_role("button");
+        assert!(button.exists());
+        assert!(button.text().contains("Click me 0"));
+
+        let button = button.click().await;
+        assert!(button.text().contains("Click me 1"));
+
+        assert_eq!(*t.get_state::<UseStateHandle<i32>>(), 1);
+    }
 }
