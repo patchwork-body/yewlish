@@ -18,5 +18,4 @@ yew = "0.21.0"
 [dev-dependencies]
 wasm-bindgen-test = "0.3.43"
 wasm-bindgen-futures = "0.4.43"
-yewlish-testing-tools = "0.1.4"
- 
+yewlish-testing-tools = "1.0.0"
