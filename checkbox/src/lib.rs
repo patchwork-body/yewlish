@@ -1,10 +1,10 @@
+use html::IntoPropValue;
 use std::default::Default;
 use std::rc::Rc;
+use yew::prelude::*;
 use yewlish_attr_passer::*;
-use html::IntoPropValue;
 use yewlish_presence::*;
 use yewlish_utils::hooks::{use_conditional_attr, use_controllable_state};
-use yew::prelude::*;
 
 #[derive(Clone, Default, Debug, PartialEq)]
 pub enum CheckedState {
@@ -159,12 +159,9 @@ pub fn checkbox(props: &CheckboxProps) -> Html {
         },
     );
 
-    let toggle_on_click = use_callback(
-        toggle.clone(),
-        move |_: MouseEvent, toggle| {
-            toggle.emit(());
-        },
-    );
+    let toggle_on_click = use_callback(toggle.clone(), move |_: MouseEvent, toggle| {
+        toggle.emit(());
+    });
 
     let prevent_checked_by_enter = use_callback((), |event: KeyboardEvent, _| {
         if event.key() == "Enter" {
@@ -312,18 +309,20 @@ pub fn checkbox_indicator(props: &CheckboxIndicatorProps) -> Html {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use wasm_bindgen_test::*;
     use yewlish_testing_tools::TesterEvent;
     use yewlish_testing_tools::*;
-    use wasm_bindgen_test::*;
 
     wasm_bindgen_test::wasm_bindgen_test_configure!(run_in_browser);
 
     #[wasm_bindgen_test]
     async fn test_checkbox_should_toggle() {
         let t = render! {
-            <Checkbox>
-                <CheckboxIndicator show_when={CheckedState::Checked}>{"X"}</CheckboxIndicator>
-            </Checkbox>
+            html! {
+                <Checkbox>
+                    <CheckboxIndicator show_when={CheckedState::Checked}>{"X"}</CheckboxIndicator>
+                </Checkbox>
+            }
         }
         .await;
 
@@ -380,9 +379,11 @@ mod tests {
     #[wasm_bindgen_test]
     async fn test_checkbox_default_checked() {
         let t = render! {
-            <Checkbox default_checked={CheckedState::Checked}>
-                <CheckboxIndicator show_when={CheckedState::Checked}>{"X"}</CheckboxIndicator>
-            </Checkbox>
+            html! {
+                <Checkbox default_checked={CheckedState::Checked}>
+                    <CheckboxIndicator show_when={CheckedState::Checked}>{"X"}</CheckboxIndicator>
+                </Checkbox>
+            }
         }
         .await;
 
@@ -404,9 +405,11 @@ mod tests {
     #[wasm_bindgen_test]
     async fn test_checkbox_default_unchecked() {
         let t = render! {
-            <Checkbox checked={CheckedState::Unchecked}>
-                <CheckboxIndicator show_when={CheckedState::Checked}>{"X"}</CheckboxIndicator>
-            </Checkbox>
+            html! {
+                <Checkbox checked={CheckedState::Unchecked}>
+                    <CheckboxIndicator show_when={CheckedState::Checked}>{"X"}</CheckboxIndicator>
+                </Checkbox>
+            }
         }
         .await;
 
@@ -428,9 +431,11 @@ mod tests {
     #[wasm_bindgen_test]
     async fn test_checkbox_is_disabled() {
         let t = render! {
-            <Checkbox disabled={true}>
-                <CheckboxIndicator show_when={CheckedState::Checked}>{"X"}</CheckboxIndicator>
-            </Checkbox>
+            html! {
+                <Checkbox disabled={true}>
+                    <CheckboxIndicator show_when={CheckedState::Checked}>{"X"}</CheckboxIndicator>
+                </Checkbox>
+            }
         }
         .await;
 
@@ -481,13 +486,15 @@ mod tests {
     #[wasm_bindgen_test]
     async fn test_checkbox_attr_passer() {
         let t = render! {
-            <AttrPasser name="checkbox-indicator" ..attributify!{
-                "data-testid" => "checkbox-indicator-id",
-            }>
-                <Checkbox>
-                    <CheckboxIndicator></CheckboxIndicator>
-                </Checkbox>
-            </AttrPasser>
+            html! {
+                <AttrPasser name="checkbox-indicator" ..attributify!{
+                    "data-testid" => "checkbox-indicator-id",
+                }>
+                    <Checkbox>
+                        <CheckboxIndicator></CheckboxIndicator>
+                    </Checkbox>
+                </AttrPasser>
+            }
         }
         .await;
 
@@ -497,9 +504,11 @@ mod tests {
     #[wasm_bindgen_test]
     async fn test_checkbox_accept_id() {
         let t = render! {
-            <Checkbox id={"id"}>
-                <CheckboxIndicator show_when={CheckedState::Checked}>{"X"}</CheckboxIndicator>
-            </Checkbox>
+            html! {
+                <Checkbox id={"id"}>
+                    <CheckboxIndicator show_when={CheckedState::Checked}>{"X"}</CheckboxIndicator>
+                </Checkbox>
+            }
         }
         .await;
 
@@ -511,9 +520,11 @@ mod tests {
     #[wasm_bindgen_test]
     async fn test_checkbox_accept_class() {
         let t = render! {
-            <Checkbox class={"class"}>
-                <CheckboxIndicator show_when={CheckedState::Checked}>{"X"}</CheckboxIndicator>
-            </Checkbox>
+            html! {
+                <Checkbox class={"class"}>
+                    <CheckboxIndicator show_when={CheckedState::Checked}>{"X"}</CheckboxIndicator>
+                </Checkbox>
+            }
         }
         .await;
 
@@ -525,9 +536,11 @@ mod tests {
     #[wasm_bindgen_test]
     async fn test_checkbox_is_required() {
         let t = render! {
-            <Checkbox required={true}>
-                <CheckboxIndicator show_when={CheckedState::Checked}>{"X"}</CheckboxIndicator>
-            </Checkbox>
+            html! {
+                <Checkbox required={true}>
+                    <CheckboxIndicator show_when={CheckedState::Checked}>{"X"}</CheckboxIndicator>
+                </Checkbox>
+            }
         }
         .await;
 
@@ -543,9 +556,11 @@ mod tests {
     #[wasm_bindgen_test]
     async fn test_checkbox_have_name() {
         let t = render! {
-            <Checkbox name={"name"}>
-                <CheckboxIndicator show_when={CheckedState::Checked}>{"X"}</CheckboxIndicator>
-            </Checkbox>
+            html! {
+                <Checkbox name={"name"}>
+                    <CheckboxIndicator show_when={CheckedState::Checked}>{"X"}</CheckboxIndicator>
+                </Checkbox>
+            }
         }
         .await;
 
@@ -557,9 +572,11 @@ mod tests {
     #[wasm_bindgen_test]
     async fn test_checkbox_have_value() {
         let t = render! {
-            <Checkbox value={"value"}>
-                <CheckboxIndicator show_when={CheckedState::Checked}>{"X"}</CheckboxIndicator>
-            </Checkbox>
+            html! {
+                <Checkbox value={"value"}>
+                    <CheckboxIndicator show_when={CheckedState::Checked}>{"X"}</CheckboxIndicator>
+                </Checkbox>
+            }
         }
         .await;
 
@@ -572,9 +589,11 @@ mod tests {
     #[wasm_bindgen_test]
     async fn test_checkbox_does_not_toggle_on_enter() {
         let t = render! {
-            <Checkbox>
-                <CheckboxIndicator show_when={CheckedState::Checked}>{"X"}</CheckboxIndicator>
-            </Checkbox>
+            html! {
+                <Checkbox>
+                    <CheckboxIndicator show_when={CheckedState::Checked}>{"X"}</CheckboxIndicator>
+                </Checkbox>
+            }
         }
         .await;
 
@@ -597,9 +616,11 @@ mod tests {
     #[wasm_bindgen_test]
     async fn test_checkbox_toggles_on_space() {
         let t = render! {
-            <Checkbox>
-                <CheckboxIndicator show_when={CheckedState::Checked}>{"X"}</CheckboxIndicator>
-            </Checkbox>
+            html! {
+                <Checkbox>
+                    <CheckboxIndicator show_when={CheckedState::Checked}>{"X"}</CheckboxIndicator>
+                </Checkbox>
+            }
         }
         .await;
 
@@ -621,9 +642,12 @@ mod tests {
 
     #[wasm_bindgen_test]
     async fn test_checkbox_accept_ref() {
-        let (_, t) = render_hook!(NodeRef, { use_node_ref() }, |node_ref: NodeRef| {
+        let t = render!({
+            let node_ref = use_node_ref();
+            use_remember_value(node_ref.clone());
+
             html! {
-                <Checkbox r#ref={node_ref.clone()}>
+                <Checkbox r#ref={node_ref}>
                     <CheckboxIndicator show_when={CheckedState::Checked}>{"X"}</CheckboxIndicator>
                 </Checkbox>
             }
@@ -635,29 +659,25 @@ mod tests {
 
     #[wasm_bindgen_test]
     async fn test_checkbox_on_checked_change() {
-        let (h, t) = render_hook!(
-            (UseStateHandle<CheckedState>, Callback<CheckedState>),
-            { 
-                let checked = use_state(|| CheckedState::Unchecked);
+        let t = render!({
+            let checked = use_state(|| CheckedState::Unchecked);
 
-                let on_checked_change = use_callback((), {
-                    let checked = checked.clone();
+            let on_checked_change = use_callback((), {
+                let checked = checked.clone();
 
-                    move |next_state: CheckedState, _| {
-                        checked.set(next_state);
-                    }
-                });
-
-                (checked, on_checked_change)
-            },
-            |(checked, on_checked_change): (UseStateHandle<CheckedState>, Callback<CheckedState>)| {
-                html! {
-                    <Checkbox checked={(*checked).clone()} on_checked_change={on_checked_change.clone()}>
-                        <CheckboxIndicator show_when={CheckedState::Checked}>{"X"}</CheckboxIndicator>
-                    </Checkbox>
+                move |next_state: CheckedState, _| {
+                    checked.set(next_state);
                 }
+            });
+
+            use_remember_value(checked.clone());
+
+            html! {
+                <Checkbox checked={(*checked).clone()} on_checked_change={&on_checked_change}>
+                    <CheckboxIndicator show_when={CheckedState::Checked}>{"X"}</CheckboxIndicator>
+                </Checkbox>
             }
-        )
+        })
         .await;
 
         let checkbox = t.query_by_role("checkbox");
@@ -668,7 +688,10 @@ mod tests {
             "false".to_string().into()
         );
 
-        assert_eq!(*h.get().0, CheckedState::Unchecked);
+        assert_eq!(
+            *t.get_state::<UseStateHandle<CheckedState>>(),
+            CheckedState::Unchecked
+        );
 
         let checkbox = checkbox.click().await;
 
@@ -677,7 +700,10 @@ mod tests {
             "true".to_string().into()
         );
 
-        assert_eq!(*h.get().0, CheckedState::Checked);
+        assert_eq!(
+            *t.get_state::<UseStateHandle<CheckedState>>(),
+            CheckedState::Checked
+        );
 
         let checkbox = checkbox.click().await;
 
@@ -686,15 +712,18 @@ mod tests {
             "false".to_string().into()
         );
 
-        assert_eq!(*h.get().0, CheckedState::Unchecked);
+        assert_eq!(
+            *t.get_state::<UseStateHandle<CheckedState>>(),
+            CheckedState::Unchecked
+        );
     }
 
     #[wasm_bindgen_test]
     async fn test_checkbox_render_as_input_checkbox() {
-        let (_, t) = render_hook!((Callback<CheckboxRenderAsProps, Html>, UseStateHandle<CheckedState>), {
+        let t = render!({
             let checked = use_state(|| CheckedState::Unchecked);
 
-            (Callback::from(|props: CheckboxRenderAsProps| {
+            let render_as = Callback::from(|props: CheckboxRenderAsProps| {
                 let checked = props.checked == CheckedState::Checked;
 
                 let onchange = {
@@ -715,16 +744,19 @@ mod tests {
                         disabled={props.disabled}
                         required={props.required}
                         name={props.name.clone()}
-                        aria-checked={if checked { "true" } else { "false" }} 
+                        aria-checked={if checked { "true" } else { "false" }}
                         value={props.value.clone()}
                         onchange={onchange}
                     />
                 }
-            }), checked)
-        },
-        |(render_as, checked): (Callback<CheckboxRenderAsProps, Html>, UseStateHandle<CheckedState>)| {
+            });
+
             html! {
-                <Checkbox {render_as} checked={(*checked).clone()} on_checked_change={Callback::from(move |next_state| checked.set(next_state))} />
+                <Checkbox
+                    {render_as}
+                    checked={(*checked).clone()}
+                    on_checked_change={Callback::from(move |next_state| checked.set(next_state))}
+                />
             }
         })
         .await;

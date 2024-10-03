@@ -72,8 +72,6 @@ pub fn popover_page() -> Html {
         flex items-center justify-center text-current ring-1 rounded-md ring-white w-5 h-5
     "##;
 
-    let popover_state = use_state(|| true);
-
     html! {
         <Wrapper title="Popover">
             <Section title="Default">

@@ -44,36 +44,51 @@
 /// The `render!` macro leverages `yew::Renderer` to wrap the component under test within a custom component.
 /// While not mandatory for testing Yew components, this macro streamlines the rendering process,
 /// making it easier to observe rendered results, extract data from it, and simulate user interactions.
-///
 #[macro_export]
 macro_rules! render {
-    ($($html:tt)*) => {{
-        use $crate::*;
+    ($view:expr) => {{
+        use std::any::Any;
+        use std::cell::RefCell;
+        use std::rc::Rc;
         use std::time::Duration;
+        use $crate::tester::ResultRef;
         use $crate::yew::platform::time::sleep;
         use $crate::yew::prelude::{function_component, Html};
+        use $crate::*;
 
         #[function_component(TestRenderer)]
         fn test_renderer() -> Html {
-            html! {
-                $($html)*
-            }
+            $view
+        }
+
+        thread_local! {
+            static RESULT_REF: ResultRef = Rc::new(RefCell::new(None));
+        }
+
+        #[allow(dead_code)]
+        #[hook]
+        pub fn use_remember_value<T>(value: T)
+        where
+            T: PartialEq + Clone + 'static,
+        {
+            use_effect_with(value.clone(), |value| {
+                RESULT_REF.with(|result_ref| {
+                    *result_ref.borrow_mut() = Some(Box::new(value.clone()) as Box<dyn Any>);
+                });
+            });
         }
 
         async fn render_and_parse() -> Tester {
             $crate::yew::Renderer::<TestRenderer>::with_root(
-                gloo_utils::document()
-                    .get_element_by_id("output")
-                    .unwrap(),
+                gloo_utils::document().get_element_by_id("output").unwrap(),
             )
             .render();
 
-            sleep(Duration::new(0, 0)).await;
+            sleep(Duration::ZERO).await;
 
             Tester::new(
-                gloo_utils::document()
-                    .get_element_by_id("output")
-                    .unwrap()
+                gloo_utils::document().get_element_by_id("output").unwrap(),
+                RESULT_REF.with(|result_ref| result_ref.clone()),
             )
         }
 

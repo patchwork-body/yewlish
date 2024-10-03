@@ -155,13 +155,15 @@ mod tests {
 
     #[wasm_bindgen_test]
     async fn test_attr_passer_for_one_receiver() {
-        let t = render! {
-            <AttrPasser name="test" ..attributify!{ "role" => "button" }>
-                <AttrReceiver name="test">
-                    <div></div>
-                </AttrReceiver>
-            </AttrPasser>
-        }
+        let t = render!({
+            html! {
+                <AttrPasser name="test" ..attributify!{ "role" => "button" }>
+                    <AttrReceiver name="test">
+                        <div></div>
+                    </AttrReceiver>
+                </AttrPasser>
+            }
+        })
         .await;
 
         assert!(t.query_by_role("button").exists());
@@ -169,15 +171,17 @@ mod tests {
 
     #[wasm_bindgen_test]
     async fn test_several_attr_passer_for_one_receiver() {
-        let t = render! {
-            <AttrPasser name="test" ..attributify!{ "role" => "button" }>
-                <AttrPasser name="test" ..attributify!{ "aria-label" => "button" }>
-                    <AttrReceiver name="test">
-                        <div></div>
-                    </AttrReceiver>
+        let t = render!({
+            html! {
+                <AttrPasser name="test" ..attributify!{ "role" => "button" }>
+                    <AttrPasser name="test" ..attributify!{ "aria-label" => "button" }>
+                        <AttrReceiver name="test">
+                            <div></div>
+                        </AttrReceiver>
+                    </AttrPasser>
                 </AttrPasser>
-            </AttrPasser>
-        }
+            }
+        })
         .await;
 
         let element = t.query_by_role("button");
@@ -188,17 +192,19 @@ mod tests {
 
     #[wasm_bindgen_test]
     async fn test_attr_passer_for_several_receivers() {
-        let t = render! {
-            <AttrPasser name="test" ..attributify!{ "role" => "button" }>
-                <AttrReceiver name="test">
-                    <div></div>
-                </AttrReceiver>
+        let t = render!({
+            html! {
+                <AttrPasser name="test" ..attributify!{ "role" => "button" }>
+                    <AttrReceiver name="test">
+                        <div></div>
+                    </AttrReceiver>
 
-                <AttrReceiver name="test">
-                    <div></div>
-                </AttrReceiver>
-            </AttrPasser>
-        }
+                    <AttrReceiver name="test">
+                        <div></div>
+                    </AttrReceiver>
+                </AttrPasser>
+            }
+        })
         .await;
 
         assert_eq!(t.query_all_by_role("button").len(), 1);
@@ -206,21 +212,23 @@ mod tests {
 
     #[wasm_bindgen_test]
     async fn test_nested_attr_passer_with_same_name() {
-        let t = render! {
-            <AttrPasser name="test" ..attributify!{ "role" => "button" }>
-                <AttrReceiver name="test">
-                    <div>
-                        <AttrPasser name="test" ..attributify!{ "role" => "button" }>
-                            <AttrPasser name="test" ..attributify!{ "aria-label" => "button" }>
-                                <AttrReceiver name="test">
-                                    <div></div>
-                                </AttrReceiver>
+        let t = render!({
+            html! {
+                <AttrPasser name="test" ..attributify!{ "role" => "button" }>
+                    <AttrReceiver name="test">
+                        <div>
+                            <AttrPasser name="test" ..attributify!{ "role" => "button" }>
+                                <AttrPasser name="test" ..attributify!{ "aria-label" => "button" }>
+                                    <AttrReceiver name="test">
+                                        <div></div>
+                                    </AttrReceiver>
+                                </AttrPasser>
                             </AttrPasser>
-                        </AttrPasser>
-                    </div>
-                </AttrReceiver>
-            </AttrPasser>
-        }
+                        </div>
+                    </AttrReceiver>
+                </AttrPasser>
+            }
+        })
         .await;
 
         assert_eq!(t.query_all_by_role("button").len(), 2);
@@ -232,21 +240,23 @@ mod tests {
 
     #[wasm_bindgen_test]
     async fn test_neighbor_attr_passer_with_same_name() {
-        let t = render! {
-            <>
-                <AttrPasser name="test" ..attributify!{ "role" => "button" }>
-                    <AttrReceiver name="test">
-                        <div></div>
-                    </AttrReceiver>
-                </AttrPasser>
+        let t = render!({
+            html! {
+                <>
+                    <AttrPasser name="test" ..attributify!{ "role" => "button" }>
+                        <AttrReceiver name="test">
+                            <div></div>
+                        </AttrReceiver>
+                    </AttrPasser>
 
-                <AttrPasser name="test" ..attributify!{ "role" => "button" }>
-                    <AttrReceiver name="test">
-                        <div></div>
-                    </AttrReceiver>
-                </AttrPasser>
-            </>
-        }
+                    <AttrPasser name="test" ..attributify!{ "role" => "button" }>
+                        <AttrReceiver name="test">
+                            <div></div>
+                        </AttrReceiver>
+                    </AttrPasser>
+                </>
+            }
+        })
         .await;
 
         assert_eq!(t.query_all_by_role("button").len(), 2);
@@ -254,27 +264,21 @@ mod tests {
 
     #[wasm_bindgen_test]
     async fn test_attr_passer_with_mutable_attributes() {
-        let (_, t) = render_hook!(
-            (UseStateHandle<String>, Callback<MouseEvent>),
-            {
-                let role = use_state(|| "button".to_string());
+        let t = render!({
+            let role = use_state(|| "button".to_string());
 
-                let update_role = use_callback(role.clone(), |_event: MouseEvent, role| {
-                    role.set("checkbox".to_string());
-                });
+            let update_role = use_callback(role.clone(), |_event: MouseEvent, role| {
+                role.set("checkbox".to_string());
+            });
 
-                (role, update_role)
-            },
-            |(role, update_role): (UseStateHandle<String>, Callback<MouseEvent>)| {
-                html! {
-                    <AttrPasser name="test" ..attributify! { "role" => (*role).clone() }>
-                        <AttrReceiver name="test">
-                            <div onclick={&update_role}></div>
-                        </AttrReceiver>
-                    </AttrPasser>
-                }
+            html! {
+                <AttrPasser name="test" ..attributify! { "role" => (*role).clone() }>
+                    <AttrReceiver name="test">
+                        <div onclick={&update_role}></div>
+                    </AttrReceiver>
+                </AttrPasser>
             }
-        )
+        })
         .await;
 
         let element = t.query_by_role("button");
@@ -297,11 +301,13 @@ mod tests {
             }
         }
 
-        let t = render! {
-            <AttrPasser name="test" ..attributify!{ "role" => "button" }>
-                <AttrReceiverInDifferentComponent />
-            </AttrPasser>
-        }
+        let t = render!({
+            html! {
+                <AttrPasser name="test" ..attributify!{ "role" => "button" }>
+                    <AttrReceiverInDifferentComponent />
+                </AttrPasser>
+            }
+        })
         .await;
 
         assert!(t.query_by_role("button").exists());
@@ -329,27 +335,21 @@ mod tests {
             }
         }
 
-        let (_, t) = render_hook!(
-            (UseStateHandle<bool>, Callback<MouseEvent>),
-            {
-                let show = use_state(|| false);
+        let t = render!({
+            let show = use_state(|| false);
 
-                let toggle_show = use_callback(show.clone(), |_event: MouseEvent, show| {
-                    show.set(true);
-                });
+            let toggle_show = use_callback(show.clone(), |_event: MouseEvent, show| {
+                show.set(true);
+            });
 
-                (show, toggle_show)
-            },
-            |(show, toggle): (UseStateHandle<bool>, Callback<MouseEvent>)| {
-                html! {
-                    <AttrPasser name="test" ..attributify!{ "role" => "button" }>
-                        <div data-testid="trigger" onclick={&toggle}>
-                            <AttrReceiverInDifferentComponent show={*show} />
-                        </div>
-                    </AttrPasser>
-                }
+            html! {
+                <AttrPasser name="test" ..attributify!{ "role" => "button" }>
+                    <div data-testid="trigger" onclick={&toggle_show}>
+                        <AttrReceiverInDifferentComponent show={*show} />
+                    </div>
+                </AttrPasser>
             }
-        )
+        })
         .await;
 
         let button = t.query_by_role("button");
