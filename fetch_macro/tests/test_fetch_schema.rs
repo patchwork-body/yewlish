@@ -18,8 +18,15 @@ struct CreateTodo {
     description: Option<String>,
 }
 
+#[derive(Default, Serialize, PartialEq, Clone)]
+struct TodoSlug {
+    id: u32,
+}
+
 #[derive(FetchSchema)]
 enum Test {
+    #[get("/todos/{id}", slugs = TodoSlug, res = Todo)]
+    Todo,
     #[get("/todos", res = Vec<Todo>)]
     Todos,
     #[post("/todos", body = CreateTodo, res = Todo)]

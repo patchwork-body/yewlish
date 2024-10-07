@@ -8,6 +8,7 @@ use syn::{
 
 struct FetchAttributeArgs {
     path: LitStr,
+    slugs: Option<Type>,
     query: Option<Type>,
     body: Option<Type>,
     res: Option<Type>,
@@ -16,6 +17,7 @@ struct FetchAttributeArgs {
 impl Parse for FetchAttributeArgs {
     fn parse(input: ParseStream) -> SynResult<Self> {
         let path: LitStr = input.parse()?;
+        let mut slugs = None;
         let mut query = None;
         let mut body = None;
         let mut res = None;
@@ -26,6 +28,10 @@ impl Parse for FetchAttributeArgs {
             input.parse::<Token![=]>()?;
 
             match ident.to_string().as_str() {
+                "slugs" => {
+                    let ty: Type = input.parse()?;
+                    slugs = Some(ty);
+                }
                 "query" => {
                     let ty: Type = input.parse()?;
                     query = Some(ty);
@@ -49,6 +55,7 @@ impl Parse for FetchAttributeArgs {
 
         Ok(FetchAttributeArgs {
             path,
+            slugs,
             query,
             body,
             res,
@@ -58,12 +65,13 @@ impl Parse for FetchAttributeArgs {
 
 static HTTP_VERBS: [&str; 5] = ["GET", "POST", "PUT", "PATCH", "DELETE"];
 
-fn extract_attrs(attrs: &[Attribute]) -> SynResult<(String, String, Type, Type, Type)> {
+fn extract_attrs(attrs: &[Attribute]) -> SynResult<(String, String, Type, Type, Type, Type)> {
     for attr in attrs {
         if let Some(ident) = attr.path().get_ident() {
             if HTTP_VERBS.contains(&ident.to_string().to_uppercase().as_str()) {
                 let FetchAttributeArgs {
                     path,
+                    slugs,
                     query,
                     body,
                     res,
@@ -71,11 +79,12 @@ fn extract_attrs(attrs: &[Attribute]) -> SynResult<(String, String, Type, Type, 
 
                 let method = ident.to_string().to_uppercase();
                 let path = path.value();
+                let slugs = slugs.unwrap_or_else(|| syn::parse_quote! { () });
                 let query = query.unwrap_or_else(|| syn::parse_quote! { () });
                 let body = body.unwrap_or_else(|| syn::parse_quote! { () });
                 let res = res.unwrap_or_else(|| syn::parse_quote! { () });
 
-                return Ok((method, path, query, body, res));
+                return Ok((method, path, slugs, query, body, res));
             }
         }
     }
@@ -124,10 +133,11 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
         let hook_name = format_ident!("use_{}", method_name);
 
         match extract_attrs(&variant.attrs) {
-            Ok((http_method, path, query, body, res)) => {
+            Ok((http_method, path, slugs, query, body, res)) => {
                 structs.push(quote! {
                     #[derive(Default, Clone, PartialEq)]
                     pub struct #method_params_struct_name {
+                        pub slugs: #slugs,
                         pub query: #query,
                         pub body: #body,
                     }
@@ -157,9 +167,10 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                             }
                         }
 
-                        fetch::<#query, #body, #res>(
+                        fetch::<#slugs, #query, #body, #res>(
                             HttpMethod::from(#http_method),
                             url.as_str(),
+                            params.slugs,
                             params.query,
                             params.body,
                             Vec::new(),
@@ -240,7 +251,7 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
     let variant_references = quote! {
         #[allow(dead_code)]
         fn _use_variants() {
-            // Reference each variant
+            // Reference each variant to prevent unused code warnings
             #(
                 let _ = &#enum_name::#variant_names;
             )*

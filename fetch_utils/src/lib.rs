@@ -52,6 +52,8 @@ impl From<&str> for HttpMethod {
 pub enum FetchError {
     #[error("Url parsing error: {0}")]
     UrlParsingError(#[from] url::ParseError),
+    #[error("Slugs serialization error: {0}")]
+    SlugsSerializationError(String),
     #[error("Query deserialization error: {0}")]
     QuerySerializationError(String),
     #[error("Header initialization error: {0}")]
@@ -89,20 +91,44 @@ pub type Middleware = Box<dyn Fn(&mut RequestInit, &mut Headers)>;
 ///
 /// # Returns
 /// A `Result` containing the deserialized response or a `JsValue` error.
-pub async fn fetch<Q, B, R>(
+pub async fn fetch<S, Q, B, R>(
     method: HttpMethod,
     url: &str,
+    slugs: S,
     query: Q,
     body: B,
     middlewares: Vec<Middleware>,
 ) -> Result<R, FetchError>
 where
+    S: Serialize + Default + PartialEq,
     Q: Serialize + Default + PartialEq,
     B: Serialize + Default + PartialEq,
     R: for<'de> Deserialize<'de>,
 {
     // Build the URL with query parameters
-    let mut url = Url::parse(url).map_err(FetchError::UrlParsingError)?;
+    let url = {
+        let mut url = url.to_string();
+
+        // Serialize path parameters to a map
+        let path_params_map = serde_json::to_value(&slugs)
+            .map_err(|error| FetchError::SlugsSerializationError(error.to_string()))?;
+
+        if let serde_json::Value::Object(map) = path_params_map {
+            for (key, value) in map.iter() {
+                let placeholder = format!("{{{}}}", key);
+                let value_str = match value {
+                    serde_json::Value::String(s) => s.clone(),
+                    _ => value.to_string(),
+                };
+
+                url = url.replace(&placeholder, &value_str);
+            }
+        }
+
+        url
+    };
+
+    let mut url = Url::parse(&url).map_err(FetchError::UrlParsingError)?;
 
     if query != Q::default() {
         let query_string = serde_urlencoded::to_string(query)
