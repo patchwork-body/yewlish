@@ -5,8 +5,8 @@ pub use event::TesterEvent;
 pub use extractor::Extractor;
 pub use query::Query;
 
+use std::fmt::Debug;
 use std::{any::Any, cell::RefCell, rc::Rc};
-use std::{fmt::Debug, time::Instant};
 use std::{fmt::Formatter, future::Future, pin::Pin, time::Duration};
 use web_sys::wasm_bindgen::JsCast;
 use web_sys::wasm_bindgen::UnwrapThrowExt;
@@ -92,17 +92,8 @@ impl Tester {
     where
         F: Fn() -> bool,
     {
-        let start = Instant::now();
-
-        while start.elapsed() < Duration::from_millis(timeout) {
-            if check_fn() {
-                return true;
-            }
-
-            sleep(Duration::from_millis(100)).await;
-        }
-
-        false
+        sleep(Duration::from_millis(timeout)).await;
+        check_fn()
     }
 
     pub async fn act<F>(&self, action: F)
