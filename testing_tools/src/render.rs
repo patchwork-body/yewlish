@@ -49,6 +49,25 @@
 #[macro_export]
 macro_rules! render {
     ($view:expr) => {{
+        use $crate::yew::prelude::*;
+
+        #[derive(Clone, PartialEq, Properties)]
+        struct TestWrapperProps {
+            children: Children,
+        }
+
+        #[function_component(TestWrapper)]
+        fn test_wrapper(props: &TestWrapperProps) -> Html {
+            html! {
+                <>
+                    { for props.children.iter() }
+                </>
+            }
+        }
+
+        render!($view, test_wrapper)
+    }};
+    ($view:expr, $wrapper:expr) => {{
         use std::any::Any;
         use std::cell::RefCell;
         use std::rc::Rc;
@@ -58,9 +77,18 @@ macro_rules! render {
         use $crate::yew::prelude::{function_component, Html};
         use $crate::*;
 
+        #[function_component(TestComponent)]
+        fn test_component() -> Html {
+            $view
+        }
+
         #[function_component(TestRenderer)]
         fn test_renderer() -> Html {
-            $view
+            html! {
+                <$wrapper>
+                    <TestComponent />
+                </$wrapper>
+            }
         }
 
         thread_local! {

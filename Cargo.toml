@@ -1,5 +1,5 @@
 [workspace]
-members = [ "popover", "primitives", "storybook", "storybook_utils", "toggle", "utils", "icons", "toggle_group", "roving_focus", "switch", "separator", "checkbox", "radio_group", "attr_passer", "presence", "listbox", "testing_tools", "synchi", "virtual_list", "fetch_macro"]
+members = [ "popover", "primitives", "storybook", "storybook_utils", "toggle", "utils", "icons", "toggle_group", "roving_focus", "switch", "separator", "checkbox", "radio_group", "attr_passer", "presence", "listbox", "testing_tools", "synchi", "virtual_list", "fetch_macro", "fetch_utils"]
 resolver = "2"
 
 [patch.crates-io]
