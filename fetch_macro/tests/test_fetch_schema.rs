@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use wasm_bindgen_test::{console_error, wasm_bindgen_test};
+use wasm_bindgen_test::wasm_bindgen_test;
 use yew::prelude::*;
 use yewlish_fetch_macro::FetchSchema;
 use yewlish_testing_tools::*;
@@ -9,7 +9,7 @@ struct Todo {
     id: u32,
     title: String,
     description: Option<String>,
-    done: bool,
+    done: u8,
 }
 
 #[derive(Default, Serialize, PartialEq, Clone)]
@@ -22,7 +22,7 @@ struct CreateTodo {
 struct UpdateTodo {
     title: Option<String>,
     description: Option<String>,
-    done: Option<bool>,
+    done: Option<u8>,
 }
 
 #[derive(Default, Serialize, PartialEq, Clone)]
@@ -40,7 +40,7 @@ enum Test {
     CreateTodo,
     #[put("/todos/{id}", slugs = TodoSlug, body = UpdateTodo, res = Todo)]
     UpdateTodo,
-    #[delete("/todos/{id}", slugs = TodoSlug)]
+    #[delete("/todos/{id}", slugs = TodoSlug, res = String)]
     DeleteTodo,
 }
 
@@ -87,10 +87,9 @@ async fn test_fetch_schema_client() {
 
     assert_eq!(todo.title, "Test".to_string());
     assert_eq!(todo.description, None);
-    assert!(!todo.done);
+    assert!(todo.done == 0);
 
     let result = client.todos(TodosParams::default()).await;
-    console_error!("{:?}", result);
     assert!(result.is_ok());
     let result = result.unwrap();
     assert_eq!(result.len(), 1);
@@ -113,7 +112,7 @@ async fn test_fetch_schema_client() {
             body: UpdateTodo {
                 title: Some("Test2".to_string()),
                 description: Some("Test".to_string()),
-                done: Some(true),
+                done: Some(1),
             },
             ..Default::default()
         })
@@ -123,7 +122,7 @@ async fn test_fetch_schema_client() {
     let todo = result.unwrap();
     assert_eq!(todo.title, "Test2".to_string());
     assert_eq!(todo.description, Some("Test".to_string()));
-    assert!(todo.done);
+    assert!(todo.done == 1);
 
     let result = client.todos(TodosParams::default()).await;
     assert!(result.is_ok());

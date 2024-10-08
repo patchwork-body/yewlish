@@ -1,3 +1,5 @@
+use std::any::TypeId;
+
 use serde::de::Deserialize;
 use serde::Serialize;
 use thiserror::Error;
@@ -103,7 +105,7 @@ where
     S: Serialize + Default + PartialEq,
     Q: Serialize + Default + PartialEq,
     B: Serialize + Default + PartialEq,
-    R: for<'de> Deserialize<'de>,
+    R: for<'de> Deserialize<'de> + Default + 'static,
 {
     // Build the URL with query parameters
     let url = {
@@ -198,11 +200,16 @@ where
     .await
     .map_err(|error| FetchError::JsonError(format!("{error:?}")))?;
 
+    let response_text = response_text.as_string().unwrap_or_default();
+
+    if response_text.trim().is_empty() && TypeId::of::<R>() == TypeId::of::<String>() {
+        return Ok(R::default());
+    }
+
     // Deserialize the response into the expected type
-    let result = serde_json::from_str::<R>(&response_text.as_string().unwrap_or_default())
-        .map_err(|error| {
-            FetchError::ResponseDeserializationError(format!("{response_text:?} --- {error:?}"))
-        })?;
+    let result = serde_json::from_str::<R>(&response_text).map_err(|error| {
+        FetchError::ResponseDeserializationError(format!("{response_text:?} --- {error:?}"))
+    })?;
 
     Ok(result)
 }
