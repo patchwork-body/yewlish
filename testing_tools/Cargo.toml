@@ -1,6 +1,6 @@
 [package]
 name = "yewlish-testing-tools"
-version = "1.0.0"
+version = "1.1.0"
 edition = "2021"
 authors = ["Kirill Korotkov <personal.gugfug@gmail.com>"]
 license = "MIT OR Apache-2.0"
@@ -13,9 +13,12 @@ documentation = "https://docs.rs/yewlish-testing-tools"
 log = "0.4.22"
 web-sys = { version = "0.3.70", features = ["Document", "DomParser", "SupportedType", "MouseEvent", "MouseEventInit", "KeyboardEvent", "KeyboardEventInit", "EventTarget", "EventInit", "HtmlButtonElement"] }
 yew = { version = "0.21.0", features = ["csr", "ssr", "hydration"] }
-wasm-bindgen-test = "0.3.43"
 wasm-bindgen-futures = "0.4.43"
 gloo-utils = "0.2.0"
+
+[dev-dependencies]
+wasm-bindgen-test = "0.3.43"
+tokio = {version = "1.40.0", features = ["full"]}
 
 [lib]
 crate-type = ["cdylib", "rlib"]
