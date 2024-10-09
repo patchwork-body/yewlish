@@ -8,22 +8,93 @@ pub use query::Query;
 use std::fmt::Debug;
 use std::{any::Any, cell::RefCell, rc::Rc};
 use std::{fmt::Formatter, future::Future, pin::Pin, time::Duration};
-use web_sys::wasm_bindgen::JsCast;
 use web_sys::wasm_bindgen::UnwrapThrowExt;
+use web_sys::{js_sys::Date, wasm_bindgen::JsCast};
 use yew::platform::time::sleep;
 
 pub type ResultRef = Rc<RefCell<Option<Box<dyn Any>>>>;
 
+/// The `HookTester` struct is designed to facilitate testing of hooks in a Yew application.
+///
+/// This struct provides methods to create a new `HookTester` instance and retrieve the inner value
+/// of a specified type. It leverages Rust's reference counting and interior mutability to manage
+/// the inner value safely across multiple references.
+///
+/// # Examples
+///
+/// ```
+/// use std::cell::RefCell;
+/// use std::rc::Rc;
+/// use yewlish_testing_tools::tester::{HookTester, ResultRef};
+///
+/// let result_ref: ResultRef = Rc::new(RefCell::new(Some(Box::new(42))));
+/// let tester = HookTester::new(result_ref.clone());
+///
+/// let value: i32 = tester.get();
+/// assert_eq!(value, 42);
+/// ```
+///
+/// # Fields
+///
+/// - `inner`: A reference-counted cell containing an optional boxed value of any type.
 #[derive(Debug, Clone)]
 pub struct HookTester {
     inner: ResultRef,
 }
 
 impl HookTester {
+    /// Creates a new `HookTester` instance.
+    ///
+    /// # Arguments
+    ///
+    /// * `inner` - A reference-counted cell containing an optional boxed value of any type.
+    ///
+    /// # Returns
+    ///
+    /// A new instance of `HookTester`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use std::cell::RefCell;
+    /// use std::rc::Rc;
+    /// use yewlish_testing_tools::tester::{HookTester, ResultRef};
+    ///
+    /// let result_ref: ResultRef = Rc::new(RefCell::new(Some(Box::new(42))));
+    /// let tester = HookTester::new(result_ref.clone());
+    /// ```
     pub fn new(inner: ResultRef) -> Self {
         Self { inner }
     }
 
+    #[must_use]
+    /// Retrieves the inner value of the specified type.
+    ///
+    /// # Type Parameters
+    ///
+    /// - `T`: The type to which the inner value should be downcast.
+    ///
+    /// # Returns
+    ///
+    /// The inner value of type `T`.
+    ///
+    /// # Panics
+    ///
+    /// This function will panic if the inner value cannot be downcast to the specified type `T`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use std::cell::RefCell;
+    /// use std::rc::Rc;
+    /// use yewlish_testing_tools::tester::{HookTester, ResultRef};
+    ///
+    /// let result_ref: ResultRef = Rc::new(RefCell::new(Some(Box::new(42))));
+    /// let tester = HookTester::new(result_ref.clone());
+    ///
+    /// let value: i32 = tester.get();
+    /// assert_eq!(value, 42);
+    /// ```
     pub fn get<T: 'static + Clone>(&self) -> T {
         self.inner
             .borrow()
@@ -38,6 +109,45 @@ impl HookTester {
             .clone()
     }
 
+    /// Executes an asynchronous action and waits for it to complete.
+    ///
+    /// The `act` method is designed to facilitate testing by allowing you to perform an action
+    /// and then wait for it to complete. This is particularly useful in scenarios where you need
+    /// to ensure that certain asynchronous operations have finished before proceeding with your tests.
+    ///
+    /// # Arguments
+    ///
+    /// * `action` - A closure representing the action to be performed. The closure should not take any arguments and should not return any value.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use std::cell::RefCell;
+    /// use std::rc::Rc;
+    /// use yewlish_testing_tools::tester::{HookTester, ResultRef};
+    ///
+    /// let result_ref: ResultRef = Rc::new(RefCell::new(Some(Box::new(42))));
+    /// let tester = HookTester::new(result_ref.clone());
+    ///
+    /// #[tokio::main]
+    /// async fn main() {
+    ///     let result_ref: ResultRef = Rc::new(RefCell::new(Some(Box::new(42))));
+    ///     let tester = HookTester::new(result_ref.clone());
+    ///
+    ///     tester.act(|| {
+    ///         // Perform some action here
+    ///     }).await;
+    /// }
+    /// ```
+    ///
+    /// # Panics
+    ///
+    /// This method does not panic under normal circumstances. However, if the provided closure panics,
+    /// the panic will propagate.
+    ///
+    /// # Type Parameters
+    ///
+    /// - `F`: The type of the closure to be executed. It must implement the `FnOnce` trait.
     pub async fn act<F>(&self, action: F)
     where
         F: FnOnce(),
@@ -47,7 +157,8 @@ impl HookTester {
     }
 }
 
-pub fn node_list_to_vec(node_list: web_sys::NodeList) -> Vec<web_sys::Element> {
+#[must_use]
+pub fn node_list_to_vec(node_list: &web_sys::NodeList) -> Vec<web_sys::Element> {
     (0..node_list.length())
         .filter_map(|i| {
             node_list
@@ -84,16 +195,26 @@ impl Tester {
         }
     }
 
+    #[must_use]
     pub fn exists(&self) -> bool {
         self.root.is_some()
     }
 
-    pub async fn wait_for<F>(&self, timeout: u64, check_fn: F) -> bool
+    pub async fn wait_for<F>(&self, timeout: f64, check_fn: F) -> bool
     where
         F: Fn() -> bool,
     {
-        sleep(Duration::from_millis(timeout)).await;
-        check_fn()
+        let start = Date::now();
+
+        while Date::now() - start < timeout {
+            if check_fn() {
+                return true;
+            }
+
+            sleep(Duration::from_millis(100)).await;
+        }
+
+        false
     }
 
     pub async fn act<F>(&self, action: F)
@@ -103,6 +224,12 @@ impl Tester {
         self.state.act(action).await;
     }
 
+    #[must_use]
+    /// Queries the root element by the given CSS selector.
+    ///
+    /// # Panics
+    ///
+    /// This function will panic if the root element is `None` or if the query selector fails.
     pub fn query_by_selector(&self, selector: &str) -> Self {
         match &self.root {
             Some(root) => match root.query_selector(selector) {
@@ -111,7 +238,7 @@ impl Tester {
                     state: self.state.clone(),
                 },
                 Err(error) => {
-                    panic!("Failed to query by selector: {:?}", error);
+                    panic!("Failed to query by selector: {error:?}");
                 }
             },
             None => {
@@ -120,10 +247,16 @@ impl Tester {
         }
     }
 
+    #[must_use]
+    /// Queries all elements by the given CSS selector.
+    ///
+    /// # Panics
+    ///
+    /// This function will panic if the root element is `None` or if the query selector fails.
     pub fn query_all_by_selector(&self, selector: &str) -> Vec<Self> {
         match &self.root {
             Some(root) => match root.query_selector_all(selector) {
-                Ok(node_list) => node_list_to_vec(node_list)
+                Ok(node_list) => node_list_to_vec(&node_list)
                     .iter()
                     .map(|node| Self {
                         root: node.clone().into(),
@@ -131,7 +264,7 @@ impl Tester {
                     })
                     .collect(),
                 Err(error) => {
-                    panic!("Failed to query all by selector: {:?}", error);
+                    panic!("Failed to query all by selector: {error:?}");
                 }
             },
             None => {
@@ -144,7 +277,7 @@ impl Tester {
 impl Query for Tester {
     fn query_by_role(&self, role: &str) -> Self {
         let implicit_selector = self.build_role_query(role);
-        let explicit_selector = format!("[role='{}']", role);
+        let explicit_selector = format!("[role='{role}']");
 
         if implicit_selector.is_empty() {
             return self.query_by_selector(&explicit_selector);
@@ -164,11 +297,11 @@ impl Query for Tester {
     }
 
     fn query_by_testid(&self, testid: &str) -> Self {
-        self.query_by_selector(&format!("[data-testid='{}']", testid))
+        self.query_by_selector(&format!("[data-testid='{testid}']"))
     }
 
     fn query_all_by_role(&self, role: &str) -> Vec<Self> {
-        self.query_all_by_selector(&format!("[role='{}']", role))
+        self.query_all_by_selector(&format!("[role='{role}']"))
     }
 
     fn query_all_by_text(&self, text: &str) -> Vec<Self> {
@@ -179,7 +312,7 @@ impl Query for Tester {
     }
 
     fn query_all_by_testid(&self, testid: &str) -> Vec<Self> {
-        self.query_all_by_selector(&format!("[data-testid='{}']", testid))
+        self.query_all_by_selector(&format!("[data-testid='{testid}']"))
     }
 }
 
@@ -267,7 +400,7 @@ impl Extractor for Tester {
     fn text(&self) -> String {
         match &self.root {
             Some(root) => root.text_content().unwrap_or_default(),
-            None => "".to_string(),
+            None => String::new(),
         }
     }
 
@@ -295,7 +428,8 @@ mod tests {
         })
         .await;
 
-        t.query_by_selector("#test");
+        let test_div = t.query_by_selector("#test");
+        assert!(test_div.exists());
     }
 
     #[wasm_bindgen_test]
@@ -2566,7 +2700,7 @@ mod tests {
             {
                 let state = state.clone();
 
-                use_effect_with((), move |_| {
+                use_effect_with((), move |()| {
                     state.set(100);
                 });
             }
