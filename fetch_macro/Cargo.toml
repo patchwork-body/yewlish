@@ -28,6 +28,7 @@ yewlish-fetch-utils = { path = "../fetch_utils" }
 [dev-dependencies]
 yewlish-testing-tools = "1.0.0"
 wasm-bindgen-test = "0.3.43"
+serial_test = "3.1.1"
 
 [lib]
 proc-macro = true
