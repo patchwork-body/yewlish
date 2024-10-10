@@ -121,6 +121,7 @@ impl Reducible for RadioGroupItemContext {
 type ReducibleRadioGroupItemContext = UseReducerHandle<RadioGroupItemContext>;
 
 #[derive(Clone, Debug, PartialEq, Properties)]
+#[allow(clippy::struct_excessive_bools)]
 pub struct RadioGroupItemRenderAsProps {
     #[prop_or_default]
     pub children: ChildrenWithProps<RadioGroupItemIndicator>,
@@ -208,7 +209,7 @@ pub fn radio_group_item(props: &RadioGroupItemProps) -> Html {
             props.checked,
             props.readonly,
         ),
-        move |_, (group_context, value, checked, readonly)| {
+        move |(), (group_context, value, checked, readonly)| {
             if *readonly {
                 return;
             }
