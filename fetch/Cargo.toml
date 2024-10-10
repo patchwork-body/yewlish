@@ -1,34 +1,29 @@
 [package]
-name = "yewlish-fetch-macro"
+name = "yewlish-fetch"
 version = "0.1.0"
 edition = "2021"
 authors = ["Kirill Korotkov <personal.gugfug@gmail.com>"]
 license = "MIT OR Apache-2.0"
-description = "A Yew ."
+description = "A macro for generating Yew fetch API bindings."
 repository = "https://github.com/patchwork-body/yewlish.git"
-documentation = "https://docs.rs/yewlish-fetch-macro"
+documentation = "https://docs.rs/yewlish-fetch"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 heck = "0.5.0"
 quote = "1.0.37"
-serde = {version = "1.0.210", features = ["derive"]}
-serde_json = "1.0.128"
-serde_urlencoded = "0.7.1"
 syn = "2.0.79"
-thiserror = "1.0.64"
-url = "2.5.2"
-wasm-bindgen = "0.2.93"
-wasm-bindgen-futures = "0.4.43"
-web-sys = "0.3.70"
 yew = "0.21.0"
-yewlish-fetch-utils = { path = "../fetch_utils" }
+yewlish-fetch-utils = "0.1.0"
 
 [dev-dependencies]
 yewlish-testing-tools = "1.0.0"
 wasm-bindgen-test = "0.3.43"
+wasm-bindgen = "0.2.93"
+wasm-bindgen-futures = "0.4.43"
 serial_test = "3.1.1"
+serde = {version = "1.0.210", features = ["derive"]}
 
 [lib]
 proc-macro = true
