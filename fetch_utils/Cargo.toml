@@ -2,6 +2,11 @@
 name = "yewlish-fetch-utils"
 version = "0.1.0"
 edition = "2021"
+authors = ["Kirill Korotkov <personal.gugfug@gmail.com>"]
+license = "MIT OR Apache-2.0"
+description = "A collection of useful utilities for working with fetch API, JSON marshalling, and URL manipulation in Yew applications."
+repository = "https://github.com/patchwork-body/yewlish.git"
+documentation = "https://docs.rs/yewlish-fetch-utils"
 
 [dependencies]
 js-sys = "0.3.70"
