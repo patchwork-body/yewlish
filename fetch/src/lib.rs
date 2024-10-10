@@ -141,7 +141,7 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
         let hook_with_options_name = format_ident!("{}_with_options", hook_name);
         let hook_name_async = format_ident!("{}_async", hook_name);
         let hook_with_options_name_async = format_ident!("{}_with_options_async", hook_name);
-        let hook_options_name = format_ident!("{}HookOptions", variant_name);
+        let hook_options_name = format_ident!("{}Options", variant_name);
 
         match extract_attrs(&variant.attrs) {
             Ok((http_method, path, slugs, query, body, res)) => {
