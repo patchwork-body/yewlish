@@ -100,6 +100,7 @@ fn extract_attrs(attrs: &[Attribute]) -> SynResult<(String, String, Type, Type, 
 pub fn fetch_schema(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
     let enum_name = &input.ident;
+    let module_name = format_ident!("{}_fetch_schema", enum_name.to_string().to_snake_case());
     let fetch_client_name = format_ident!("{}FetchClient", enum_name);
     let fetch_client_options_name = format_ident!("{}Options", fetch_client_name);
     let hook_options_name = format_ident!("{}HookOptions", enum_name);
@@ -471,81 +472,87 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
     let errors = errors.into_iter().map(|error| error.to_compile_error());
 
     let expanded = quote! {
-        use yew::hook;
-        use std::rc::Rc;
-        use std::cell::RefCell;
-        use std::borrow::BorrowMut;
-        use yewlish_fetch_utils::{
-            fetch, FetchOptions, HttpMethod, FetchError, Middleware, Cacheable, Cache, CacheOptions, CacheEntry,
-            generate_cache_key, CachePolicy, deserialize_cached_data, deserialize_response, deserialize_response_and_store_cache
-        };
-        use yew::platform::spawn_local;
+        mod #module_name {
+            use crate::*;
+            use yew::hook;
+            use std::rc::Rc;
+            use std::cell::RefCell;
+            use std::borrow::BorrowMut;
+            use yewlish_fetch_utils::{
+                fetch, FetchOptions, HttpMethod, FetchError, Middleware, Cacheable, Cache, CacheOptions, CacheEntry,
+                generate_cache_key, CachePolicy, deserialize_cached_data, deserialize_response, deserialize_response_and_store_cache
+            };
+            use yew::prelude::*;
+            use yew::platform::spawn_local;
 
-        #(#structs)*
-        #(#errors)*
+            #(#structs)*
+            #(#errors)*
 
-        #[derive(Clone, PartialEq, Default)]
-        pub struct #hook_options_name {
-            pub cache_options: Option<CacheOptions>,
-        }
-
-        #[derive(Clone)]
-        pub struct #fetch_client_name {
-            pub base_url: String,
-            pub middlewares: Vec<Middleware>,
-            pub cache: Rc<RefCell<dyn Cacheable>>,
-            _marker: std::marker::PhantomData<#enum_name>,
-        }
-
-        impl PartialEq for #fetch_client_name {
-            fn eq(&self, other: &Self) -> bool {
-                self.base_url == other.base_url
-                && self.middlewares.len() == other.middlewares.len()
+            #[derive(Clone, PartialEq, Default)]
+            pub struct #hook_options_name {
+                pub cache_options: Option<CacheOptions>,
             }
-        }
 
-        impl #fetch_client_name {
-            pub fn new(base_url: &str) -> Self {
-                Self {
-                    base_url: base_url.to_string(),
-                    middlewares: Vec::new(),
-                    cache: Rc::new(RefCell::new(Cache::default())),
-                    _marker: std::marker::PhantomData
+            #[derive(Clone)]
+            pub struct #fetch_client_name {
+                pub base_url: String,
+                pub middlewares: Vec<Middleware>,
+                pub cache: Rc<RefCell<dyn Cacheable>>,
+                _marker: std::marker::PhantomData<#enum_name>,
+            }
+
+            impl PartialEq for #fetch_client_name {
+                fn eq(&self, other: &Self) -> bool {
+                    self.base_url == other.base_url
+                    && self.middlewares.len() == other.middlewares.len()
                 }
             }
 
-            #(#methods)*
-        }
+            impl #fetch_client_name {
+                pub fn new(base_url: &str) -> Self {
+                    Self {
+                        base_url: base_url.to_string(),
+                        middlewares: Vec::new(),
+                        cache: Rc::new(RefCell::new(Cache::default())),
+                        _marker: std::marker::PhantomData
+                    }
+                }
 
-        #[derive(Clone)]
-        pub struct #fetch_client_options_name {
-            pub middlewares: Vec<Middleware>,
-            pub cache: Rc<RefCell<dyn Cacheable>>,
-        }
-
-        impl PartialEq for #fetch_client_options_name {
-            fn eq(&self, other: &Self) -> bool {
-                self.middlewares.len() == other.middlewares.len()
+                #(#methods)*
             }
-        }
 
-        #[derive(Clone, PartialEq, Properties)]
-        pub struct #fetch_client_context_props_name {
-            pub client: #fetch_client_name,
-            pub children: Children,
-        }
-
-        #[function_component(#fetch_client_context_provider_name)]
-        pub fn #fetch_client_context_snake_case_provider_name(props: &#fetch_client_context_props_name) -> Html {
-            html! {
-                <ContextProvider<#fetch_client_name> context={props.client.clone()}>
-                    {for props.children.iter()}
-                </ContextProvider<#fetch_client_name>>
+            #[derive(Clone)]
+            pub struct #fetch_client_options_name {
+                pub middlewares: Vec<Middleware>,
+                pub cache: Rc<RefCell<dyn Cacheable>>,
             }
+
+            impl PartialEq for #fetch_client_options_name {
+                fn eq(&self, other: &Self) -> bool {
+                    self.middlewares.len() == other.middlewares.len()
+                }
+            }
+
+            #[derive(Clone, PartialEq, Properties)]
+            pub struct #fetch_client_context_props_name {
+                pub client: #fetch_client_name,
+                pub children: Children,
+            }
+
+            #[function_component(#fetch_client_context_provider_name)]
+            pub fn #fetch_client_context_snake_case_provider_name(props: &#fetch_client_context_props_name) -> Html {
+                html! {
+                    <ContextProvider<#fetch_client_name> context={props.client.clone()}>
+                        {for props.children.iter()}
+                    </ContextProvider<#fetch_client_name>>
+                }
+            }
+
+            #(#hooks)*
+            #variant_references
         }
 
-        #(#hooks)*
-        #variant_references
+        pub use #module_name::*;
     };
 
     TokenStream::from(expanded)
