@@ -27,6 +27,7 @@ pub static FOCUSABLE_SELECTOR: &str =
 
 pub static SKIP_FOCUS_ATTRIBUTES: [&str; 3] = ["disabled", "hidden", "aria-hidden"];
 
+#[must_use]
 pub fn is_focusable(element: &HtmlElement) -> bool {
     let is_focusable_element =
         FOCUSABLE_ELEMENTS.contains(&element.tag_name().to_lowercase().as_str());
@@ -42,6 +43,7 @@ pub fn is_focusable(element: &HtmlElement) -> bool {
     (is_focusable_element || has_valid_tabindex) && has_no_skip_attributes
 }
 
+#[must_use]
 pub fn get_focusable_element(element: &Element) -> Option<HtmlElement> {
     if let Ok(element) = <web_sys::Element as Clone>::clone(element).dyn_into::<HtmlElement>() {
         if is_focusable(&element) {
@@ -57,15 +59,13 @@ pub fn get_focusable_element(element: &Element) -> Option<HtmlElement> {
                 None => None,
             };
 
-            if child.is_none() {
-                continue;
+            if let Some(child) = child {
+                if is_focusable(&child) {
+                    return Some(child);
+                }
             }
 
-            let child = child.unwrap();
-
-            if is_focusable(&child) {
-                return Some(child);
-            }
+            continue;
         }
     }
 
@@ -90,6 +90,7 @@ pub fn focus_child(child: Option<Element>) {
     }
 }
 
+#[must_use]
 pub fn get_all_focusable_elements() -> Vec<HtmlElement> {
     match window() {
         Some(window) => match window.document() {
@@ -113,6 +114,7 @@ pub fn get_all_focusable_elements() -> Vec<HtmlElement> {
     }
 }
 
+#[must_use]
 pub fn get_next_focusable_element(current_element: HtmlElement) -> HtmlElement {
     let all_focusable_elements = get_all_focusable_elements();
 
@@ -130,6 +132,7 @@ pub fn get_next_focusable_element(current_element: HtmlElement) -> HtmlElement {
     all_focusable_elements[next_index].clone()
 }
 
+#[must_use]
 pub fn get_prev_focusable_element(current_element: HtmlElement) -> HtmlElement {
     let all_focusable_elements = get_all_focusable_elements();
 
