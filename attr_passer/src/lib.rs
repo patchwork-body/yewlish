@@ -117,9 +117,9 @@ pub fn attr_receiver(props: &AttrReceiverProps) -> Html {
         return html! {
             <>{element}</>
         };
-    } else {
-        log::warn!("AttrReceiver component only accepts a tag element");
     }
+
+    log::warn!("AttrReceiver component only accepts a tag element");
 
     html! {}
 }
