@@ -103,7 +103,6 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
     let module_name = format_ident!("{}_fetch_schema", enum_name.to_string().to_snake_case());
     let fetch_client_name = format_ident!("{}FetchClient", enum_name);
     let fetch_client_options_name = format_ident!("{}Options", fetch_client_name);
-    let hook_options_name = format_ident!("{}HookOptions", enum_name);
     let fetch_client_context_props_name = format_ident!("{}ProviderProps", fetch_client_name);
     let fetch_client_context_provider_name = format_ident!("{}Provider", fetch_client_name);
     let fetch_client_context_snake_case_provider_name = format_ident!(
@@ -142,6 +141,7 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
         let hook_with_options_name = format_ident!("{}_with_options", hook_name);
         let hook_name_async = format_ident!("{}_async", hook_name);
         let hook_with_options_name_async = format_ident!("{}_with_options_async", hook_name);
+        let hook_options_name = format_ident!("{}HookOptions", variant_name);
 
         match extract_attrs(&variant.attrs) {
             Ok((http_method, path, slugs, query, body, res)) => {
@@ -230,6 +230,13 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                         }
                     }
 
+                    #[derive(Clone, PartialEq, Default)]
+                    pub struct #hook_options_name {
+                        pub cache_options: Option<CacheOptions>,
+                        pub on_success: Option<Callback<#res>>,
+                        pub on_error: Option<Callback<FetchError>>,
+                    }
+
                     #[hook]
                     fn #common_hook_name(options: Option<#hook_options_name>) -> #hook_async_handle_name {
                         let client = use_context::<#fetch_client_name>()
@@ -307,6 +314,9 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                                         }
                                     }
                                 };
+
+                                let on_success = options.as_ref().and_then(|o| o.on_success.clone()).unwrap_or_else(Callback::noop);
+                                let on_error = options.as_ref().and_then(|o| o.on_error.clone()).unwrap_or_else(Callback::noop);
 
                                 spawn_local(async move {
                                     loading.set(true);
@@ -417,6 +427,14 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                                         }
                                     }
 
+                                    if let Some(error) = error.as_ref() {
+                                        on_error.emit(error.clone());
+                                    }
+
+                                    if let Some(data) = data.as_ref() {
+                                        on_success.emit(data.clone());
+                                    }
+
                                     loading.set(false);
                                 });
                             }
@@ -518,10 +536,6 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
             #(#structs)*
             #(#errors)*
 
-            #[derive(Clone, PartialEq, Default)]
-            pub struct #hook_options_name {
-                pub cache_options: Option<CacheOptions>,
-            }
 
             #[derive(Clone)]
             pub struct #fetch_client_name {
