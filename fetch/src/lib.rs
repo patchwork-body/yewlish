@@ -170,7 +170,7 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
 
                         let mut url = format!("{}/{}", base_url, path);
 
-                        if #query != () {
+                        if TypeId::of::<#query>() != TypeId::of::<()>() {
                             if url.contains('?') {
                                 url.push('&');
                             } else {
@@ -477,6 +477,7 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
             use yew::hook;
             use std::rc::Rc;
             use std::cell::RefCell;
+            use std::any::TypeId;
             use std::borrow::BorrowMut;
             use yewlish_fetch_utils::{
                 fetch, FetchOptions, HttpMethod, FetchError, Middleware, Cacheable, Cache, CacheOptions, CacheEntry,
