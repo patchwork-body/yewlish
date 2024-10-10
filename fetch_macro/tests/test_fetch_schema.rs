@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use serial_test::serial;
 use wasm_bindgen_test::wasm_bindgen_test;
 use yew::prelude::*;
 use yewlish_fetch_macro::FetchSchema;
@@ -53,7 +54,7 @@ struct TestRootProps {
 
 #[function_component(TestRoot)]
 fn test_root(props: &TestRootProps) -> Html {
-    let client = TestFetchClient::new("http://127.0.0.1:5000".to_string());
+    let client = TestFetchClient::new("http://127.0.0.1:5000");
 
     html! {
         <TestFetchClientProvider client={client}>
@@ -65,104 +66,108 @@ fn test_root(props: &TestRootProps) -> Html {
 }
 
 #[wasm_bindgen_test]
+#[serial]
 async fn test_fetch_schema_client() {
-    let client = TestFetchClient::new("http://127.0.0.1:5000".to_string());
-    let result = client.todos(TodosParams::default()).await;
-
-    assert!(result.is_ok());
-    assert_eq!(result.unwrap(), vec![]);
-
-    let result = client
-        .create_todo(CreateTodoParams {
-            body: CreateTodo {
-                title: "Test".to_string(),
-                description: None,
-            },
-            ..Default::default()
-        })
+    let client = TestFetchClient::new("http://127.0.0.1:5000");
+    let result = &client
+        .todos(client.prepare_todos_url(), TodosParams::default())
         .await;
 
     assert!(result.is_ok());
-    let todo = result.unwrap();
+    let result: Vec<Todo> = deserialize_response(result.as_ref().unwrap().as_str()).unwrap();
+    assert_eq!(result, vec![]);
+
+    let result = client
+        .create_todo(
+            client.prepare_create_todo_url(),
+            CreateTodoParams {
+                body: CreateTodo {
+                    title: "Test".to_string(),
+                    description: None,
+                },
+                ..Default::default()
+            },
+        )
+        .await;
+
+    assert!(result.is_ok());
+    let todo: Todo = deserialize_response(result.unwrap().as_str()).unwrap();
 
     assert_eq!(todo.title, "Test".to_string());
     assert_eq!(todo.description, None);
     assert!(todo.done == 0);
 
-    let result = client.todos(TodosParams::default()).await;
+    let result = &client
+        .todos(client.prepare_todos_url(), TodosParams::default())
+        .await;
+
     assert!(result.is_ok());
-    let result = result.unwrap();
+    let result: Vec<Todo> = deserialize_response(result.as_ref().unwrap().as_str()).unwrap();
     assert_eq!(result.len(), 1);
     assert_eq!(result[0], todo);
 
     let result = client
-        .todo(TodoParams {
-            slugs: TodoSlug { id: todo.id },
-            ..Default::default()
-        })
+        .todo(
+            client.prepare_todo_url(),
+            TodoParams {
+                slugs: TodoSlug { id: todo.id },
+                ..Default::default()
+            },
+        )
         .await;
 
     assert!(result.is_ok());
-    let result = result.unwrap();
+    let result: Todo = deserialize_response(result.unwrap().as_str()).unwrap();
     assert_eq!(result, todo);
 
     let result = client
-        .update_todo(UpdateTodoParams {
-            slugs: TodoSlug { id: todo.id },
-            body: UpdateTodo {
-                title: Some("Test2".to_string()),
-                description: Some("Test".to_string()),
-                done: Some(1),
+        .update_todo(
+            client.prepare_update_todo_url(),
+            UpdateTodoParams {
+                slugs: TodoSlug { id: todo.id },
+                body: UpdateTodo {
+                    title: Some("Test2".to_string()),
+                    description: Some("Test".to_string()),
+                    done: Some(1),
+                },
+                ..Default::default()
             },
-            ..Default::default()
-        })
+        )
         .await;
 
     assert!(result.is_ok());
-    let todo = result.unwrap();
+    let todo: Todo = deserialize_response(result.unwrap().as_str()).unwrap();
     assert_eq!(todo.title, "Test2".to_string());
     assert_eq!(todo.description, Some("Test".to_string()));
     assert!(todo.done == 1);
 
-    let result = client.todos(TodosParams::default()).await;
+    let result = client
+        .todos(client.prepare_todos_url(), TodosParams::default())
+        .await;
+
     assert!(result.is_ok());
-    let result = result.unwrap();
+    let result: Vec<Todo> = deserialize_response(result.unwrap().as_str()).unwrap();
     assert_eq!(result.len(), 1);
     assert_eq!(result[0], todo);
 
     let result = client
-        .delete_todo(DeleteTodoParams {
-            slugs: TodoSlug { id: todo.id },
-            ..Default::default()
-        })
+        .delete_todo(
+            client.prepare_delete_todo_url(),
+            DeleteTodoParams {
+                slugs: TodoSlug { id: todo.id },
+                ..Default::default()
+            },
+        )
         .await;
 
     assert!(result.is_ok());
 
-    let result = client.todos(TodosParams::default()).await;
+    let result = client
+        .todos(client.prepare_todos_url(), TodosParams::default())
+        .await;
+
     assert!(result.is_ok());
 
-    let result = result.unwrap();
+    let result: Vec<Todo> = deserialize_response(result.unwrap().as_str()).unwrap();
     assert_eq!(result.len(), 0);
 }
-
-// #[wasm_bindgen_test]
-// async fn test_fetch_schema_get_todos() {
-//     let t = render!(
-//         {
-//             let res = use_todos(TodosParams::default());
-//             use_remember_value(res);
-
-//             html! {}
-//         },
-//         TestRoot
-//     )
-//     .await;
-
-//     assert!(
-//         t.wait_for(2000, || t.get_state::<UseTodosHandle>().data.is_some())
-//             .await
-//     );
-
-//     assert_eq!(*t.get_state::<UseTodosHandle>().data, Some(vec![]));
-// }
