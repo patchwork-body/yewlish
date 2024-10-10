@@ -52,8 +52,7 @@ impl Reducible for CheckboxContext {
             CheckboxAction::Toggle => CheckboxContext {
                 checked: match self.checked {
                     CheckedState::Checked => CheckedState::Unchecked,
-                    CheckedState::Unchecked => CheckedState::Checked,
-                    CheckedState::Indeterminate => CheckedState::Checked,
+                    CheckedState::Unchecked | CheckedState::Indeterminate => CheckedState::Checked,
                 },
                 ..(*self).clone()
             }
@@ -151,8 +150,7 @@ pub fn checkbox(props: &CheckboxProps) -> Html {
 
             dispatch.emit(Box::new(|prev_state| match prev_state {
                 CheckedState::Checked => CheckedState::Unchecked,
-                CheckedState::Unchecked => CheckedState::Checked,
-                CheckedState::Indeterminate => CheckedState::Checked,
+                CheckedState::Unchecked | CheckedState::Indeterminate => CheckedState::Checked,
             }));
 
             context_value.dispatch(CheckboxAction::Toggle);
@@ -163,7 +161,7 @@ pub fn checkbox(props: &CheckboxProps) -> Html {
         toggle.emit(());
     });
 
-    let prevent_checked_by_enter = use_callback((), |event: KeyboardEvent, _| {
+    let prevent_checked_by_enter = use_callback((), |event: KeyboardEvent, ()| {
         if event.key() == "Enter" {
             event.prevent_default();
         }
@@ -446,7 +444,7 @@ mod tests {
             "disabled".to_string().into()
         );
 
-        assert_eq!(checkbox.attribute("data-disabled"), "".to_string().into());
+        assert_eq!(checkbox.attribute("data-disabled"), String::new().into());
 
         assert_eq!(
             checkbox.attribute("aria-checked"),
@@ -468,7 +466,7 @@ mod tests {
             "disabled".to_string().into()
         );
 
-        assert_eq!(checkbox.attribute("data-disabled"), "".to_string().into());
+        assert_eq!(checkbox.attribute("data-disabled"), String::new().into());
 
         assert_eq!(
             checkbox.attribute("aria-checked"),
@@ -665,7 +663,7 @@ mod tests {
             let on_checked_change = use_callback((), {
                 let checked = checked.clone();
 
-                move |next_state: CheckedState, _| {
+                move |next_state: CheckedState, ()| {
                     checked.set(next_state);
                 }
             });
