@@ -2,6 +2,7 @@ use serde::{Deserialize, Serialize};
 use serial_test::serial;
 use wasm_bindgen_test::wasm_bindgen_test;
 use yew::prelude::*;
+use yewlish_fetch_utils::*;
 use yewlish_fetch::FetchSchema;
 use yewlish_testing_tools::*;
 
