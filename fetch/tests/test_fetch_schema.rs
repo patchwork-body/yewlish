@@ -1,10 +1,10 @@
 use serde::{Deserialize, Serialize};
-use std::sync::Arc;
 use serial_test::serial;
+use std::{rc::Rc, sync::Arc};
 use wasm_bindgen_test::wasm_bindgen_test;
 use yew::prelude::*;
-use yewlish_fetch_utils::*;
 use yewlish_fetch::FetchSchema;
+use yewlish_fetch_utils::*;
 use yewlish_testing_tools::*;
 
 #[derive(Default, Serialize, PartialEq, Clone, Debug)]
@@ -61,12 +61,12 @@ struct TestRootProps {
 
 #[function_component(TestRoot)]
 fn test_root(props: &TestRootProps) -> Html {
-    let client = TestFetchClient::new("http://127.0.0.1:5000").with_middlewares(vec![
-        Arc::new(Box::new(|_, headers| {
+    let client = TestFetchClient::new("http://127.0.0.1:5000").with_middlewares(vec![Arc::new(
+        Box::new(|_, headers| {
             headers.set("Authorization", "Bearer token").unwrap();
             headers.set("Content-Type", "application/json").unwrap();
-        })),
-    ]);
+        }),
+    )]);
 
     html! {
         <TestFetchClientProvider client={client}>
@@ -80,15 +80,22 @@ fn test_root(props: &TestRootProps) -> Html {
 #[wasm_bindgen_test]
 #[serial]
 async fn test_fetch_schema_client() {
-    let client = TestFetchClient::new("http://127.0.0.1:5000").with_middlewares(vec![
-        Arc::new(Box::new(|_, headers| {
+    let client = TestFetchClient::new("http://127.0.0.1:5000").with_middlewares(vec![Arc::new(
+        Box::new(|_, headers| {
             headers.set("Authorization", "Bearer token").unwrap();
             headers.set("Content-Type", "application/json").unwrap();
-        })),
-    ]);
+        }),
+    )]);
+
+    let abort_controller = web_sys::AbortController::new().unwrap();
+    let signal = Rc::new(abort_controller.signal());
 
     let result = &client
-        .todos(client.prepare_todos_url(), TodosParams::default())
+        .todos(
+            client.prepare_todos_url(),
+            signal.clone(),
+            TodosParams::default(),
+        )
         .await;
 
     assert!(result.is_ok());
@@ -98,6 +105,7 @@ async fn test_fetch_schema_client() {
     let result = client
         .create_todo(
             client.prepare_create_todo_url(),
+            signal.clone(),
             CreateTodoParams {
                 body: CreateTodo {
                     title: "Test".to_string(),
@@ -116,7 +124,11 @@ async fn test_fetch_schema_client() {
     assert!(todo.done == 0);
 
     let result = &client
-        .todos(client.prepare_todos_url(), TodosParams::default())
+        .todos(
+            client.prepare_todos_url(),
+            signal.clone(),
+            TodosParams::default(),
+        )
         .await;
 
     assert!(result.is_ok());
@@ -127,6 +139,7 @@ async fn test_fetch_schema_client() {
     let result = client
         .todo(
             client.prepare_todo_url(),
+            signal.clone(),
             TodoParams {
                 slugs: TodoSlug { id: todo.id },
                 ..Default::default()
@@ -141,6 +154,7 @@ async fn test_fetch_schema_client() {
     let result = client
         .update_todo(
             client.prepare_update_todo_url(),
+            signal.clone(),
             UpdateTodoParams {
                 slugs: TodoSlug { id: todo.id },
                 body: UpdateTodo {
@@ -160,7 +174,11 @@ async fn test_fetch_schema_client() {
     assert!(todo.done == 1);
 
     let result = client
-        .todos(client.prepare_todos_url(), TodosParams::default())
+        .todos(
+            client.prepare_todos_url(),
+            signal.clone(),
+            TodosParams::default(),
+        )
         .await;
 
     assert!(result.is_ok());
@@ -171,6 +189,7 @@ async fn test_fetch_schema_client() {
     let result = client
         .delete_todo(
             client.prepare_delete_todo_url(),
+            signal.clone(),
             DeleteTodoParams {
                 slugs: TodoSlug { id: todo.id },
                 ..Default::default()
@@ -181,7 +200,7 @@ async fn test_fetch_schema_client() {
     assert!(result.is_ok());
 
     let result = client
-        .todos(client.prepare_todos_url(), TodosParams::default())
+        .todos(client.prepare_todos_url(), signal, TodosParams::default())
         .await;
 
     assert!(result.is_ok());

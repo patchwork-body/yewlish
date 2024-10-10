@@ -1,6 +1,6 @@
 use crate::helpers::{build_request, build_url, send_request};
 use serde::Serialize;
-use std::sync::Arc;
+use std::{rc::Rc, sync::Arc};
 use thiserror::Error;
 use web_sys::{Headers, RequestInit};
 
@@ -82,6 +82,7 @@ pub struct FetchOptions<S, Q, B> {
     pub query: Q,
     pub body: B,
     pub middlewares: Vec<Middleware>,
+    pub abort_signal: Rc<web_sys::AbortSignal>,
 }
 
 #[allow(clippy::too_many_lines)]
@@ -108,7 +109,13 @@ where
     B: Serialize + Default + PartialEq,
 {
     let url = build_url(url, &options.slugs, options.query)?;
-    let request = build_request(&url, &method, &options.body, &options.middlewares)?;
+    let request = build_request(
+        &url,
+        &method,
+        &options.body,
+        &options.middlewares,
+        &options.abort_signal,
+    )?;
     let response_text = send_request(&request).await?;
 
     Ok(response_text)

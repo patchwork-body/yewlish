@@ -83,6 +83,7 @@ pub fn build_request<T>(
     method: &HttpMethod,
     body: &T,
     middlewares: &Vec<Middleware>,
+    abort_signal: &web_sys::AbortSignal,
 ) -> Result<Request, FetchError>
 where
     T: Serialize + Default + PartialEq,
@@ -114,6 +115,7 @@ where
 
     // Attach headers to the request
     request_init.set_headers(&headers);
+    request_init.set_signal(Some(abort_signal));
 
     let request =
         Request::new_with_str_and_init(String::from(url.to_string()).as_str(), &request_init)
