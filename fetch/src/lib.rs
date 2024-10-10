@@ -181,12 +181,13 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                         url
                     }
 
-                    pub async fn #fetch_method_name(&self, url: String, params: #method_params_struct_name) -> Result<String, FetchError> {
+                    pub async fn #fetch_method_name(&self, url: String, abort_signal: Rc<web_sys::AbortSignal>, params: #method_params_struct_name) -> Result<String, FetchError> {
                         let fetch_options = FetchOptions {
                             slugs: params.slugs,
                             query: params.query,
                             body: params.body,
                             middlewares: self.middlewares.clone(),
+                            abort_signal: abort_signal.clone(),
                         };
 
                         fetch::<#slugs, #query, #body>(
@@ -203,6 +204,7 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                         pub data: UseStateHandle<Option<#res>>,
                         pub loading: UseStateHandle<bool>,
                         pub error: UseStateHandle<Option<FetchError>>,
+                        pub cancel: Callback<()>,
                     }
 
                     impl PartialEq for #hook_handle_name {
@@ -218,6 +220,7 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                         pub loading: UseStateHandle<bool>,
                         pub error: UseStateHandle<Option<FetchError>>,
                         pub trigger: Callback<#method_params_struct_name>,
+                        pub cancel: Callback<()>,
                     }
 
                     impl PartialEq for #hook_async_handle_name {
@@ -242,10 +245,28 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                         let loading = use_state(|| false);
                         let error = use_state(|| None::<FetchError>);
 
+                        let abort_controller = match web_sys::AbortController::new() {
+                            Ok(controller) => Rc::new(controller),
+                            Err(abort_controller_error) => {
+                                error.set(Some(FetchError::UnknownError(format!("{abort_controller_error:?}"))));
+
+                                return #hook_async_handle_name {
+                                    data,
+                                    loading,
+                                    error,
+                                    trigger: Callback::noop(),
+                                    cancel: Callback::noop(),
+                                };
+                            }
+                        };
+
+                        let abort_signal = Rc::new(abort_controller.signal());
+
                         let trigger = use_callback(client.clone(), {
                             let data = data.clone();
                             let loading = loading.clone();
                             let error = error.clone();
+                            let abort_signal = abort_signal.clone();
 
                             move |params: #method_params_struct_name, client| {
                                 let data = data.clone();
@@ -253,6 +274,7 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                                 let error = error.clone();
                                 let client = client.clone();
                                 let options = options.clone();
+                                let abort_signal = abort_signal.clone();
 
                                 let cache_policy = {
                                     let custom_cache_policy = options.as_ref().and_then(
@@ -303,7 +325,7 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                                                     }
                                                 }
 
-                                                match client.#fetch_method_name(url, params).await {
+                                                match client.#fetch_method_name(url, abort_signal, params).await {
                                                     Ok(res) => {
                                                         match deserialize_response_and_store_cache::<#res>(
                                                             &res,
@@ -339,7 +361,7 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                                                         }
                                                     }
                                                 } else {
-                                                    match client.#fetch_method_name(url, params).await {
+                                                    match client.#fetch_method_name(url, abort_signal, params).await {
                                                         Ok(res) => {
                                                             match deserialize_response_and_store_cache::<#res>(
                                                                 &res,
@@ -365,7 +387,7 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                                             }
                                         }
                                         CachePolicy::NetworkOnly => {
-                                            match client.#fetch_method_name(url, params).await {
+                                            match client.#fetch_method_name(url, abort_signal, params).await {
                                                 Ok(res) => {
                                                     match deserialize_response::<#res>(&res) {
                                                         Ok(res) => {
@@ -400,11 +422,16 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                             }
                         });
 
+                        let cancel = use_callback(abort_controller.clone(), |(), controller| {
+                            controller.abort();
+                        });
+
                         #hook_async_handle_name {
                             data,
                             loading,
                             error,
                             trigger,
+                            cancel,
                         }
 
                     }
@@ -431,6 +458,7 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                             data: hook.data,
                             loading: hook.loading,
                             error: hook.error,
+                            cancel: hook.cancel,
                         }
                     }
 
@@ -446,6 +474,7 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                             data: hook.data,
                             loading: hook.loading,
                             error: hook.error,
+                            cancel: hook.cancel,
                         }
                     }
                 });

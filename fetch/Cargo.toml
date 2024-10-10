@@ -1,6 +1,6 @@
 [package]
 name = "yewlish-fetch"
-version = "0.1.3"
+version = "0.1.4"
 edition = "2021"
 authors = ["Kirill Korotkov <personal.gugfug@gmail.com>"]
 license = "MIT OR Apache-2.0"
@@ -24,6 +24,7 @@ wasm-bindgen = "0.2.93"
 wasm-bindgen-futures = "0.4.43"
 serial_test = "3.1.1"
 serde = {version = "1.0.210", features = ["derive"]}
+web-sys = {version = "0.3.70", features = ["AbortController"]}
 
 [lib]
 proc-macro = true
