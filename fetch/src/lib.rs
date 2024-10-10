@@ -519,6 +519,16 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                     }
                 }
 
+                pub fn with_middlewares(mut self, middlewares: Vec<Middleware>) -> Self {
+                    self.middlewares = middlewares;
+                    self
+                }
+
+                pub fn with_cache(mut self, cache: Rc<RefCell<dyn Cacheable>>) -> Self {
+                    self.cache = cache;
+                    self
+                }
+
                 #(#methods)*
             }
 
