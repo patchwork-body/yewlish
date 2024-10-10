@@ -6,6 +6,11 @@ use yewlish_fetch_utils::*;
 use yewlish_fetch::FetchSchema;
 use yewlish_testing_tools::*;
 
+#[derive(Default, Serialize, PartialEq, Clone, Debug)]
+struct TodosQuery {
+    done: Option<u8>,
+}
+
 #[derive(Default, Deserialize, PartialEq, Clone, Debug)]
 struct Todo {
     id: u32,
@@ -36,7 +41,7 @@ struct TodoSlug {
 enum Test {
     #[get("/todos/{id}", slugs = TodoSlug, res = Todo)]
     Todo,
-    #[get("/todos", res = Vec<Todo>)]
+    #[get("/todos", query = TodosQuery, res = Vec<Todo>)]
     Todos,
     #[post("/todos", body = CreateTodo, res = Todo)]
     CreateTodo,
