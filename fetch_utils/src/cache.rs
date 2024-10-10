@@ -3,7 +3,8 @@ use js_sys::Date;
 #[derive(Default, Clone, PartialEq)]
 pub enum CachePolicy {
     #[default]
-    NetworkAndCache,
+    StaleWhileRevalidate,
+    CacheThenNetwork,
     NetworkOnly,
     CacheOnly,
 }
@@ -35,7 +36,7 @@ impl Default for Cache {
 pub trait Cacheable {
     fn policy(&self) -> &CachePolicy;
     fn max_age(&self) -> f64;
-    fn set(&mut self, key: &str, value: &serde_json::Value);
+    fn set(&mut self, key: &str, value: &serde_json::Value, max_age: Option<f64>);
     fn get(&self, key: &str) -> Option<&CacheEntry>;
     fn remove(&mut self, key: &str);
     fn clear(&mut self);
@@ -62,18 +63,24 @@ impl Cacheable for Cache {
         self.max_age
     }
 
-    fn set(&mut self, key: &str, value: &serde_json::Value) {
+    fn set(&mut self, key: &str, value: &serde_json::Value, max_age: Option<f64>) {
         self.entries.insert(
             key.to_string(),
             CacheEntry {
-                timestamp: Date::now(),
+                timestamp: Date::now() + max_age.unwrap_or(self.max_age),
                 data: value.clone(),
             },
         );
     }
 
     fn get(&self, key: &str) -> Option<&CacheEntry> {
-        self.entries.get(key)
+        if let Some(cache_entry) = self.entries.get(key) {
+            if cache_entry.timestamp > js_sys::Date::now() {
+                return Some(cache_entry);
+            }
+        }
+
+        None
     }
 
     fn remove(&mut self, key: &str) {

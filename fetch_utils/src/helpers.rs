@@ -1,7 +1,7 @@
-use crate::{FetchError, HttpMethod, Middleware};
+use crate::{Cacheable, FetchError, HttpMethod, Middleware};
 use serde::Serialize;
 use sha1::{Digest, Sha1};
-use std::sync::Arc;
+use std::{any::TypeId, cell::RefCell, rc::Rc, sync::Arc};
 use wasm_bindgen::JsCast;
 use wasm_bindgen::JsValue;
 use wasm_bindgen_futures::JsFuture;
@@ -156,4 +156,59 @@ pub async fn send_request(request: &Request) -> Result<String, FetchError> {
     .map_err(|error| FetchError::JsonError(format!("{error:?}")))?;
 
     Ok(response_text.as_string().unwrap_or_default())
+}
+
+pub fn deserialize_cached_data<R>(data: &serde_json::Value) -> Result<R, FetchError>
+where
+    R: for<'de> serde::Deserialize<'de>,
+{
+    let result = serde_json::from_value::<R>(data.clone()).map_err(|error| {
+        FetchError::ResponseDeserializationError(format!("{data:?} --- {error:?}"))
+    })?;
+
+    Ok(result)
+}
+
+pub fn deserialize_response<R>(response_text: &str) -> Result<R, FetchError>
+where
+    R: for<'de> serde::Deserialize<'de> + Default + 'static,
+{
+    if response_text.trim().is_empty()
+        && std::any::TypeId::of::<R>() == std::any::TypeId::of::<String>()
+    {
+        return Ok(R::default());
+    }
+
+    let value = serde_json::from_str(response_text).map_err(|error| {
+        FetchError::ResponseDeserializationError(format!("{response_text:?} --- {error:?}"))
+    })?;
+
+    Ok(value)
+}
+
+pub fn deserialize_response_and_store_cache<R>(
+    response_text: &str,
+    cache: &Rc<RefCell<dyn Cacheable>>,
+    cache_key: &str,
+    max_age: Option<f64>,
+) -> Result<R, FetchError>
+where
+    R: for<'de> serde::Deserialize<'de> + Default + 'static,
+{
+    if response_text.trim().is_empty() && TypeId::of::<R>() == TypeId::of::<String>() {
+        return Ok(R::default());
+    }
+
+    let value = serde_json::from_str(response_text).map_err(|error| {
+        FetchError::ResponseDeserializationError(format!("{response_text:?} --- {error:?}"))
+    })?;
+
+    cache.borrow_mut().set(cache_key, &value, max_age);
+
+    // Deserialize the response into the expected type
+    let result = serde_json::from_value::<R>(value).map_err(|error| {
+        FetchError::ResponseDeserializationError(format!("{response_text:?} --- {error:?}"))
+    })?;
+
+    Ok(result)
 }

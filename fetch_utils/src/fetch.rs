@@ -1,14 +1,8 @@
-use std::{any::TypeId, cell::RefCell, rc::Rc, sync::Arc};
-
-use serde::de::Deserialize;
+use crate::helpers::{build_request, build_url, send_request};
 use serde::Serialize;
+use std::sync::Arc;
 use thiserror::Error;
 use web_sys::{Headers, RequestInit};
-
-use crate::{
-    utils::{build_request, build_url, generate_cache_key, send_request},
-    CachePolicy,
-};
 
 /// Enum representing supported HTTP methods.
 #[derive(Debug)]
@@ -83,6 +77,14 @@ pub enum FetchError {
 
 pub type Middleware = Arc<Box<dyn Fn(&mut RequestInit, &mut Headers)>>;
 
+pub struct FetchOptions<S, Q, B> {
+    pub slugs: S,
+    pub query: Q,
+    pub body: B,
+    pub middlewares: Vec<Middleware>,
+}
+
+#[allow(clippy::too_many_lines)]
 /// Asynchronous function to perform an HTTP request using `web_sys` fetch API.
 ///
 /// # Parameters
@@ -95,96 +97,19 @@ pub type Middleware = Arc<Box<dyn Fn(&mut RequestInit, &mut Headers)>>;
 ///
 /// # Returns
 /// A `Result` containing the deserialized response or a `FetchError` error.
-pub async fn fetch<S, Q, B, R>(
+pub async fn fetch<S, Q, B>(
     method: HttpMethod,
     url: &str,
-    slugs: S,
-    query: Q,
-    body: B,
-    middlewares: &Vec<Middleware>,
-    cache: Rc<RefCell<dyn crate::cache::Cacheable>>,
-) -> Result<R, FetchError>
+    options: FetchOptions<S, Q, B>,
+) -> Result<String, FetchError>
 where
     S: Serialize + Default + PartialEq,
     Q: Serialize + Default + PartialEq,
     B: Serialize + Default + PartialEq,
-    R: for<'de> Deserialize<'de> + Default + 'static,
 {
-    let cache_policy = {
-        let cache_ref = cache.borrow();
-        cache_ref.policy().clone()
-    };
+    let url = build_url(url, &options.slugs, options.query)?;
+    let request = build_request(&url, &method, &options.body, &options.middlewares)?;
+    let response_text = send_request(&request).await?;
 
-    match cache_policy {
-        CachePolicy::NetworkAndCache => {
-            let cache_key = generate_cache_key(&method, url, &slugs, &query, &body)?;
-
-            if let Some(cache_entry) = cache.borrow().get(&cache_key) {
-                if cache_entry.timestamp > js_sys::Date::now() {
-                    let result =
-                        serde_json::from_value::<R>(cache_entry.data.clone()).map_err(|error| {
-                            FetchError::ResponseDeserializationError(format!(
-                                "{cache_entry:?} --- {error:?}"
-                            ))
-                        })?;
-
-                    return Ok(result);
-                }
-            }
-
-            let url = build_url(url, &slugs, query)?;
-            let request = build_request(&url, &method, &body, middlewares)?;
-            let response_text = send_request(&request).await?;
-
-            if response_text.trim().is_empty() && TypeId::of::<R>() == TypeId::of::<String>() {
-                return Ok(R::default());
-            }
-
-            let value = serde_json::from_str(&response_text).map_err(|error| {
-                FetchError::ResponseDeserializationError(format!("{response_text:?} --- {error:?}"))
-            })?;
-
-            cache.borrow_mut().set(&cache_key, &value);
-
-            // Deserialize the response into the expected type
-            let result = serde_json::from_value::<R>(value).map_err(|error| {
-                FetchError::ResponseDeserializationError(format!("{response_text:?} --- {error:?}"))
-            })?;
-
-            Ok(result)
-        }
-        CachePolicy::NetworkOnly => {
-            let url = build_url(url, &slugs, query)?;
-            let request = build_request(&url, &method, &body, middlewares)?;
-            let response_text = send_request(&request).await?;
-
-            if response_text.trim().is_empty() && TypeId::of::<R>() == TypeId::of::<String>() {
-                return Ok(R::default());
-            }
-
-            let result = serde_json::from_str::<R>(&response_text).map_err(|error| {
-                FetchError::ResponseDeserializationError(format!("{response_text:?} --- {error:?}"))
-            })?;
-
-            Ok(result)
-        }
-        CachePolicy::CacheOnly => {
-            let cache_key = generate_cache_key(&method, url, &slugs, &query, &body)?;
-
-            if let Some(cache_entry) = cache.borrow().get(&cache_key) {
-                if cache_entry.timestamp > js_sys::Date::now() {
-                    let result =
-                        serde_json::from_value::<R>(cache_entry.data.clone()).map_err(|error| {
-                            FetchError::ResponseDeserializationError(format!(
-                                "{cache_entry:?} --- {error:?}"
-                            ))
-                        })?;
-
-                    return Ok(result);
-                }
-            }
-
-            Ok(R::default())
-        }
-    }
+    Ok(response_text)
 }
