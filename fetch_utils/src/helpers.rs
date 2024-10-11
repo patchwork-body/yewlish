@@ -1,7 +1,7 @@
 use crate::{Cacheable, FetchError, HttpMethod, Middleware};
 use serde::Serialize;
 use sha1::{Digest, Sha1};
-use std::{any::TypeId, cell::RefCell, rc::Rc, sync::Arc};
+use std::{any::TypeId, cell::RefCell, rc::Rc};
 use wasm_bindgen::JsCast;
 use wasm_bindgen::JsValue;
 use wasm_bindgen_futures::JsFuture;
@@ -78,50 +78,68 @@ where
     Ok(url)
 }
 
-pub fn build_request<T>(
+pub async fn build_request<T>(
     url: &Url,
     method: &HttpMethod,
     body: &T,
-    middlewares: &Vec<Middleware>,
+    middlewares: &[Middleware],
     abort_signal: &web_sys::AbortSignal,
 ) -> Result<Request, FetchError>
 where
     T: Serialize + Default + PartialEq,
 {
-    let mut request_init = RequestInit::new();
-    request_init.set_method(method.as_str());
+    let request_init = Rc::new(RefCell::new(RequestInit::new()));
+
+    {
+        let request_init = request_init.borrow_mut();
+        request_init.set_method(method.as_str());
+    }
 
     // Initialize headers
-    let mut headers = Headers::new()
+    let headers = Headers::new()
         .map_err(|error| FetchError::HeaderInitializationError(format!("{error:?}")))?;
+
+    let headers = Rc::new(RefCell::new(headers));
 
     // Set the request body and headers
     if *body != T::default() {
         let body_str = serde_json::to_string(&body)
             .map_err(|error| FetchError::BodySerializationError(error.to_string()))?;
 
-        request_init.set_body(&JsValue::from_str(&body_str));
+        {
+            let request_init = request_init.borrow_mut();
+            request_init.set_body(&JsValue::from_str(&body_str));
 
-        headers
-            .set("Content-Type", "application/json")
-            .map_err(|error| FetchError::HeaderMutationError(format!("{error:?}")))?;
+            let headers = headers.borrow_mut();
+
+            headers
+                .set("Content-Type", "application/json")
+                .map_err(|error| FetchError::HeaderMutationError(format!("{error:?}")))?;
+        }
     }
 
     // Apply middlewares
-    for middleware in middlewares {
-        let middleware = Arc::clone(middleware);
-        middleware(&mut request_init, &mut headers);
+    let middleware_futures: Vec<_> = middlewares
+        .iter()
+        .map(|middleware| middleware(request_init.clone(), headers.clone()))
+        .collect();
+
+    for future in middleware_futures {
+        future.await;
     }
 
     // Attach headers to the request
-    request_init.set_headers(&headers);
-    request_init.set_signal(Some(abort_signal));
+    {
+        let request_init = request_init.borrow_mut();
+        request_init.set_headers(&headers.borrow());
+        request_init.set_signal(Some(abort_signal));
+    }
 
-    let request =
-        Request::new_with_str_and_init(String::from(url.to_string()).as_str(), &request_init)
-            .map_err(|error| {
-                FetchError::HttpError(format!("Failed to create request: {error:?}"))
-            })?;
+    let request = Request::new_with_str_and_init(
+        String::from(url.to_string()).as_str(),
+        &request_init.borrow(),
+    )
+    .map_err(|error| FetchError::HttpError(format!("Failed to create request: {error:?}")))?;
 
     Ok(request)
 }

@@ -186,7 +186,7 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                             slugs: params.slugs,
                             query: params.query,
                             body: params.body,
-                            middlewares: self.middlewares.clone(),
+                            middlewares: self.middlewares.as_slice(),
                             abort_signal: abort_signal.clone(),
                         };
 

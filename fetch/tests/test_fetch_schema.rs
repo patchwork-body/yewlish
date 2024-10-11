@@ -1,10 +1,10 @@
 use schema::{
-    use_todos_with_options, CreateTodoParams, DeleteTodoParams, TestFetchClient,
-    TestFetchClientProvider, TodoParams, TodosOptions, TodosParams, UpdateTodoParams,
+    use_todos, CreateTodoParams, DeleteTodoParams, TestFetchClient, TestFetchClientProvider,
+    TodoParams, TodosParams, UpdateTodoParams,
 };
 use serde::{Deserialize, Serialize};
 use serial_test::serial;
-use std::{rc::Rc, sync::Arc};
+use std::rc::Rc;
 use wasm_bindgen_test::wasm_bindgen_test;
 use yew::prelude::*;
 use yewlish_fetch_utils::*;
@@ -70,11 +70,20 @@ struct TestRootProps {
 
 #[function_component(TestRoot)]
 fn test_root(props: &TestRootProps) -> Html {
-    let client = TestFetchClient::new("http://127.0.0.1:5000").with_middlewares(vec![Arc::new(
-        Box::new(|_, headers| {
-            headers.set("Authorization", "Bearer token").unwrap();
-            headers.set("Content-Type", "application/json").unwrap();
-        }),
+    let client = TestFetchClient::new("http://127.0.0.1:5000").with_middlewares(vec![Rc::new(
+        |_request_init, headers| {
+            let headers = headers.clone();
+
+            // Of course this is a dummy middleware, but it's just for testing purposes
+            let future = async move {
+                headers
+                    .borrow_mut()
+                    .set("Authorization", "Bearer token")
+                    .unwrap();
+            };
+
+            Box::pin(future)
+        },
     )]);
 
     html! {
@@ -89,11 +98,20 @@ fn test_root(props: &TestRootProps) -> Html {
 #[wasm_bindgen_test]
 #[serial]
 async fn test_fetch_schema_client() {
-    let client = TestFetchClient::new("http://127.0.0.1:5000").with_middlewares(vec![Arc::new(
-        Box::new(|_, headers| {
-            headers.set("Authorization", "Bearer token").unwrap();
-            headers.set("Content-Type", "application/json").unwrap();
-        }),
+    let client = TestFetchClient::new("http://127.0.0.1:5000").with_middlewares(vec![Rc::new(
+        |_request_init, headers| {
+            let headers = headers.clone();
+
+            // Of course this is a dummy middleware, but it's just for testing purposes
+            let future = async move {
+                headers
+                    .borrow_mut()
+                    .set("Authorization", "Bearer token")
+                    .unwrap();
+            };
+
+            Box::pin(future)
+        },
     )]);
 
     let abort_controller = web_sys::AbortController::new().unwrap();
@@ -223,8 +241,8 @@ async fn test_fetch_schema_client() {
 pub async fn test_hooks() {
     let t = render!(
         {
-            let query = use_todos_with_options(TodosParams::default(), TodosOptions::default());
-            use_remember_value(query.data);
+            let todos = use_todos(TodosParams::default());
+            use_remember_value((*todos.data).clone().unwrap_or_default().clone());
 
             html! {}
         },
