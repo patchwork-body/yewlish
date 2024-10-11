@@ -1,6 +1,6 @@
 use crate::helpers::{build_request, build_url, send_request};
 use serde::Serialize;
-use std::{rc::Rc, sync::Arc};
+use std::{cell::RefCell, future::Future, pin::Pin, rc::Rc};
 use thiserror::Error;
 use web_sys::{Headers, RequestInit};
 
@@ -75,13 +75,15 @@ pub enum FetchError {
     UnknownError(String),
 }
 
-pub type Middleware = Arc<Box<dyn Fn(&mut RequestInit, &mut Headers)>>;
+pub type MiddlewareFuture = Pin<Box<dyn Future<Output = ()>>>;
+pub type Middleware =
+    Rc<dyn Fn(Rc<RefCell<RequestInit>>, Rc<RefCell<Headers>>) -> MiddlewareFuture>;
 
-pub struct FetchOptions<S, Q, B> {
+pub struct FetchOptions<'a, S, Q, B> {
     pub slugs: S,
     pub query: Q,
     pub body: B,
-    pub middlewares: Vec<Middleware>,
+    pub middlewares: &'a [Middleware],
     pub abort_signal: Rc<web_sys::AbortSignal>,
 }
 
@@ -98,10 +100,10 @@ pub struct FetchOptions<S, Q, B> {
 ///
 /// # Returns
 /// A `Result` containing the deserialized response or a `FetchError` error.
-pub async fn fetch<S, Q, B>(
+pub async fn fetch<'a, S, Q, B>(
     method: HttpMethod,
     url: &str,
-    options: FetchOptions<S, Q, B>,
+    options: FetchOptions<'a, S, Q, B>,
 ) -> Result<String, FetchError>
 where
     S: Serialize + Default + PartialEq,
@@ -109,13 +111,16 @@ where
     B: Serialize + Default + PartialEq,
 {
     let url = build_url(url, &options.slugs, options.query)?;
+
     let request = build_request(
         &url,
         &method,
         &options.body,
-        &options.middlewares,
+        options.middlewares,
         &options.abort_signal,
-    )?;
+    )
+    .await?;
+
     let response_text = send_request(&request).await?;
 
     Ok(response_text)
