@@ -274,6 +274,7 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                             let loading = loading.clone();
                             let error = error.clone();
                             let abort_signal = abort_signal.clone();
+                            let options = options.clone();
 
                             move |params: #method_params_struct_name, client| {
                                 let data = data.clone();
@@ -315,8 +316,6 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                                     }
                                 };
 
-                                let on_success = options.as_ref().and_then(|o| o.on_success.clone()).unwrap_or_else(Callback::noop);
-                                let on_error = options.as_ref().and_then(|o| o.on_error.clone()).unwrap_or_else(Callback::noop);
 
                                 spawn_local(async move {
                                     loading.set(true);
@@ -427,16 +426,22 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                                         }
                                     }
 
-                                    if let Some(error) = error.as_ref() {
-                                        on_error.emit(error.clone());
-                                    }
-
-                                    if let Some(data) = data.as_ref() {
-                                        on_success.emit(data.clone());
-                                    }
-
                                     loading.set(false);
                                 });
+                            }
+                        });
+
+                        use_effect_with((error.clone(), options.clone()), |(error, options)| {
+                            if let Some(error) = (**error).as_ref() {
+                                let on_error = options.as_ref().and_then(|o| o.on_error.clone()).unwrap_or_else(Callback::noop);
+                                on_error.emit(error.clone());
+                            }
+                        });
+
+                        use_effect_with((data.clone(), options.clone()), |(data, options)| {
+                            if let Some(data) = (**data).as_ref() {
+                                let on_success = options.as_ref().and_then(|o| o.on_success.clone()).unwrap_or_else(Callback::noop);
+                                on_success.emit(data.clone());
                             }
                         });
 

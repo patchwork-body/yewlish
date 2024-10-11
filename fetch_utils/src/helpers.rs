@@ -157,7 +157,7 @@ pub async fn send_request(request: &Request) -> Result<String, FetchError> {
         .dyn_into()
         .map_err(|error| FetchError::InvalidResponse(format!("Response error: {error:?}")))?;
 
-    // Check if the response is OK (status in the range 200-299)
+    // Check if the response isn't OK (OK is a status in the range 200-299)
     if !response.ok() {
         return Err(FetchError::HttpError(format!(
             "Http Error: {}: {}",

@@ -45,7 +45,7 @@ impl From<&str> for HttpMethod {
     }
 }
 
-#[derive(Error, Debug, Clone)]
+#[derive(Error, Debug, Clone, PartialEq)]
 pub enum FetchError {
     #[error("Url parsing error: {0}")]
     UrlParsingError(String),
