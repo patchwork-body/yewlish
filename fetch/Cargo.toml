@@ -15,7 +15,7 @@ heck = "0.5.0"
 quote = "1.0.37"
 syn = "2.0.79"
 yew = "0.21.0"
-yewlish-fetch-utils = "0.2.0"
+yewlish-fetch-utils = "0.2.1"
 
 [dev-dependencies]
 yewlish-testing-tools = "1.0.0"
