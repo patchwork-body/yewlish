@@ -18,7 +18,9 @@ gloo-utils = "0.2.0"
 
 [dev-dependencies]
 wasm-bindgen-test = "0.3.43"
-tokio = {version = "1.40.0", features = ["full"]}
+
+[target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
+tokio = { version = "1.40.0", features = ["rt", "rt-multi-thread", "macros"] }
 
 [lib]
 crate-type = ["cdylib", "rlib"]
