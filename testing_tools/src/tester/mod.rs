@@ -19,9 +19,6 @@ pub type ResultRef = Rc<RefCell<Option<Box<dyn Any>>>>;
 /// This struct provides methods to create a new `HookTester` instance and retrieve the inner value
 /// of a specified type. It leverages Rust's reference counting and interior mutability to manage
 /// the inner value safely across multiple references.
-///
-/// # Examples
-///
 /// ```
 /// use std::cell::RefCell;
 /// use std::rc::Rc;
@@ -52,9 +49,6 @@ impl HookTester {
     /// # Returns
     ///
     /// A new instance of `HookTester`.
-    ///
-    /// # Examples
-    ///
     /// ```
     /// use std::cell::RefCell;
     /// use std::rc::Rc;
@@ -81,9 +75,6 @@ impl HookTester {
     /// # Panics
     ///
     /// This function will panic if the inner value cannot be downcast to the specified type `T`.
-    ///
-    /// # Examples
-    ///
     /// ```
     /// use std::cell::RefCell;
     /// use std::rc::Rc;
@@ -118,9 +109,6 @@ impl HookTester {
     /// # Arguments
     ///
     /// * `action` - A closure representing the action to be performed. The closure should not take any arguments and should not return any value.
-    ///
-    /// # Examples
-    ///
     /// ```
     /// use std::cell::RefCell;
     /// use std::rc::Rc;
@@ -301,7 +289,14 @@ impl Query for Tester {
     }
 
     fn query_all_by_role(&self, role: &str) -> Vec<Self> {
-        self.query_all_by_selector(&format!("[role='{role}']"))
+        let implicit_selector = self.build_role_query(role);
+        let explicit_selector = format!("[role='{role}']");
+
+        if implicit_selector.is_empty() {
+            return self.query_all_by_selector(&explicit_selector);
+        }
+
+        self.query_all_by_selector(&format!("{implicit_selector}, {explicit_selector}"))
     }
 
     fn query_all_by_text(&self, text: &str) -> Vec<Self> {
@@ -2220,6 +2215,22 @@ mod tests {
         .await;
 
         assert!(t.query_by_role("listitem").exists());
+    }
+
+    #[wasm_bindgen_test]
+    async fn test_query_all_by_role() {
+        let t = render!({
+            html! {
+                <ul>
+                    <li>{"Hello"}</li>
+                    <li>{"World"}</li>
+                </ul>
+            }
+        })
+        .await;
+
+        let items = t.query_all_by_role("listitem");
+        assert_eq!(items.len(), 2);
     }
 
     #[wasm_bindgen_test]
