@@ -8,14 +8,14 @@
 /// use yew::prelude::*;
 ///
 /// #[derive(Clone, Properties, PartialEq)]
-/// struct Props {
-///     text: &'static str,
+/// struct TestProps {
+///     text: AttrValue,
 /// }
 ///
-/// #[function_component(TestComponent)]
-/// fn test_component(props: &Props) -> Html {
+/// #[function_component(Test)]
+/// fn test(props: &TestProps) -> Html {
 ///     html! {
-///         <div>{props.text}</div>
+///         <div>{props.text.clone()}</div>
 ///     }
 /// }
 ///
@@ -31,7 +31,7 @@
 ///     async fn test_render() {
 ///         let t = render!({
 ///             html! {
-///                 <TestComponent text="Hello, World!" />
+///                 <Test text={"Hello, World!"} />
 ///             }
 ///         })
 ///         .await;

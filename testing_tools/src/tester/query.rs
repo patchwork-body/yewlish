@@ -190,7 +190,7 @@ pub trait Query {
     /// An instance of the implementing type representing the queried element.
     fn query_all_by_role(&self, role: &str) -> Vec<Self>
     where
-        Self: Sized;
+        Self: std::marker::Sized;
 
     /// Queries all elements by their text content.
     ///
@@ -203,7 +203,7 @@ pub trait Query {
     /// A `Vec` containing instances of the implementing type representing the queried elements.
     fn query_all_by_text(&self, text: &str) -> Vec<Self>
     where
-        Self: Sized;
+        Self: std::marker::Sized;
 
     /// Queries all elements by their test ID.
     ///
@@ -216,5 +216,5 @@ pub trait Query {
     /// A `Vec` containing instances of the implementing type representing the queried elements.
     fn query_all_by_testid(&self, testid: &str) -> Vec<Self>
     where
-        Self: Sized;
+        Self: std::marker::Sized;
 }
