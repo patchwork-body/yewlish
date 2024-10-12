@@ -1,65 +1,64 @@
-use schema::{
-    use_todos, CreateTodoParams, DeleteTodoParams, TestFetchClient, TestFetchClientProvider,
-    TodoParams, TodosParams, UpdateTodoParams,
-};
+use schema::*;
 use serde::{Deserialize, Serialize};
-use serial_test::serial;
 use std::rc::Rc;
-use wasm_bindgen_test::wasm_bindgen_test;
 use yew::prelude::*;
 use yewlish_fetch_utils::*;
 use yewlish_testing_tools::*;
 
-#[derive(Default, Serialize, PartialEq, Clone, Debug)]
-struct TodosQuery {
-    done: Option<u8>,
+#[derive(Default, Serialize, PartialEq, Clone)]
+struct PostSlugs {
+    id: u32,
 }
 
-#[derive(Default, Deserialize, PartialEq, Clone, Debug)]
-struct Todo {
+#[derive(Default, Serialize, PartialEq, Clone)]
+struct GetPostCommentsQuery {
+    id: u32,
+}
+
+#[derive(Default, Deserialize, Debug, Serialize, PartialEq, Clone)]
+struct PostBody {
     id: u32,
     title: String,
-    description: Option<String>,
-    done: u8,
+    body: String,
+    #[serde(rename = "userId")]
+    user_id: u32,
 }
 
-#[derive(Default, Serialize, PartialEq, Clone)]
-struct CreateTodo {
-    title: String,
-    description: Option<String>,
-}
-
-#[derive(Default, Serialize, PartialEq, Clone)]
-struct UpdateTodo {
-    title: Option<String>,
-    description: Option<String>,
-    done: Option<u8>,
-}
-
-#[derive(Default, Serialize, PartialEq, Clone)]
-struct TodoSlug {
+#[derive(Default, Debug, Deserialize, Serialize, PartialEq, Clone)]
+struct CommentBody {
     id: u32,
+    name: String,
+    email: String,
+    body: String,
+    #[serde(rename = "postId")]
+    post_id: u32,
 }
 
 mod schema {
     use yewlish_fetch::FetchSchema;
 
     #[derive(FetchSchema)]
-    pub enum Test {
-        #[get("/todos/{id}", slugs = TodoSlug, res = Todo)]
-        Todo,
-        #[get("/todos", query = TodosQuery, res = Vec<Todo>)]
-        Todos,
-        #[post("/todos", body = CreateTodo, res = Todo)]
-        CreateTodo,
-        #[put("/todos/{id}", slugs = TodoSlug, body = UpdateTodo, res = Todo)]
-        UpdateTodo,
-        #[delete("/todos/{id}", slugs = TodoSlug, res = String)]
-        DeleteTodo,
+    pub enum Api {
+        #[get("/posts", res = Vec<PostBody>)]
+        GetPosts,
+        #[get("/posts/{id}", slugs = PostSlugs, res = PostBody)]
+        GetPost,
+        #[get("/posts/{id}/comments", slugs = PostSlugs, res = Vec<CommentBody>)]
+        GetPostComments,
+        #[get("/comments", query = GetPostCommentsQuery, res = Vec<CommentBody>)]
+        GetComments,
+        #[post("/posts", body = PostBody)]
+        CreatePost,
+        #[put("/posts/{id}", slugs = PostSlugs, body = PostBody)]
+        UpdatePost,
+        #[patch("/posts/{id}", slugs = PostSlugs, body = PostBody)]
+        PatchPost,
+        #[delete("/posts/{id}", slugs = PostSlugs)]
+        DeletePost,
     }
 }
 
-pub use schema::Test;
+pub use schema::Api;
 
 wasm_bindgen_test::wasm_bindgen_test_configure!(run_in_browser);
 
@@ -70,185 +69,369 @@ struct TestRootProps {
 
 #[function_component(TestRoot)]
 fn test_root(props: &TestRootProps) -> Html {
-    let client = TestFetchClient::new("http://127.0.0.1:5000").with_middlewares(vec![Rc::new(
-        |_request_init, headers| {
-            let headers = headers.clone();
+    let client =
+        ApiFetchClient::new("https://jsonplaceholder.typicode.com").with_middlewares(vec![
+            Rc::new(|_request_init, headers| {
+                let headers = headers.clone();
 
-            // Of course this is a dummy middleware, but it's just for testing purposes
-            let future = async move {
-                headers
-                    .borrow_mut()
-                    .set("Authorization", "Bearer token")
-                    .unwrap();
-            };
+                // Of course this is a dummy middleware, but it's just for testing purposes
+                let future = async move {
+                    headers
+                        .borrow_mut()
+                        .set("Authorization", "Bearer token")
+                        .unwrap();
+                };
 
-            Box::pin(future)
-        },
-    )]);
+                Box::pin(future)
+            }),
+        ]);
 
     html! {
-        <TestFetchClientProvider client={client}>
+        <ApiFetchClientProvider client={client}>
             <div class="test-root">
                 {for props.children.iter()}
             </div>
-        </TestFetchClientProvider>
+        </ApiFetchClientProvider>
     }
 }
 
-#[wasm_bindgen_test]
-#[serial]
-async fn test_fetch_schema_client() {
-    let client = TestFetchClient::new("http://127.0.0.1:5000").with_middlewares(vec![Rc::new(
-        |_request_init, headers| {
-            let headers = headers.clone();
+#[cfg(test)]
+mod test {
+    use crate::*;
+    use wasm_bindgen_test::wasm_bindgen_test;
 
-            // Of course this is a dummy middleware, but it's just for testing purposes
-            let future = async move {
-                headers
-                    .borrow_mut()
-                    .set("Authorization", "Bearer token")
-                    .unwrap();
-            };
+    #[wasm_bindgen_test]
+    async fn test_get_request() {
+        let client = ApiFetchClient::new("https://jsonplaceholder.typicode.com");
 
-            Box::pin(future)
-        },
-    )]);
+        let abort_controller = web_sys::AbortController::new().unwrap();
+        let signal = Rc::new(abort_controller.signal());
 
-    let abort_controller = web_sys::AbortController::new().unwrap();
-    let signal = Rc::new(abort_controller.signal());
+        let result = &client
+            .get_posts(
+                client.prepare_get_posts_url(),
+                signal.clone(),
+                GetPostsParams::default(),
+            )
+            .await;
 
-    let result = &client
-        .todos(
-            client.prepare_todos_url(),
-            signal.clone(),
-            TodosParams::default(),
-        )
-        .await;
+        assert!(result.is_ok());
 
-    assert!(result.is_ok());
-    let result: Vec<Todo> = deserialize_response(result.as_ref().unwrap().as_str()).unwrap();
-    assert_eq!(result, vec![]);
+        let result: Vec<PostBody> =
+            deserialize_response(result.as_ref().unwrap().as_str()).unwrap();
+        assert_eq!(result.len(), 100);
+    }
 
-    let result = client
-        .create_todo(
-            client.prepare_create_todo_url(),
-            signal.clone(),
-            CreateTodoParams {
-                body: CreateTodo {
-                    title: "Test".to_string(),
-                    description: None,
+    #[wasm_bindgen_test]
+    async fn test_get_request_with_slugs() {
+        let client = ApiFetchClient::new("https://jsonplaceholder.typicode.com");
+
+        let abort_controller = web_sys::AbortController::new().unwrap();
+        let signal = Rc::new(abort_controller.signal());
+
+        let result = &client
+            .get_post(
+                client.prepare_get_post_url(),
+                signal.clone(),
+                GetPostParams {
+                    slugs: PostSlugs { id: 1 },
+                    ..Default::default()
                 },
-                ..Default::default()
-            },
-        )
-        .await;
+            )
+            .await;
 
-    assert!(result.is_ok());
-    let todo: Todo = deserialize_response(result.unwrap().as_str()).unwrap();
+        assert!(result.is_ok());
 
-    assert_eq!(todo.title, "Test".to_string());
-    assert_eq!(todo.description, None);
-    assert!(todo.done == 0);
+        let result: PostBody = deserialize_response(result.as_ref().unwrap().as_str()).unwrap();
+        assert_eq!(result.id, 1);
+    }
 
-    let result = &client
-        .todos(
-            client.prepare_todos_url(),
-            signal.clone(),
-            TodosParams::default(),
-        )
-        .await;
+    #[wasm_bindgen_test]
+    async fn test_get_request_with_query() {
+        let client = ApiFetchClient::new("https://jsonplaceholder.typicode.com");
 
-    assert!(result.is_ok());
-    let result: Vec<Todo> = deserialize_response(result.as_ref().unwrap().as_str()).unwrap();
-    assert_eq!(result.len(), 1);
-    assert_eq!(result[0], todo);
+        let abort_controller = web_sys::AbortController::new().unwrap();
+        let signal = Rc::new(abort_controller.signal());
 
-    let result = client
-        .todo(
-            client.prepare_todo_url(),
-            signal.clone(),
-            TodoParams {
-                slugs: TodoSlug { id: todo.id },
-                ..Default::default()
-            },
-        )
-        .await;
-
-    assert!(result.is_ok());
-    let result: Todo = deserialize_response(result.unwrap().as_str()).unwrap();
-    assert_eq!(result, todo);
-
-    let result = client
-        .update_todo(
-            client.prepare_update_todo_url(),
-            signal.clone(),
-            UpdateTodoParams {
-                slugs: TodoSlug { id: todo.id },
-                body: UpdateTodo {
-                    title: Some("Test2".to_string()),
-                    description: Some("Test".to_string()),
-                    done: Some(1),
+        let result = &client
+            .get_post_comments(
+                client.prepare_get_comments_url(),
+                signal.clone(),
+                GetPostCommentsParams {
+                    slugs: PostSlugs { id: 1 },
+                    ..Default::default()
                 },
-                ..Default::default()
+            )
+            .await;
+
+        assert!(result.is_ok());
+
+        let result: Vec<CommentBody> =
+            deserialize_response(result.as_ref().unwrap().as_str()).unwrap();
+        assert_eq!(result.len(), 500);
+    }
+
+    #[wasm_bindgen_test]
+    async fn test_post_request() {
+        let client = ApiFetchClient::new("https://jsonplaceholder.typicode.com");
+
+        let abort_controller = web_sys::AbortController::new().unwrap();
+        let signal = Rc::new(abort_controller.signal());
+
+        let result = client
+            .create_post(
+                client.prepare_create_post_url(),
+                signal.clone(),
+                CreatePostParams {
+                    body: PostBody {
+                        id: 101,
+                        title: "Test".to_string(),
+                        body: "Test".to_string(),
+                        user_id: 1,
+                    },
+                    ..Default::default()
+                },
+            )
+            .await;
+
+        assert!(result.is_ok());
+
+        let result: PostBody = deserialize_response(result.unwrap().as_str()).unwrap();
+        assert_eq!(result.id, 101);
+        assert_eq!(result.title, "Test".to_string());
+        assert_eq!(result.body, "Test".to_string());
+        assert_eq!(result.user_id, 1);
+    }
+
+    #[wasm_bindgen_test]
+    async fn test_put_request() {
+        let client = ApiFetchClient::new("https://jsonplaceholder.typicode.com");
+
+        let abort_controller = web_sys::AbortController::new().unwrap();
+        let signal = Rc::new(abort_controller.signal());
+
+        let result = client
+            .update_post(
+                client.prepare_update_post_url(),
+                signal.clone(),
+                UpdatePostParams {
+                    slugs: PostSlugs { id: 1 },
+                    body: PostBody {
+                        id: 1,
+                        title: "Test".to_string(),
+                        body: "Test".to_string(),
+                        user_id: 1,
+                    },
+                    ..Default::default()
+                },
+            )
+            .await;
+
+        assert!(result.is_ok());
+
+        let result: PostBody = deserialize_response(result.unwrap().as_str()).unwrap();
+        assert_eq!(result.id, 1);
+        assert_eq!(result.title, "Test".to_string());
+        assert_eq!(result.body, "Test".to_string());
+        assert_eq!(result.user_id, 1);
+    }
+
+    #[wasm_bindgen_test]
+    async fn test_patch_request() {
+        let client = ApiFetchClient::new("https://jsonplaceholder.typicode.com");
+
+        let abort_controller = web_sys::AbortController::new().unwrap();
+        let signal = Rc::new(abort_controller.signal());
+
+        let result = client
+            .patch_post(
+                client.prepare_patch_post_url(),
+                signal.clone(),
+                PatchPostParams {
+                    slugs: PostSlugs { id: 1 },
+                    body: PostBody {
+                        id: 1,
+                        title: "Test".to_string(),
+                        body: "Test".to_string(),
+                        user_id: 1,
+                    },
+                    ..Default::default()
+                },
+            )
+            .await;
+
+        assert!(result.is_ok());
+
+        let result: PostBody = deserialize_response(result.unwrap().as_str()).unwrap();
+        assert_eq!(result.id, 1);
+        assert_eq!(result.title, "Test".to_string());
+        assert_eq!(result.body, "Test".to_string());
+        assert_eq!(result.user_id, 1);
+    }
+
+    #[wasm_bindgen_test]
+    async fn test_delete_request() {
+        let client = ApiFetchClient::new("https://jsonplaceholder.typicode.com");
+
+        let abort_controller = web_sys::AbortController::new().unwrap();
+        let signal = Rc::new(abort_controller.signal());
+
+        let result = client
+            .delete_post(
+                client.prepare_delete_post_url(),
+                signal.clone(),
+                DeletePostParams {
+                    slugs: PostSlugs { id: 1 },
+                    ..Default::default()
+                },
+            )
+            .await;
+
+        assert!(result.is_ok());
+    }
+
+    #[wasm_bindgen_test]
+    async fn test_middleware() {
+        let client =
+            ApiFetchClient::new("https://jsonplaceholder.typicode.com").with_middlewares(vec![
+                Rc::new(|_request_init, headers| {
+                    let headers = headers.clone();
+
+                    // Of course this is a dummy middleware, but it's just for testing purposes
+                    let future = async move {
+                        headers
+                            .borrow_mut()
+                            .set("Authorization", "Bearer token")
+                            .unwrap();
+                    };
+
+                    Box::pin(future)
+                }),
+            ]);
+
+        let abort_controller = web_sys::AbortController::new().unwrap();
+        let signal = Rc::new(abort_controller.signal());
+
+        let result = &client
+            .get_posts(
+                client.prepare_get_posts_url(),
+                signal.clone(),
+                GetPostsParams::default(),
+            )
+            .await;
+
+        assert!(result.is_ok());
+
+        let result: Vec<PostBody> =
+            deserialize_response(result.as_ref().unwrap().as_str()).unwrap();
+        assert_eq!(result.len(), 100);
+    }
+
+    #[wasm_bindgen_test]
+    async fn test_hook() {
+        let t = render!(
+            {
+                let posts = use_get_posts(GetPostsParams::default());
+
+                use_remember_value((*posts.data).clone());
+
+                html! {
+                    <ul>
+                        {for (*posts.data).clone().unwrap_or_default().iter().map(|post| html! {
+                            <li key={post.id}>
+                                <p>{&post.title}</p>
+                                <p>{&post.body}</p>
+                            </li>
+                        })}
+                    </ul>
+                }
             },
+            TestRoot
         )
         .await;
 
-    assert!(result.is_ok());
-    let todo: Todo = deserialize_response(result.unwrap().as_str()).unwrap();
-    assert_eq!(todo.title, "Test2".to_string());
-    assert_eq!(todo.description, Some("Test".to_string()));
-    assert!(todo.done == 1);
-
-    let result = client
-        .todos(
-            client.prepare_todos_url(),
-            signal.clone(),
-            TodosParams::default(),
-        )
+        t.wait_for(1000.0, || {
+            let post_items = t.query_all_by_role("listitem");
+            post_items.len() == 100
+        })
         .await;
 
-    assert!(result.is_ok());
-    let result: Vec<Todo> = deserialize_response(result.unwrap().as_str()).unwrap();
-    assert_eq!(result.len(), 1);
-    assert_eq!(result[0], todo);
+        let post_items = t.query_all_by_role("listitem");
+        assert_eq!(post_items.len(), 100);
 
-    let result = client
-        .delete_todo(
-            client.prepare_delete_todo_url(),
-            signal.clone(),
-            DeleteTodoParams {
-                slugs: TodoSlug { id: todo.id },
-                ..Default::default()
+        assert_eq!(
+            t.get_state::<Option<Vec<PostBody>>>()
+                .unwrap_or_default()
+                .len(),
+            100
+        );
+    }
+
+    #[wasm_bindgen_test]
+    async fn test_hook_async() {
+        let t = render!(
+            {
+                let posts = use_get_posts_async();
+
+                use_remember_value((*posts.data).clone());
+
+                if let Some(error) = (*posts.error).clone() {
+                    return html! { format!("Error fetching posts: {error:?}") }
+                }
+
+                html! {
+                    <>
+                        <button onclick={Callback::from(move |_event: MouseEvent| {
+                            posts.trigger.emit(GetPostsParams::default());
+                        })}>{ "Fetch" }</button>
+
+                        {if *posts.loading {
+                            html! { "Loading..." }
+                        } else {
+                            html! {
+                                <ul>
+                                    {for (*posts.data).clone().unwrap_or_default().iter().map(|post| html! {
+                                        <li key={post.id}>
+                                            <p>{&post.title}</p>
+                                            <p>{&post.body}</p>
+                                        </li>
+                                    })}
+                                </ul>
+                            }
+                        }}
+                    </>
+                }
             },
+            TestRoot
         )
         .await;
 
-    assert!(result.is_ok());
+        let button = t.query_by_role("button");
 
-    let result = client
-        .todos(client.prepare_todos_url(), signal, TodosParams::default())
+        assert_eq!(t.query_all_by_role("listitem").len(), 0);
+
+        assert_eq!(
+            t.get_state::<Option<Vec<PostBody>>>()
+                .unwrap_or_default()
+                .len(),
+            0
+        );
+
+        button.click().await;
+
+        t.wait_for(1000.0, || {
+            let post_items = t.query_all_by_role("listitem");
+            post_items.len() == 100
+        })
         .await;
 
-    assert!(result.is_ok());
+        assert_eq!(t.query_all_by_role("listitem").len(), 100);
 
-    let result: Vec<Todo> = deserialize_response(result.unwrap().as_str()).unwrap();
-    assert_eq!(result.len(), 0);
-}
-
-#[wasm_bindgen_test]
-#[serial]
-pub async fn test_hooks() {
-    let t = render!(
-        {
-            let todos = use_todos(TodosParams::default());
-            use_remember_value((*todos.data).clone().unwrap_or_default().clone());
-
-            html! {}
-        },
-        TestRoot
-    )
-    .await;
-
-    assert_eq!(t.get_state::<Vec<Todo>>().len(), 0);
+        assert_eq!(
+            t.get_state::<Option<Vec<PostBody>>>()
+                .unwrap_or_default()
+                .len(),
+            100
+        );
+    }
 }
