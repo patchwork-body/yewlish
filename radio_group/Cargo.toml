@@ -1,12 +1,13 @@
 [package]
 name = "yewlish-radio-group"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2021"
 authors = ["Kirill Korotkov <personal.gugfug@gmail.com>"]
 license = "MIT OR Apache-2.0"
 description = "A Yew component that represents a radio buttons."
 repository = "https://github.com/patchwork-body/yewlish.git"
 documentation = "https://docs.rs/yewlish-radio-group"
+readme = "README.md"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -15,3 +16,8 @@ yew = "0.21.0"
 yewlish-utils = "0.1.5"
 yewlish-roving-focus = "0.1.0"
 yewlish-attr-passer = "0.1.2"
+
+[dev-dependencies]
+wasm-bindgen-futures = "0.4.45"
+wasm-bindgen-test = "0.3.45"
+yewlish-testing-tools = "1.2.0"
