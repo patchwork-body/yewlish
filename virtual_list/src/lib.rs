@@ -19,11 +19,13 @@ pub fn virtual_list(props: &VirtualListProps) -> Html {
     let viewport_height = props.viewport_height;
     let render_item = &props.render_item;
 
-    let total_height = total_items as f64 * item_height;
+    #[allow(clippy::cast_precision_loss)]
+    let total_height = (total_items as f64) * item_height;
     let first_visible = (*scroll_top / item_height).floor() as usize;
     let visible_count = (viewport_height / item_height).ceil() as usize + 1;
     let last_visible = (first_visible + visible_count).min(total_items);
 
+    #[allow(clippy::cast_precision_loss)]
     let padding_top = first_visible as f64 * item_height;
 
     let visible_items = (first_visible..last_visible)
@@ -42,11 +44,11 @@ pub fn virtual_list(props: &VirtualListProps) -> Html {
 
     html! {
         <div
-            style={format!("height: {}px; overflow-y: auto; position: relative;", viewport_height)}
+            style={format!("height: {viewport_height}px; overflow-y: auto; position: relative;")}
             {onscroll}
         >
-            <div style={format!("height: {}px; position: relative;", total_height)}>
-                <div style={format!("transform: translateY({}px);", padding_top)}>
+            <div style={format!("height: {total_height}px; position: relative;")}>
+                <div style={format!("transform: translateY({padding_top}px);")}>
                     { visible_items }
                 </div>
             </div>
