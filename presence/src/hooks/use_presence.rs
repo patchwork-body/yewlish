@@ -91,18 +91,12 @@ pub fn use_presence(present: bool, node_ref: NodeRef) -> Rc<bool> {
     use_effect_with(
         (node_ref.clone(), styles_ref.clone(), state.clone()),
         |(node_ref, styles_ref, _)| {
-            let window = match web_sys::window() {
-                Some(window) => window,
-                None => return,
-            };
-
-            if let Some(node) = node_ref.cast::<web_sys::HtmlElement>() {
-                let styles = match window.get_computed_style(&node) {
-                    Ok(Some(styles)) => styles,
-                    _ => return,
-                };
-
-                styles_ref.replace(styles.into());
+            if let Some(window) = web_sys::window() {
+                if let Some(node) = node_ref.cast::<web_sys::HtmlElement>() {
+                    if let Ok(styles) = window.get_computed_style(&node) {
+                        styles_ref.replace(styles);
+                    }
+                }
             }
         },
     );
@@ -136,58 +130,48 @@ pub fn use_presence(present: bool, node_ref: NodeRef) -> Rc<bool> {
             let node = node_ref.cast::<web_sys::HtmlElement>();
 
             let animationstart_handler = Closure::wrap(Box::new(move |event: Event| {
-                let window = match web_sys::window() {
-                    Some(window) => window,
-                    None => return,
+                let Some(window) = web_sys::window() else {
+                    return;
                 };
 
-                let target = match event.target() {
-                    Some(target) => target,
-                    None => return,
+                let Some(target) = event.target() else {
+                    return;
                 };
 
-                let element = match target.dyn_ref::<web_sys::HtmlElement>() {
-                    Some(element) => element,
-                    None => return,
+                let Some(element) = target.dyn_ref::<web_sys::HtmlElement>() else {
+                    return;
                 };
 
-                let style = match window.get_computed_style(element) {
-                    Ok(Some(style)) => style,
-                    _ => return,
+                let Ok(Some(style)) = window.get_computed_style(element) else {
+                    return;
                 };
 
-                let animation_name = match style.get_property_value("animation-name") {
-                    Ok(animation_name) => animation_name,
-                    Err(_) => return,
+                let Ok(animation_name) = style.get_property_value("animation-name") else {
+                    return;
                 };
 
                 current_animation_name.replace(animation_name.into());
             }) as Box<dyn FnMut(Event)>);
 
             let animationend_handler = Closure::wrap(Box::new(move |event: Event| {
-                let window = match web_sys::window() {
-                    Some(window) => window,
-                    None => return,
+                let Some(window) = web_sys::window() else {
+                    return;
                 };
 
-                let target = match event.target() {
-                    Some(target) => target,
-                    None => return,
+                let Some(target) = event.target() else {
+                    return;
                 };
 
-                let element = match target.dyn_ref::<web_sys::HtmlElement>() {
-                    Some(element) => element,
-                    None => return,
+                let Some(element) = target.dyn_ref::<web_sys::HtmlElement>() else {
+                    return;
                 };
 
-                let style = match window.get_computed_style(element) {
-                    Ok(Some(style)) => style,
-                    _ => return,
+                let Ok(Some(style)) = window.get_computed_style(element) else {
+                    return;
                 };
 
-                let animation_name = match style.get_property_value("animation-name") {
-                    Ok(animation_name) => animation_name,
-                    Err(_) => return,
+                let Ok(animation_name) = style.get_property_value("animation-name") else {
+                    return;
                 };
 
                 prev_animation_name.replace(animation_name.into());

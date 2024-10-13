@@ -1,6 +1,6 @@
 [package]
 name = "yewlish-presence"
-version = "0.1.2"
+version = "0.1.3"
 edition = "2021"
 authors = ["Kirill Korotkov <personal.gugfug@gmail.com>"]
 license = "MIT OR Apache-2.0"
@@ -12,6 +12,6 @@ documentation = "https://docs.rs/yewlish-presence"
 
 [dependencies]
 log = "0.4.22"
-web-sys = {version = "0.3.70", features = ["CssAnimation", "CssStyleDeclaration", "HtmlElement", "Element", "Window"]}
+web-sys = {version = "0.3.72", features = ["CssAnimation", "CssStyleDeclaration", "HtmlElement", "Element", "Window"]}
 yew = "0.21.0"
-yewlish-attr-passer = "0.1.2"
+yewlish-attr-passer = "0.1.3"
