@@ -156,6 +156,7 @@ pub fn node_list_to_vec(node_list: &web_sys::NodeList) -> Vec<web_sys::Element> 
         .collect()
 }
 
+#[derive(Clone)]
 pub struct Tester {
     root: Option<web_sys::Element>,
     state: HookTester,
@@ -370,6 +371,26 @@ impl TesterEvent for Tester {
                     .dyn_ref::<web_sys::EventTarget>()
                     .expect("Failed to cast element to EventTarget")
                     .dispatch_event(&keydown_event);
+
+                Box::pin(async move {
+                    sleep(Duration::ZERO).await;
+                    self
+                })
+            }
+            None => Box::pin(async move {
+                sleep(Duration::ZERO).await;
+                self
+            }),
+        }
+    }
+
+    fn focus(self) -> Pin<Box<dyn Future<Output = Self>>> {
+        match &self.root {
+            Some(root) => {
+                root.dyn_ref::<web_sys::HtmlElement>()
+                    .expect("Failed to cast element to HtmlElement")
+                    .focus()
+                    .expect("Failed to focus element");
 
                 Box::pin(async move {
                     sleep(Duration::ZERO).await;
