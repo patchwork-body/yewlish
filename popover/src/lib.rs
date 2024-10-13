@@ -1,4 +1,3 @@
-use yewlish_roving_focus::helpers::get_focusable_element;
 use std::{
     fmt::{Display, Formatter},
     rc::Rc,
@@ -8,6 +7,7 @@ use web_sys::{wasm_bindgen::prelude::Closure, Element};
 use yew::prelude::*;
 use yewlish_attr_passer::*;
 use yewlish_presence::*;
+use yewlish_roving_focus::helpers::get_focusable_element;
 use yewlish_utils::hooks::{use_controllable_state, use_interaction_outside};
 
 #[derive(Debug, Clone, PartialEq)]
@@ -354,14 +354,14 @@ pub fn popover_content(props: &PopoverContentProps) -> Html {
         },
     );
 
-    let style = format!("{} {}", style, transform);
+    let style = format!("{style} {transform}");
     let content_ref = use_node_ref();
 
-    let focus_on_present = use_callback(content_ref.clone(), |_, content_ref| {
+    let focus_on_present = use_callback(content_ref.clone(), |(), content_ref| {
         if let Some(content) = content_ref.cast::<Element>() {
             if let Some(element) = get_focusable_element(&content) {
                 match element.focus() {
-                    Ok(_) => {}
+                    Ok(()) => {}
                     Err(error) => {
                         log::error!("Failed to focus the popover content: {error:?}");
                     }
