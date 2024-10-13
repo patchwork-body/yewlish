@@ -48,6 +48,7 @@
     "rowheader",
     "samp",
     "searchbox",
+    "serde",
     "spinbutton",
     "struct",
     "structopt",
