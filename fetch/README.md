@@ -19,7 +19,10 @@ To use yewlish-fetch in your project, add the following to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-yewlish-fetch = "0.2.2"
+yewlish-fetch = "0.2.3"
+# required peer-dependencies
+yewlish-fetch-utils = "0.2.2"
+web-sys = {version = "0.3.72", features = ["AbortController"]}
 ```
 
 ## Prerequisites

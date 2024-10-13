@@ -1,6 +1,6 @@
 [package]
 name = "yewlish-fetch"
-version = "0.2.2"
+version = "0.2.3"
 edition = "2021"
 authors = ["Kirill Korotkov <personal.gugfug@gmail.com>"]
 license = "MIT OR Apache-2.0"
@@ -18,13 +18,13 @@ yew = "0.21.0"
 yewlish-fetch-utils = "0.2.1"
 
 [dev-dependencies]
-yewlish-testing-tools = "1.1.2"
-wasm-bindgen-test = "0.3.43"
-wasm-bindgen = "0.2.93"
-wasm-bindgen-futures = "0.4.43"
+yewlish-testing-tools = "1.2.0"
+wasm-bindgen-test = "0.3.45"
+wasm-bindgen = "0.2.95"
+wasm-bindgen-futures = "0.4.45"
 serial_test = "3.1.1"
 serde = {version = "1.0.210", features = ["derive"]}
-web-sys = {version = "0.3.70", features = ["AbortController"]}
+web-sys = {version = "0.3.72", features = ["AbortController"]}
 
 [lib]
 proc-macro = true
