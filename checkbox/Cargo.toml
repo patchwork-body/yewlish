@@ -1,6 +1,6 @@
 [package]
 name = "yewlish-checkbox"
-version = "0.1.8"
+version = "0.1.9"
 edition = "2021"
 authors = ["Kirill Korotkov <personal.gugfug@gmail.com>"]
 license = "MIT OR Apache-2.0"
@@ -17,8 +17,8 @@ yewlish-utils = "0.1.5"
 log = "0.4.22"
 
 [dev-dependencies]
-wasm-bindgen-futures = "0.4.42"
-web-sys = "0.3.70"
-wasm-bindgen-test = "0.3.42"
+wasm-bindgen-futures = "0.4.45"
+web-sys = "0.3.72"
+wasm-bindgen-test = "0.3.45"
 gloo-utils = "0.2.0"
-yewlish-testing-tools = "1.1.2"
+yewlish-testing-tools = "1.2.0"
