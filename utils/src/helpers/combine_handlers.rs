@@ -1,5 +1,6 @@
 use yew::Callback;
 
+#[must_use]
 pub fn combine_handlers<T: Clone + 'static>(
     a: Option<Callback<T>>,
     b: Option<Callback<T>>,
