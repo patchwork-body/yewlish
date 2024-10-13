@@ -76,9 +76,9 @@ pub fn roving_focus(props: &RovingFocusProps) -> Html {
                         .and_then(|html_element| get_focusable_element(&html_element))
                         .map(|html_element| {
                             if event.shift_key() {
-                                get_prev_focusable_element(html_element)
+                                get_prev_focusable_element(&html_element)
                             } else {
-                                get_next_focusable_element(html_element)
+                                get_next_focusable_element(&html_element)
                             }
                         })
                         .and_then(|next_outside_focusable_element| {

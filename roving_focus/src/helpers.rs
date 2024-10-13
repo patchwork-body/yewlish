@@ -115,12 +115,12 @@ pub fn get_all_focusable_elements() -> Vec<HtmlElement> {
 }
 
 #[must_use]
-pub fn get_next_focusable_element(current_element: HtmlElement) -> HtmlElement {
+pub fn get_next_focusable_element(current_element: &HtmlElement) -> HtmlElement {
     let all_focusable_elements = get_all_focusable_elements();
 
     let current_index = all_focusable_elements
         .iter()
-        .position(|element| element == &current_element)
+        .position(|element| element == current_element)
         .unwrap_or_default();
 
     let next_index = if current_index == all_focusable_elements.len() - 1 {
@@ -133,12 +133,12 @@ pub fn get_next_focusable_element(current_element: HtmlElement) -> HtmlElement {
 }
 
 #[must_use]
-pub fn get_prev_focusable_element(current_element: HtmlElement) -> HtmlElement {
+pub fn get_prev_focusable_element(current_element: &HtmlElement) -> HtmlElement {
     let all_focusable_elements = get_all_focusable_elements();
 
     let current_index = all_focusable_elements
         .iter()
-        .position(|element| element == &current_element)
+        .position(|element| element == current_element)
         .unwrap_or_default();
 
     let prev_index = if current_index == 0 {
