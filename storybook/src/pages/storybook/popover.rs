@@ -9,32 +9,32 @@ use yewlish_switch::*;
 
 #[function_component(PopoverPage)]
 pub fn popover_page() -> Html {
-    let checkbox_class = r##"
+    let checkbox_class = r"
         peer h-4 w-4 shrink-0 rounded-sm border border-neutral-100 ring-offset-neutral-950 focus-visible:outline-none
         focus-visible:ring-2 focus-visible:ring-neutral-100 focus-visible:ring-offset-2 disabled:cursor-not-allowed
         disabled:opacity-50 data-[state=checked]:bg-neutral-100 data-[state=checked]:text-neutral-950
-    "##;
+    ";
 
-    let checkbox_label_class = r##"
+    let checkbox_label_class = r"
         text-neutral-200 text-nowrap
-    "##;
+    ";
 
-    let checkbox_indicator_class = r##"
+    let checkbox_indicator_class = r"
         flex items-center justify-center text-current
-    "##;
+    ";
 
-    let switch_class = r##"
+    let switch_class = r"
         peer inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full
         border-2 border-transparent transition-colors focus-visible:outline-none
         focus-visible:ring-2 focus-visible:ring-neutral-100 focus-visible:ring-offset-2
         focus-visible:ring-offset-neutral-950 disabled:cursor-not-allowed disabled:opacity-50
         data-[state=checked]:bg-neutral-100 data-[state=unchecked]:bg-neutral-800
-    "##;
+    ";
 
-    let switch_thumb_class = r##"
+    let switch_thumb_class = r"
         pointer-events-none block h-5 w-5 rounded-full bg-neutral-950 shadow-lg ring-0 transition-transform
         data-[state=checked]:translate-x-5 data-[state=unchecked]:translate-x-0
-    "##;
+    ";
 
     #[cfg(target_arch = "wasm32")]
     let popover_container = use_state(|| {
@@ -63,14 +63,14 @@ pub fn popover_page() -> Html {
         });
     }
 
-    let listbox_option_class = r##"
+    let listbox_option_class = r#"
         flex items-center gap-2 p-2 hover:bg-neutral-700 hover:text-neutral-100 cursor-pointer
         aria-[checked=true]:bg-neutral-850 data-[active="true"]:bg-neutral-800
-    "##;
+    "#;
 
-    let listbox_option_indicator_class = r##"
+    let listbox_option_indicator_class = r"
         flex items-center justify-center text-current ring-1 rounded-md ring-white w-5 h-5
-    "##;
+    ";
 
     html! {
         <Wrapper title="Popover">
