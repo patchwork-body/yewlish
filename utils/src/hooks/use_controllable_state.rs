@@ -32,7 +32,7 @@ where
             on_change.emit(new_state);
 
             if !is_controlled {
-                trigger.force_update()
+                trigger.force_update();
             }
         }
     });
