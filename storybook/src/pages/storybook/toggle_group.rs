@@ -6,16 +6,16 @@ use yewlish_utils::enums::Orientation;
 
 #[function_component(ToggleGroupPage)]
 pub fn toggle_group_page() -> Html {
-    let toggle_class = r##"
+    let toggle_class = r"
         text-neutral-100 bg-transparent p-1 rounded-md
         hover:text-neutral-400 hover:bg-neutral-800 focus-visible:ring-2 focus-visible:ring-neutral-400
         data-[state=on]:bg-neutral-800 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent
         disabled:hover:text-neutral-100 outline-none transition-colors duration-300
-    "##;
+    ";
 
-    let toggle_group_class = r##"
+    let toggle_group_class = r"
         flex gap-5 data-[orientation=vertical]:flex-col
-    "##;
+    ";
 
     html! {
         <>
