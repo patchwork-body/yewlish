@@ -38,7 +38,7 @@ mod tests {
         .await;
 
         let button = t
-            .get_state::<NodeRef>()
+            .get_remembered_value::<NodeRef>()
             .cast::<HtmlElement>()
             .unwrap_throw();
 
@@ -59,7 +59,7 @@ mod tests {
         .await;
 
         let button = t
-            .get_state::<NodeRef>()
+            .get_remembered_value::<NodeRef>()
             .cast::<HtmlElement>()
             .unwrap_throw();
 
