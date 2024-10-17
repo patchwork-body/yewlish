@@ -687,7 +687,7 @@ mod tests {
         );
 
         assert_eq!(
-            *t.get_state::<UseStateHandle<CheckedState>>(),
+            *t.get_remembered_value::<UseStateHandle<CheckedState>>(),
             CheckedState::Unchecked
         );
 
@@ -699,7 +699,7 @@ mod tests {
         );
 
         assert_eq!(
-            *t.get_state::<UseStateHandle<CheckedState>>(),
+            *t.get_remembered_value::<UseStateHandle<CheckedState>>(),
             CheckedState::Checked
         );
 
@@ -711,7 +711,7 @@ mod tests {
         );
 
         assert_eq!(
-            *t.get_state::<UseStateHandle<CheckedState>>(),
+            *t.get_remembered_value::<UseStateHandle<CheckedState>>(),
             CheckedState::Unchecked
         );
     }
