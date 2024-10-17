@@ -1,6 +1,6 @@
 [package]
 name = "yewlish-attr-passer"
-version = "0.1.3"
+version = "0.1.4"
 edition = "2021"
 authors = ["Kirill Korotkov <personal.gugfug@gmail.com>"]
 license = "MIT OR Apache-2.0"
@@ -18,4 +18,4 @@ yewlish-synchi = "0.1.0"
 wasm-bindgen-test = "0.3.45"
 wasm-bindgen-futures = "0.4.45"
 gloo-utils = "0.2.0"
-yewlish-testing-tools = "1.2.0"
+yewlish-testing-tools = "1.2.1"
