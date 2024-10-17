@@ -1,6 +1,6 @@
 [package]
 name = "yewlish-radio-group"
-version = "0.1.2"
+version = "0.1.3"
 edition = "2021"
 authors = ["Kirill Korotkov <personal.gugfug@gmail.com>"]
 license = "MIT OR Apache-2.0"
@@ -12,11 +12,11 @@ documentation = "https://docs.rs/yewlish-radio-group"
 
 [dependencies]
 yew = "0.21.0"
-yewlish-utils = "0.1.5"
-yewlish-roving-focus = "0.1.0"
-yewlish-attr-passer = "0.1.2"
+yewlish-utils = "0.1.8"
+yewlish-roving-focus = "0.1.2"
+yewlish-attr-passer = "0.1.4"
 
 [dev-dependencies]
 wasm-bindgen-futures = "0.4.45"
 wasm-bindgen-test = "0.3.45"
-yewlish-testing-tools = "1.2.0"
+yewlish-testing-tools = "1.2.1"
