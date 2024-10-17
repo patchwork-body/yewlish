@@ -2725,7 +2725,7 @@ mod tests {
         })
         .await;
 
-        assert!(*t.get_state::<UseStateHandle<bool>>());
+        assert!(*t.get_remembered_value::<UseStateHandle<bool>>());
     }
 
     #[wasm_bindgen_test]
@@ -2747,7 +2747,7 @@ mod tests {
         })
         .await;
 
-        assert_eq!(*t.get_state::<UseStateHandle<i32>>(), 100);
+        assert_eq!(*t.get_remembered_value::<UseStateHandle<i32>>(), 100);
     }
 
     #[wasm_bindgen_test]
@@ -2787,23 +2787,32 @@ mod tests {
         })
         .await;
 
-        assert_eq!(t.get_state::<UseReducerHandle<Counter>>().count, 0);
+        assert_eq!(
+            t.get_remembered_value::<UseReducerHandle<Counter>>().count,
+            0
+        );
 
         t.act(|| {
-            t.get_state::<UseReducerHandle<Counter>>()
+            t.get_remembered_value::<UseReducerHandle<Counter>>()
                 .dispatch(CounterAction::Increment);
         })
         .await;
 
-        assert_eq!(t.get_state::<UseReducerHandle<Counter>>().count, 1);
+        assert_eq!(
+            t.get_remembered_value::<UseReducerHandle<Counter>>().count,
+            1
+        );
 
         t.act(|| {
-            t.get_state::<UseReducerHandle<Counter>>()
+            t.get_remembered_value::<UseReducerHandle<Counter>>()
                 .dispatch(CounterAction::Decrement);
         })
         .await;
 
-        assert_eq!(t.get_state::<UseReducerHandle<Counter>>().count, 0);
+        assert_eq!(
+            t.get_remembered_value::<UseReducerHandle<Counter>>().count,
+            0
+        );
     }
 
     #[wasm_bindgen_test]
@@ -2823,7 +2832,7 @@ mod tests {
         })
         .await;
 
-        assert_eq!(*t.get_state::<UseStateHandle<i32>>(), 0);
+        assert_eq!(*t.get_remembered_value::<UseStateHandle<i32>>(), 0);
 
         let button = t.query_by_role("button");
         assert!(button.exists());
@@ -2832,6 +2841,6 @@ mod tests {
         let button = button.click().await;
         assert!(button.text().contains("Click me 1"));
 
-        assert_eq!(*t.get_state::<UseStateHandle<i32>>(), 1);
+        assert_eq!(*t.get_remembered_value::<UseStateHandle<i32>>(), 1);
     }
 }
