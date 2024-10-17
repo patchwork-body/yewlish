@@ -1,6 +1,6 @@
 [package]
 name = "yewlish-testing-tools"
-version = "1.2.0"
+version = "1.2.1"
 edition = "2021"
 authors = ["Kirill Korotkov <personal.gugfug@gmail.com>"]
 license = "MIT OR Apache-2.0"
