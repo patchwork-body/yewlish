@@ -369,7 +369,7 @@ mod tests {
 
         // Initially, the second item should be checked
         assert_eq!(
-            *t.get_state::<UseStateHandle<AttrValue>>(),
+            *t.get_remembered_value::<UseStateHandle<AttrValue>>(),
             AttrValue::from("item2")
         );
 
@@ -383,7 +383,7 @@ mod tests {
 
         // Now, the first item should be checked
         assert_eq!(
-            *t.get_state::<UseStateHandle<AttrValue>>(),
+            *t.get_remembered_value::<UseStateHandle<AttrValue>>(),
             AttrValue::from("item1")
         );
 
