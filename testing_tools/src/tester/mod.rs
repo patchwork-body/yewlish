@@ -420,8 +420,12 @@ impl Extractor for Tester {
         }
     }
 
-    fn get_state<T: Clone + 'static>(&self) -> T {
+    fn get_remembered_value<T: Clone + 'static>(&self) -> T {
         self.state.get()
+    }
+
+    fn get_state<T: Clone + 'static>(&self) -> T {
+        self.get_remembered_value()
     }
 }
 
