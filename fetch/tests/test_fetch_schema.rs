@@ -360,7 +360,7 @@ mod test {
         assert_eq!(post_items.len(), 100);
 
         assert_eq!(
-            t.get_state::<Option<Vec<PostBody>>>()
+            t.get_remembered_value::<Option<Vec<PostBody>>>()
                 .unwrap_or_default()
                 .len(),
             100
@@ -411,7 +411,7 @@ mod test {
         assert_eq!(t.query_all_by_role("listitem").len(), 0);
 
         assert_eq!(
-            t.get_state::<Option<Vec<PostBody>>>()
+            t.get_remembered_value::<Option<Vec<PostBody>>>()
                 .unwrap_or_default()
                 .len(),
             0
@@ -428,7 +428,7 @@ mod test {
         assert_eq!(t.query_all_by_role("listitem").len(), 100);
 
         assert_eq!(
-            t.get_state::<Option<Vec<PostBody>>>()
+            t.get_remembered_value::<Option<Vec<PostBody>>>()
                 .unwrap_or_default()
                 .len(),
             100
