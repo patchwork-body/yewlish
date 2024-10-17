@@ -427,21 +427,21 @@ mod tests {
 
         // Initially unchecked
         assert_eq!(switch.attribute("aria-checked"), "false".to_string().into());
-        assert!(!*t.get_state::<UseStateHandle<bool>>());
+        assert!(!*t.get_remembered_value::<UseStateHandle<bool>>());
 
         // Click the switch
         let switch = switch.click().await;
 
         // Should now be checked
         assert_eq!(switch.attribute("aria-checked"), "true".to_string().into());
-        assert!(*t.get_state::<UseStateHandle<bool>>());
+        assert!(*t.get_remembered_value::<UseStateHandle<bool>>());
 
         // Click again
         let switch = switch.click().await;
 
         // Should be unchecked again
         assert_eq!(switch.attribute("aria-checked"), "false".to_string().into());
-        assert!(!*t.get_state::<UseStateHandle<bool>>());
+        assert!(!*t.get_remembered_value::<UseStateHandle<bool>>());
     }
 
     #[wasm_bindgen_test]
