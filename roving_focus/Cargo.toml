@@ -1,6 +1,6 @@
 [package]
 name = "yewlish-roving-focus"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2021"
 authors = ["Kirill Korotkov <personal.gugfug@gmail.com>"]
 license = "MIT OR Apache-2.0"
@@ -14,4 +14,4 @@ documentation = "https://docs.rs/yewlish-roving-focus"
 log = "0.4.21"
 web-sys = {version = "0.3.72", features = ["KeyboardEventInit"]}
 yew = "0.21.0"
-yewlish-utils = "0.1.6"
+yewlish-utils = "0.1.8"
