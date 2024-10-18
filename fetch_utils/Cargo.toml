@@ -10,6 +10,7 @@ documentation = "https://docs.rs/yewlish-fetch-utils"
 
 [dependencies]
 js-sys = "0.3.72"
+yew = "0.21.0"
 serde = "1.0.210"
 serde_json = "1.0.128"
 serde_urlencoded = "0.7.1"
