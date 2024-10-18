@@ -35,6 +35,7 @@
     "multiselectable",
     "onchange",
     "onclick",
+    "onclose",
     "onfocus",
     "onfocusin",
     "onkeydown",
