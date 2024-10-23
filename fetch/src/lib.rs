@@ -100,6 +100,7 @@ fn extract_attrs(attrs: &[Attribute]) -> SynResult<(String, String, Type, Type, 
 pub fn fetch_schema(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
     let enum_name = &input.ident;
+    let state_enum_name = format_ident!("{}State", enum_name);
     let module_name = format_ident!("{}_fetch_schema", enum_name.to_string().to_snake_case());
     let fetch_client_name = format_ident!("{}FetchClient", enum_name);
     let fetch_client_options_name = format_ident!("{}Options", fetch_client_name);
@@ -125,11 +126,13 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
     let mut hooks = Vec::new();
     let mut errors = Vec::new();
     let mut variant_names = Vec::new();
+    let mut state_enum_variants = Vec::new();
 
     for variant in variants {
         let variant_name = &variant.ident;
         variant_names.push(variant_name);
 
+        let state_struct_name = format_ident!("{}State", variant_name);
         let method_params_struct_name = format_ident!("{}Params", variant_name);
         let method_open_params_struct_name = format_ident!("{}HookOpenParams", variant_name);
         let hook_open_params_struct_name = format_ident!("{}OpenParams", variant_name);
@@ -169,6 +172,50 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                         pub struct #method_params_struct_name {
                             pub body: #body,
                         }
+
+                        #[derive(Clone, Debug, PartialEq)]
+                        pub struct #state_struct_name {
+                            pub web_socket_watcher: Rc<RefCell<WebSocketWatcher>>,
+                        }
+
+                        #[derive(Clone, Debug)]
+                        pub struct #hook_handle_name {
+                            pub data: UseStateHandle<Option<#res>>,
+                            pub status: UseStateHandle<WsStatus>,
+                            pub error: UseStateHandle<Option<FetchError>>,
+                            pub send: Callback<#method_params_struct_name>,
+                            pub close: Callback<()>,
+                        }
+
+                        impl PartialEq for #hook_handle_name {
+                            fn eq(&self, other: &Self) -> bool {
+                                self.data == other.data
+                                    && self.status == other.status
+                            }
+                        }
+
+                        #[derive(Clone, Debug)]
+                        pub struct #hook_async_handle_name {
+                            pub data: UseStateHandle<Option<#res>>,
+                            pub status: UseStateHandle<WsStatus>,
+                            pub error: UseStateHandle<Option<FetchError>>,
+                            pub send: Callback<#method_params_struct_name>,
+                            pub open: Callback<#hook_open_params_struct_name>,
+                            pub close: Callback<()>,
+                        }
+
+                        impl PartialEq for #hook_async_handle_name {
+                            fn eq(&self, other: &Self) -> bool {
+                                self.data == other.data
+                                    && self.status == other.status
+                            }
+                        }
+
+                        #[derive(Clone, PartialEq, Default)]
+                        pub struct #hook_options_name {
+                            pub on_success: Option<Callback<#res>>,
+                            pub on_error: Option<Callback<FetchError>>,
+                        }
                     });
                 } else {
                     structs.push(quote! {
@@ -178,8 +225,57 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                             pub query: #query,
                             pub body: #body,
                         }
+
+                        #[derive(Clone, Debug, PartialEq)]
+                        pub struct #state_struct_name {
+                            pub data: UseStateHandle<Option<#res>>,
+                            pub loading: UseStateHandle<bool>,
+                            pub error: UseStateHandle<Option<FetchError>>,
+                        }
+
+                        #[derive(Clone, Debug)]
+                        pub struct #hook_handle_name {
+                            pub data: UseStateHandle<Option<#res>>,
+                            pub loading: UseStateHandle<bool>,
+                            pub error: UseStateHandle<Option<FetchError>>,
+                            pub cancel: Callback<()>,
+                        }
+
+                        impl PartialEq for #hook_handle_name {
+                            fn eq(&self, other: &Self) -> bool {
+                                self.data == other.data
+                                    && self.loading == other.loading
+                            }
+                        }
+
+                        #[derive(Clone, Debug)]
+                        pub struct #hook_async_handle_name {
+                            pub data: UseStateHandle<Option<#res>>,
+                            pub loading: UseStateHandle<bool>,
+                            pub error: UseStateHandle<Option<FetchError>>,
+                            pub trigger: Callback<#method_params_struct_name>,
+                            pub cancel: Callback<()>,
+                        }
+
+                        impl PartialEq for #hook_async_handle_name {
+                            fn eq(&self, other: &Self) -> bool {
+                                self.data == other.data
+                                    && self.loading == other.loading
+                            }
+                        }
+
+                        #[derive(Clone, PartialEq, Default)]
+                        pub struct #hook_options_name {
+                            pub cache_options: Option<CacheOptions>,
+                            pub on_success: Option<Callback<#res>>,
+                            pub on_error: Option<Callback<FetchError>>,
+                        }
                     });
                 }
+
+                state_enum_variants.push(quote! {
+                    #variant_name(#state_struct_name),
+                });
 
                 methods.push(quote! {
                     pub fn #prepare_url_method_name(&self) -> String {
@@ -249,49 +345,9 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
 
                 if http_method == "WS" {
                     hooks.push(quote! {
-                        #[derive(Clone, Debug)]
-                        pub struct #hook_handle_name {
-                            pub data: UseStateHandle<Option<#res>>,
-                            pub loading: UseStateHandle<bool>,
-                            pub error: UseStateHandle<Option<FetchError>>,
-                            pub send: Callback<#method_params_struct_name>,
-                            pub close: Callback<()>,
-                        }
-
-                        #[derive(Clone, Debug)]
-                        pub struct #hook_async_handle_name {
-                            pub data: UseStateHandle<Option<#res>>,
-                            pub loading: UseStateHandle<bool>,
-                            pub error: UseStateHandle<Option<FetchError>>,
-                            pub send: Callback<#method_params_struct_name>,
-                            pub open: Callback<#hook_open_params_struct_name>,
-                            pub close: Callback<()>,
-                        }
-
-                        impl PartialEq for #hook_async_handle_name {
-                            fn eq(&self, other: &Self) -> bool {
-                                self.data == other.data
-                                    && self.loading == other.loading
-                            }
-                        }
-
-                        #[derive(Clone, PartialEq, Default)]
-                        pub struct #hook_options_name {
-                            pub cache_options: Option<CacheOptions>,
-                            pub on_success: Option<Callback<#res>>,
-                            pub on_error: Option<Callback<FetchError>>,
-                        }
-
-                        impl PartialEq for #hook_handle_name {
-                            fn eq(&self, other: &Self) -> bool {
-                                self.data == other.data
-                                    && self.loading == other.loading
-                            }
-                        }
-
                         #[hook]
                         fn #common_hook_name(options: Option<#hook_options_name>) -> #hook_async_handle_name {
-                            let client = use_context::<#fetch_client_name>()
+                            let client = use_context::<Rc<#fetch_client_name>>()
                                 .expect(
                                     &format!(
                                         "{} must be used within a {} provider",
@@ -301,20 +357,16 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                                 );
 
                             let data = use_state(|| None::<#res>);
-                            let is_open = use_state(|| false);
-                            let opening = use_state(|| false);
-                            let loading = use_state(|| false);
+                            let status = use_state(|| WsStatus::Closed);
                             let error = use_state(|| None::<FetchError>);
-                            let send_ref = use_mut_ref(|| None);
-                            let close_ref = use_mut_ref(|| None);
+                            let state_key_ref = use_mut_ref(|| None::<String>);
+                            let slot_key_ref = use_mut_ref(|| None::<usize>);
 
                             let onopen = use_callback((), {
-                                let is_open = is_open.clone();
-                                let opening = opening.clone();
+                                let status = status.clone();
 
                                 move |_event: web_sys::Event, ()| {
-                                    is_open.set(true);
-                                    opening.set(false);
+                                    status.set(WsStatus::Open);
                                 }
                             });
 
@@ -350,76 +402,118 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                             });
 
                             let onclose = use_callback((), {
-                                let is_open = is_open.clone();
-                                let opening = opening.clone();
+                                let status = status.clone();
 
                                 move |_event: web_sys::CloseEvent, ()| {
-                                    is_open.set(false);
-                                    opening.set(false);
+                                    status.set(WsStatus::Closed);
                                 }
                             });
 
-                            let open = use_callback((client.clone(), onopen.clone(), onmessage.clone(), onerror.clone(), onclose.clone()), {
-                                let opening = opening.clone();
-                                let error = error.clone();
-                                let send_ref = send_ref.clone();
-                                let close_ref = close_ref.clone();
+                            let subscriber = use_memo((onopen.clone(), onmessage.clone(), onerror.clone(), onclose.clone()), |(onopen, onmessage, onerror, onclose)| WebSocketSubscriber {
+                                onopen: onopen.clone(),
+                                onmessage: onmessage.clone(),
+                                onerror: onerror.clone(),
+                                onclose: onclose.clone(),
+                            });
 
-                                move |params: #hook_open_params_struct_name, (client, onopen, onmessage, onerror, onclose)| {
+                            let open = use_callback((client.clone(), subscriber.clone()), {
+                                let error = error.clone();
+                                let status = status.clone();
+                                let state_key_ref = state_key_ref.clone();
+                                let slot_key_ref = slot_key_ref.clone();
+
+                                move |params: #hook_open_params_struct_name, (client, subscriber)| {
                                     let url = client.#prepare_url_method_name();
 
-                                    let params = #method_open_params_struct_name {
-                                        slugs: params.slugs,
-                                        query: params.query,
-                                        onopen: onopen.clone().into(),
-                                        onmessage: onmessage.clone().into(),
-                                        onerror: onerror.clone().into(),
-                                        onclose: onclose.clone().into(),
+                                    let Ok(state_key) = generate_state_key("ws", url.as_str(), &params.slugs, &params.query) else {
+                                        error.set(Some(FetchError::UnknownError("Failed to generate state key".to_string())));
+                                        return;
                                     };
 
-                                    opening.set(true);
+                                    state_key_ref.replace(Some(state_key.clone()));
 
-                                    match client.#fetch_method_name(url, params) {
-                                        Ok((send, close)) => {
-                                            send_ref.replace(Some(send));
-                                            close_ref.replace(Some(close));
+                                    if let Some(slotmap) = (*client.queries).borrow_mut().get_mut(&state_key) {
+                                        if slot_key_ref.borrow().is_some() {
+                                            return;
                                         }
-                                        Err(err) => {
-                                            error.set(Some(err));
+
+                                        if let Some(#state_enum_name::#variant_name(state)) = slotmap.first() {
+                                            match (*state.web_socket_watcher).borrow_mut().subscribe((**subscriber).clone()) {
+                                                Ok(()) => {}
+                                                Err(err) => {
+                                                    error.set(Some(err));
+                                                }
+                                            }
                                         }
-                                    }
-                                }
-                            });
+                                    } else {
+                                        match build_url(url.as_str(), &params.slugs, &params.query) {
+                                            Ok(url) => {
+                                                let mut slotmap = SlotMap::<#state_enum_name>::new();
+                                                let mut watcher = WebSocketWatcher::new(String::from(url.to_string()));
 
-                            let send = use_callback(send_ref.clone(), {
-                                let error = error.clone();
+                                                match watcher.subscribe((**subscriber).clone()) {
+                                                    Ok(()) => {}
+                                                    Err(err) => {
+                                                        error.set(Some(err));
+                                                        return;
+                                                    }
+                                                }
 
-                                move |params: #method_params_struct_name, send_ref| {
-                                    if let Some(send) = send_ref.borrow().as_ref() {
-                                        match send.emit(params.body) {
-                                            Ok(()) => {}
+                                                let slot_key = slotmap.insert(#state_enum_name::#variant_name(#state_struct_name {
+                                                    web_socket_watcher: Rc::new(RefCell::new(watcher)),
+                                                }));
+
+                                                slot_key_ref.replace(Some(slot_key));
+
+                                                (*client.queries).borrow_mut().insert(state_key, slotmap);
+                                            },
                                             Err(err) => {
-                                                error.set(Some(FetchError::NetworkError(format!("{err:?}"))));
+                                                error.set(Some(err));
                                             }
                                         }
                                     }
                                 }
                             });
 
-                            let close = use_callback( close_ref.clone(), {
-                                let is_open = is_open.clone();
-                                let opening = opening.clone();
+                            let send = use_callback((client.clone(), state_key_ref.clone(), slot_key_ref.clone()), {
                                 let error = error.clone();
 
-                                move |(), close_ref| {
-                                    if let Some(close) = close_ref.borrow().as_ref() {
-                                        match close.emit(()) {
-                                            Ok(()) => {
-                                                is_open.set(false);
-                                                opening.set(false);
+                                move |params: #method_params_struct_name, (client, state_key_ref, slot_key_ref)| {
+                                    let (Some(state_key), Some(slot_key)) = (state_key_ref.borrow().as_ref().cloned(), slot_key_ref.borrow().as_ref().cloned()) else {
+                                        error.set(Some(FetchError::UnknownError("State key or slot key is missing".to_string())));
+                                        return;
+                                    };
+
+                                    if let Some(slotmap) = client.queries.borrow().get(&state_key) {
+                                        if let Some(#state_enum_name::#variant_name(state)) = slotmap.get(slot_key) {
+                                            match state.web_socket_watcher.borrow().send(&params.body) {
+                                                Ok(()) => {}
+                                                Err(err) => {
+                                                    error.set(Some(err));
+                                                }
                                             }
-                                            Err(err) => {
-                                                error.set(Some(FetchError::NetworkError(format!("{err:?}"))));
+                                        }
+                                    }
+                                }
+                            });
+
+                            let close = use_callback((client.clone(), subscriber.clone(), state_key_ref.clone(), slot_key_ref.clone()), {
+                                let status = status.clone();
+                                let error = error.clone();
+
+                                move |(), (client, subscriber, state_key_ref, slot_key_ref)| {
+                                    let (Some(state_key), Some(slot_key)) = (state_key_ref.borrow().as_ref().cloned(), slot_key_ref.borrow().as_ref().cloned()) else {
+                                        error.set(Some(FetchError::UnknownError("State key or slot key is missing".to_string())));
+                                        return;
+                                    };
+
+                                    if let Some(slotmap) = client.queries.borrow().get(&state_key) {
+                                        if let Some(#state_enum_name::#variant_name(state)) = slotmap.get(slot_key) {
+                                            match (*state.web_socket_watcher).borrow_mut().unsubscribe(&*subscriber.as_ref()) {
+                                                Ok(()) => {}
+                                                Err(err) => {
+                                                    error.set(Some(err));
+                                                }
                                             }
                                         }
                                     }
@@ -440,9 +534,39 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                                 }
                             });
 
+                            use_effect_with((client.clone(), close.clone(), state_key_ref.clone(), slot_key_ref.clone()), {
+                                let error = error.clone();
+
+                                move |(client, close, state_key_ref, slot_key_ref)| {
+                                    let client = client.clone();
+                                    let close = close.clone();
+                                    let state_key_ref = state_key_ref.clone();
+                                    let slot_key_ref = slot_key_ref.clone();
+
+                                    move || {
+                                        close.emit(());
+
+                                        let (Some(state_key), Some(slot_key)) = (state_key_ref.borrow().as_ref().cloned(), slot_key_ref.borrow().as_ref().cloned()) else {
+                                            error.set(Some(FetchError::UnknownError("State key or slot key is missing".to_string())));
+                                            return;
+                                        };
+
+                                        let mut queries = (*client.queries).borrow_mut();
+
+                                        if let Some(slotmap) = queries.get_mut(&state_key) {
+                                            slotmap.remove(slot_key);
+
+                                            if slotmap.is_empty() {
+                                                queries.remove(&state_key);
+                                            }
+                                        }
+                                    }
+                                }
+                            });
+
                             #hook_async_handle_name {
                                 data,
-                                loading,
+                                status,
                                 error,
                                 send,
                                 open,
@@ -470,7 +594,7 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
 
                             #hook_handle_name {
                                 data: hook.data,
-                                loading: hook.loading,
+                                status: hook.status,
                                 error: hook.error,
                                 send: hook.send.clone(),
                                 close: hook.close.clone(),
@@ -479,47 +603,9 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                     });
                 } else {
                     hooks.push(quote! {
-                        #[derive(Clone, Debug)]
-                        pub struct #hook_handle_name {
-                            pub data: UseStateHandle<Option<#res>>,
-                            pub loading: UseStateHandle<bool>,
-                            pub error: UseStateHandle<Option<FetchError>>,
-                            pub cancel: Callback<()>,
-                        }
-
-                        impl PartialEq for #hook_handle_name {
-                            fn eq(&self, other: &Self) -> bool {
-                                self.data == other.data
-                                    && self.loading == other.loading
-                            }
-                        }
-
-                        #[derive(Clone, Debug)]
-                        pub struct #hook_async_handle_name {
-                            pub data: UseStateHandle<Option<#res>>,
-                            pub loading: UseStateHandle<bool>,
-                            pub error: UseStateHandle<Option<FetchError>>,
-                            pub trigger: Callback<#method_params_struct_name>,
-                            pub cancel: Callback<()>,
-                        }
-
-                        impl PartialEq for #hook_async_handle_name {
-                            fn eq(&self, other: &Self) -> bool {
-                                self.data == other.data
-                                    && self.loading == other.loading
-                            }
-                        }
-
-                        #[derive(Clone, PartialEq, Default)]
-                        pub struct #hook_options_name {
-                            pub cache_options: Option<CacheOptions>,
-                            pub on_success: Option<Callback<#res>>,
-                            pub on_error: Option<Callback<FetchError>>,
-                        }
-
                         #[hook]
                         fn #common_hook_name(options: Option<#hook_options_name>) -> #hook_async_handle_name {
-                            let client = use_context::<#fetch_client_name>()
+                            let client = use_context::<Rc<#fetch_client_name>>()
                                 .expect(
                                     &format!(
                                         "{} must be used within a {} provider",
@@ -734,7 +820,6 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                                 trigger,
                                 cancel,
                             }
-
                         }
 
                         #[hook]
@@ -813,16 +898,24 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
             use yewlish_fetch_utils::*;
             use yew::prelude::*;
             use yew::platform::spawn_local;
+            use std::collections::HashMap;
+            use std::any::Any;
             use wasm_bindgen::JsCast;
 
             #(#structs)*
             #(#errors)*
+
+            #[derive(Clone, PartialEq)]
+            pub enum #state_enum_name {
+                #(#state_enum_variants)*
+            }
 
             #[derive(Clone)]
             pub struct #fetch_client_name {
                 pub base_url: String,
                 pub middlewares: Vec<Middleware>,
                 pub cache: Rc<RefCell<dyn Cacheable>>,
+                pub queries: Rc<RefCell<HashMap<String, SlotMap<#state_enum_name>>>>,
                 _marker: std::marker::PhantomData<#enum_name>,
             }
 
@@ -839,6 +932,7 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                         base_url: base_url.to_string(),
                         middlewares: Vec::new(),
                         cache: Rc::new(RefCell::new(Cache::default())),
+                        queries: Rc::new(RefCell::new(HashMap::new())),
                         _marker: std::marker::PhantomData
                     }
                 }
@@ -889,9 +983,9 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
             #[function_component(#fetch_client_context_provider_name)]
             pub fn #fetch_client_context_snake_case_provider_name(props: &#fetch_client_context_props_name) -> Html {
                 html! {
-                    <ContextProvider<#fetch_client_name> context={props.client.clone()}>
+                    <ContextProvider<Rc<#fetch_client_name>> context={Rc::new(props.client.clone())}>
                         {for props.children.iter()}
-                    </ContextProvider<#fetch_client_name>>
+                    </ContextProvider<Rc<#fetch_client_name>>>
                 }
             }
 

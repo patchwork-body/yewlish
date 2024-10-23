@@ -50,6 +50,7 @@
     "samp",
     "searchbox",
     "serde",
+    "slotmap",
     "spinbutton",
     "struct",
     "structopt",
