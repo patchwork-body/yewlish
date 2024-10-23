@@ -38,7 +38,32 @@ where
     Ok(format!("{:x}", hasher.finalize()))
 }
 
-pub fn build_url<S, Q>(url: &str, slugs: &S, query: Q) -> Result<Url, FetchError>
+pub fn generate_state_key<S, Q>(
+    prefix: &str,
+    url: &str,
+    slugs: &S,
+    query: &Q,
+) -> Result<String, FetchError>
+where
+    S: Serialize,
+    Q: Serialize,
+{
+    let mut hasher = Sha1::new();
+    hasher.update(prefix.as_bytes());
+    hasher.update(url.as_bytes());
+
+    let slugs_bytes = serde_json::to_vec(slugs)
+        .map_err(|error| FetchError::SlugsSerializationError(error.to_string()))?;
+    hasher.update(&slugs_bytes);
+
+    let query_bytes = serde_json::to_vec(query)
+        .map_err(|error| FetchError::QuerySerializationError(error.to_string()))?;
+    hasher.update(&query_bytes);
+
+    Ok(format!("{:x}", hasher.finalize()))
+}
+
+pub fn build_url<S, Q>(url: &str, slugs: &S, query: &Q) -> Result<Url, FetchError>
 where
     S: Serialize + Default + PartialEq,
     Q: Serialize + Default + PartialEq,
@@ -68,7 +93,7 @@ where
 
     let url = Url::new(&url).map_err(|_| FetchError::UrlParsingError("Invalid URL".to_string()))?;
 
-    if query != Q::default() {
+    if *query != Q::default() {
         let query_string = serde_urlencoded::to_string(query)
             .map_err(|error| FetchError::QuerySerializationError(error.to_string()))?;
 
@@ -231,4 +256,13 @@ where
     })?;
 
     Ok(result)
+}
+
+#[derive(Default, Debug, Clone, PartialEq)]
+pub enum WsStatus {
+    Open,
+    Opening,
+    Closing,
+    #[default]
+    Closed,
 }
