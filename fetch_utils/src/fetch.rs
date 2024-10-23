@@ -77,7 +77,7 @@ where
     Q: Serialize + Default + PartialEq,
     B: Serialize + Default + PartialEq,
 {
-    let url = build_url(url, &options.slugs, options.query)?;
+    let url = build_url(url, &options.slugs, &options.query)?;
 
     let request = build_request(
         &url,

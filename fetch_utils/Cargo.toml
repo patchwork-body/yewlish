@@ -1,6 +1,6 @@
 [package]
 name = "yewlish-fetch-utils"
-version = "0.2.3"
+version = "0.3.0-beta.2"
 edition = "2021"
 authors = ["Kirill Korotkov <personal.gugfug@gmail.com>"]
 license = "MIT OR Apache-2.0"
