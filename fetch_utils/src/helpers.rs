@@ -216,12 +216,14 @@ where
 
 pub fn deserialize_response<R>(response_text: &str) -> Result<R, FetchError>
 where
-    R: for<'de> serde::Deserialize<'de> + Default + 'static,
+    R: for<'de> serde::Deserialize<'de> + 'static,
 {
     if response_text.trim().is_empty()
         && std::any::TypeId::of::<R>() == std::any::TypeId::of::<String>()
     {
-        return Ok(R::default());
+        return serde_json::from_str("\"\"").map_err(|error| {
+            FetchError::ResponseDeserializationError(format!("{response_text:?} --- {error:?}"))
+        });
     }
 
     let value = serde_json::from_str(response_text).map_err(|error| {
