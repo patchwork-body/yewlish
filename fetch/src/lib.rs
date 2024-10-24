@@ -101,6 +101,8 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
     let enum_name = &input.ident;
     let state_enum_name = format_ident!("{}State", enum_name);
+    let data_enum_name = format_ident!("{}WsData", enum_name);
+    let ws_state_struct_name = format_ident!("{}WsState", enum_name);
     let module_name = format_ident!("{}_fetch_schema", enum_name.to_string().to_snake_case());
     let fetch_client_name = format_ident!("{}FetchClient", enum_name);
     let fetch_client_options_name = format_ident!("{}Options", fetch_client_name);
@@ -127,6 +129,7 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
     let mut errors = Vec::new();
     let mut variant_names = Vec::new();
     let mut state_enum_variants = Vec::new();
+    let mut data_enum_variants = Vec::new();
 
     for variant in variants {
         let variant_name = &variant.ident;
@@ -171,11 +174,6 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                         #[derive(Default, Clone, PartialEq)]
                         pub struct #method_params_struct_name {
                             pub body: #body,
-                        }
-
-                        #[derive(Clone, Debug, PartialEq)]
-                        pub struct #state_struct_name {
-                            pub web_socket_watcher: Rc<RefCell<WebSocketWatcher>>,
                         }
 
                         #[derive(Clone, Debug)]
@@ -273,9 +271,15 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                     });
                 }
 
-                state_enum_variants.push(quote! {
-                    #variant_name(#state_struct_name),
-                });
+                if http_method == "WS" {
+                    data_enum_variants.push(quote! {
+                        #variant_name(#res),
+                    });
+                } else {
+                    state_enum_variants.push(quote! {
+                        #variant_name(#state_struct_name),
+                    });
+                }
 
                 methods.push(quote! {
                     pub fn #prepare_url_method_name(&self) -> String {
@@ -305,25 +309,7 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                     }
                 });
 
-                if http_method == "WS" {
-                    methods.push(quote! {
-                        pub fn #fetch_method_name(&self, url: String, params: #method_open_params_struct_name) -> Result<(SendMessage<#body>, CloseConnection), FetchError> {
-                            let web_socket_options = yewlish_fetch_utils::WebSocketOptions {
-                                slugs: params.slugs,
-                                query: params.query,
-                                onopen: params.onopen.clone(),
-                                onmessage: params.onmessage.clone(),
-                                onerror: params.onerror.clone(),
-                                onclose: params.onclose.clone(),
-                            };
-
-                            web_socket::<#slugs, #query, #body>(
-                                url.as_str(),
-                                web_socket_options,
-                            )
-                        }
-                    });
-                } else {
+                if http_method != "WS" {
                     methods.push(quote! {
                         pub async fn #fetch_method_name(&self, url: String, abort_signal: Rc<web_sys::AbortSignal>, params: #method_params_struct_name) -> Result<String, FetchError> {
                             let fetch_options = FetchOptions {
@@ -374,21 +360,9 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                                 let data = data.clone();
                                 let error = error.clone();
 
-                                move |event: web_sys::MessageEvent, options| {
-                                    match event.data().dyn_into::<web_sys::js_sys::JsString>() {
-                                        Ok(message) => {
-                                            match deserialize_response(String::from(message).as_str()) {
-                                                Ok(res) => {
-                                                    data.set(Some(res));
-                                                }
-                                                Err(err) => {
-                                                    error.set(Some(err));
-                                                }
-                                            }
-                                        }
-                                        Err(err) => {
-                                            error.set(Some(FetchError::UnknownError(format!("{err:?}"))));
-                                        }
+                                move |res: #data_enum_name, options| {
+                                    if let #data_enum_name::#variant_name(res) = res {
+                                        data.set(Some(res));
                                     }
                                 }
                             });
@@ -396,8 +370,8 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                             let onerror = use_callback((), {
                                 let error = error.clone();
 
-                                move |_event: web_sys::ErrorEvent, ()| {
-                                    error.set(Some(FetchError::NetworkError("".to_string())));
+                                move |err: FetchError, ()| {
+                                    error.set(Some(err));
                                 }
                             });
 
@@ -409,12 +383,15 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                                 }
                             });
 
-                            let subscriber = use_memo((onopen.clone(), onmessage.clone(), onerror.clone(), onclose.clone()), |(onopen, onmessage, onerror, onclose)| WebSocketSubscriber {
-                                onopen: onopen.clone(),
-                                onmessage: onmessage.clone(),
-                                onerror: onerror.clone(),
-                                onclose: onclose.clone(),
-                            });
+                            let subscriber = use_memo(
+                                (onopen.clone(), onmessage.clone(), onerror.clone(), onclose.clone()),
+                                |(onopen, onmessage, onerror, onclose)| WebSocketSubscriber {
+                                        onopen: onopen.clone(),
+                                        onmessage: onmessage.clone(),
+                                        onerror: onerror.clone(),
+                                        onclose: onclose.clone(),
+                                }
+                            );
 
                             let open = use_callback((client.clone(), subscriber.clone()), {
                                 let error = error.clone();
@@ -431,15 +408,23 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                                     };
 
                                     state_key_ref.replace(Some(state_key.clone()));
+                                    let mut queries = (*client.queries).borrow_mut();
 
-                                    if let Some(slotmap) = (*client.queries).borrow_mut().get_mut(&state_key) {
+                                    if let Some(mut slotmap) = queries.get_mut(&state_key) {
                                         if slot_key_ref.borrow().is_some() {
                                             return;
                                         }
 
-                                        if let Some(#state_enum_name::#variant_name(state)) = slotmap.first() {
+                                        if let Some(#state_enum_name::Ws(state)) = slotmap.first().cloned() {
                                             match (*state.web_socket_watcher).borrow_mut().subscribe((**subscriber).clone()) {
-                                                Ok(()) => {}
+                                                Ok(()) => {
+                                                    let slot_key = slotmap.insert(#state_enum_name::Ws(#ws_state_struct_name {
+                                                        web_socket_watcher: state.web_socket_watcher.clone(),
+                                                    }));
+
+                                                    slot_key_ref.replace(Some(slot_key));
+                                                    error.set(None);
+                                                }
                                                 Err(err) => {
                                                     error.set(Some(err));
                                                 }
@@ -449,23 +434,24 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                                         match build_url(url.as_str(), &params.slugs, &params.query) {
                                             Ok(url) => {
                                                 let mut slotmap = SlotMap::<#state_enum_name>::new();
-                                                let mut watcher = WebSocketWatcher::new(String::from(url.to_string()));
+                                                let mut watcher = WebSocketWatcher::<#data_enum_name>::new(String::from(url.to_string()));
 
                                                 match watcher.subscribe((**subscriber).clone()) {
-                                                    Ok(()) => {}
+                                                    Ok(()) => {
+                                                        error.set(None);
+                                                    }
                                                     Err(err) => {
                                                         error.set(Some(err));
                                                         return;
                                                     }
                                                 }
 
-                                                let slot_key = slotmap.insert(#state_enum_name::#variant_name(#state_struct_name {
+                                                let slot_key = slotmap.insert(#state_enum_name::Ws(#ws_state_struct_name {
                                                     web_socket_watcher: Rc::new(RefCell::new(watcher)),
                                                 }));
 
                                                 slot_key_ref.replace(Some(slot_key));
-
-                                                (*client.queries).borrow_mut().insert(state_key, slotmap);
+                                                queries.insert(state_key, slotmap);
                                             },
                                             Err(err) => {
                                                 error.set(Some(err));
@@ -480,14 +466,19 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
 
                                 move |params: #method_params_struct_name, (client, state_key_ref, slot_key_ref)| {
                                     let (Some(state_key), Some(slot_key)) = (state_key_ref.borrow().as_ref().cloned(), slot_key_ref.borrow().as_ref().cloned()) else {
-                                        error.set(Some(FetchError::UnknownError("State key or slot key is missing".to_string())));
+                                        error.set(Some(FetchError::UnknownError(
+                                            format!("State key or slot key is missing. state key: {state_key_ref:?}, slot key: {slot_key_ref:?}")
+                                        )));
+
                                         return;
                                     };
 
                                     if let Some(slotmap) = client.queries.borrow().get(&state_key) {
-                                        if let Some(#state_enum_name::#variant_name(state)) = slotmap.get(slot_key) {
+                                        if let Some(#state_enum_name::Ws(state)) = slotmap.get(slot_key) {
                                             match state.web_socket_watcher.borrow().send(&params.body) {
-                                                Ok(()) => {}
+                                                Ok(()) => {
+                                                    error.set(None);
+                                                }
                                                 Err(err) => {
                                                     error.set(Some(err));
                                                 }
@@ -508,7 +499,7 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                                     };
 
                                     if let Some(slotmap) = client.queries.borrow().get(&state_key) {
-                                        if let Some(#state_enum_name::#variant_name(state)) = slotmap.get(slot_key) {
+                                        if let Some(#state_enum_name::Ws(state)) = slotmap.get(slot_key) {
                                             match (*state.web_socket_watcher).borrow_mut().unsubscribe(&*subscriber.as_ref()) {
                                                 Ok(()) => {}
                                                 Err(err) => {
@@ -905,9 +896,21 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
             #(#structs)*
             #(#errors)*
 
-            #[derive(Clone, PartialEq)]
-            pub enum #state_enum_name {
+            #[derive(Clone, Debug, PartialEq, Deserialize)]
+            #[serde(untagged)]
+            enum #data_enum_name {
+                #(#data_enum_variants)*
+            }
+
+            #[derive(Clone, Debug, PartialEq)]
+            struct #ws_state_struct_name {
+                pub web_socket_watcher: Rc<RefCell<WebSocketWatcher<#data_enum_name>>>,
+            }
+
+            #[derive(Clone, Debug, PartialEq)]
+            enum #state_enum_name {
                 #(#state_enum_variants)*
+                Ws(#ws_state_struct_name),
             }
 
             #[derive(Clone)]
