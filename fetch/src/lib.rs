@@ -63,12 +63,12 @@ impl Parse for FetchAttributeArgs {
     }
 }
 
-static HTTP_VERBS: [&str; 5] = ["GET", "POST", "PUT", "PATCH", "DELETE"];
+static ALLOWED_METHODS: [&str; 6] = ["GET", "POST", "PUT", "PATCH", "DELETE", "WS"];
 
 fn extract_attrs(attrs: &[Attribute]) -> SynResult<(String, String, Type, Type, Type, Type)> {
     for attr in attrs {
         if let Some(ident) = attr.path().get_ident() {
-            if HTTP_VERBS.contains(&ident.to_string().to_uppercase().as_str()) {
+            if ALLOWED_METHODS.contains(&ident.to_string().to_uppercase().as_str()) {
                 let FetchAttributeArgs {
                     path,
                     slugs,
@@ -95,11 +95,14 @@ fn extract_attrs(attrs: &[Attribute]) -> SynResult<(String, String, Type, Type, 
     ))
 }
 
-#[proc_macro_derive(FetchSchema, attributes(get, post, put, patch, delete))]
+#[proc_macro_derive(FetchSchema, attributes(get, post, put, patch, delete, ws))]
 #[allow(clippy::too_many_lines)]
 pub fn fetch_schema(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
     let enum_name = &input.ident;
+    let state_enum_name = format_ident!("{}State", enum_name);
+    let data_enum_name = format_ident!("{}WsData", enum_name);
+    let ws_state_struct_name = format_ident!("{}WsState", enum_name);
     let module_name = format_ident!("{}_fetch_schema", enum_name.to_string().to_snake_case());
     let fetch_client_name = format_ident!("{}FetchClient", enum_name);
     let fetch_client_options_name = format_ident!("{}Options", fetch_client_name);
@@ -120,17 +123,22 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
         });
     };
 
-    let mut methods = Vec::new();
     let mut structs = Vec::new();
+    let mut methods = Vec::new();
     let mut hooks = Vec::new();
     let mut errors = Vec::new();
     let mut variant_names = Vec::new();
+    let mut state_enum_variants = Vec::new();
+    let mut data_enum_variants = Vec::new();
 
     for variant in variants {
         let variant_name = &variant.ident;
         variant_names.push(variant_name);
 
+        let state_struct_name = format_ident!("{}State", variant_name);
         let method_params_struct_name = format_ident!("{}Params", variant_name);
+        let method_open_params_struct_name = format_ident!("{}HookOpenParams", variant_name);
+        let hook_open_params_struct_name = format_ident!("{}OpenParams", variant_name);
         let variant_snake_case = variant_name.to_string().to_snake_case();
         let fetch_method_name = format_ident!("{}", variant_snake_case);
         let prepare_url_method_name = format_ident!("prepare_{}_url", variant_snake_case);
@@ -145,14 +153,133 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
 
         match extract_attrs(&variant.attrs) {
             Ok((http_method, path, slugs, query, body, res)) => {
-                structs.push(quote! {
-                    #[derive(Default, Clone, PartialEq)]
-                    pub struct #method_params_struct_name {
-                        pub slugs: #slugs,
-                        pub query: #query,
-                        pub body: #body,
-                    }
-                });
+                if http_method == "WS" {
+                    structs.push(quote! {
+                        #[derive(Default, Clone, PartialEq)]
+                        pub struct #hook_open_params_struct_name {
+                            pub slugs: #slugs,
+                            pub query: #query,
+                        }
+
+                        #[derive(Default, Clone, PartialEq)]
+                        pub struct #method_open_params_struct_name {
+                            pub slugs: #slugs,
+                            pub query: #query,
+                            pub onopen: Option<Callback<web_sys::Event>>,
+                            pub onmessage: Option<Callback<web_sys::MessageEvent>>,
+                            pub onerror: Option<Callback<web_sys::ErrorEvent>>,
+                            pub onclose: Option<Callback<web_sys::CloseEvent>>,
+                        }
+
+                        #[derive(Default, Clone, PartialEq)]
+                        pub struct #method_params_struct_name {
+                            pub body: #body,
+                        }
+
+                        #[derive(Clone, Debug)]
+                        pub struct #hook_handle_name {
+                            pub data: UseStateHandle<Option<#res>>,
+                            pub status: UseStateHandle<WsStatus>,
+                            pub error: UseStateHandle<Option<FetchError>>,
+                            pub send: Callback<#method_params_struct_name>,
+                            pub close: Callback<()>,
+                        }
+
+                        impl PartialEq for #hook_handle_name {
+                            fn eq(&self, other: &Self) -> bool {
+                                self.data == other.data
+                                    && self.status == other.status
+                            }
+                        }
+
+                        #[derive(Clone, Debug)]
+                        pub struct #hook_async_handle_name {
+                            pub data: UseStateHandle<Option<#res>>,
+                            pub status: UseStateHandle<WsStatus>,
+                            pub error: UseStateHandle<Option<FetchError>>,
+                            pub send: Callback<#method_params_struct_name>,
+                            pub open: Callback<#hook_open_params_struct_name>,
+                            pub close: Callback<()>,
+                        }
+
+                        impl PartialEq for #hook_async_handle_name {
+                            fn eq(&self, other: &Self) -> bool {
+                                self.data == other.data
+                                    && self.status == other.status
+                            }
+                        }
+
+                        #[derive(Clone, PartialEq, Default)]
+                        pub struct #hook_options_name {
+                            pub on_success: Option<Callback<#res>>,
+                            pub on_error: Option<Callback<FetchError>>,
+                        }
+                    });
+                } else {
+                    structs.push(quote! {
+                        #[derive(Default, Clone, PartialEq)]
+                        pub struct #method_params_struct_name {
+                            pub slugs: #slugs,
+                            pub query: #query,
+                            pub body: #body,
+                        }
+
+                        #[derive(Clone, Debug, PartialEq)]
+                        pub struct #state_struct_name {
+                            pub data: UseStateHandle<Option<#res>>,
+                            pub loading: UseStateHandle<bool>,
+                            pub error: UseStateHandle<Option<FetchError>>,
+                        }
+
+                        #[derive(Clone, Debug)]
+                        pub struct #hook_handle_name {
+                            pub data: UseStateHandle<Option<#res>>,
+                            pub loading: UseStateHandle<bool>,
+                            pub error: UseStateHandle<Option<FetchError>>,
+                            pub cancel: Callback<()>,
+                        }
+
+                        impl PartialEq for #hook_handle_name {
+                            fn eq(&self, other: &Self) -> bool {
+                                self.data == other.data
+                                    && self.loading == other.loading
+                            }
+                        }
+
+                        #[derive(Clone, Debug)]
+                        pub struct #hook_async_handle_name {
+                            pub data: UseStateHandle<Option<#res>>,
+                            pub loading: UseStateHandle<bool>,
+                            pub error: UseStateHandle<Option<FetchError>>,
+                            pub trigger: Callback<#method_params_struct_name>,
+                            pub cancel: Callback<()>,
+                        }
+
+                        impl PartialEq for #hook_async_handle_name {
+                            fn eq(&self, other: &Self) -> bool {
+                                self.data == other.data
+                                    && self.loading == other.loading
+                            }
+                        }
+
+                        #[derive(Clone, PartialEq, Default)]
+                        pub struct #hook_options_name {
+                            pub cache_options: Option<CacheOptions>,
+                            pub on_success: Option<Callback<#res>>,
+                            pub on_error: Option<Callback<FetchError>>,
+                        }
+                    });
+                }
+
+                if http_method == "WS" {
+                    data_enum_variants.push(quote! {
+                        #variant_name(#res),
+                    });
+                } else {
+                    state_enum_variants.push(quote! {
+                        #variant_name(#state_struct_name),
+                    });
+                }
 
                 methods.push(quote! {
                     pub fn #prepare_url_method_name(&self) -> String {
@@ -180,170 +307,379 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
 
                         url
                     }
-
-                    pub async fn #fetch_method_name(&self, url: String, abort_signal: Rc<web_sys::AbortSignal>, params: #method_params_struct_name) -> Result<String, FetchError> {
-                        let fetch_options = FetchOptions {
-                            slugs: params.slugs,
-                            query: params.query,
-                            body: params.body,
-                            middlewares: self.middlewares.as_slice(),
-                            abort_signal: abort_signal.clone(),
-                        };
-
-                        fetch::<#slugs, #query, #body>(
-                            HttpMethod::from(#http_method),
-                            url.as_str(),
-                            fetch_options,
-                        ).await
-                    }
                 });
 
-                hooks.push(quote! {
-                    #[derive(Clone, Debug)]
-                    pub struct #hook_handle_name {
-                        pub data: UseStateHandle<Option<#res>>,
-                        pub loading: UseStateHandle<bool>,
-                        pub error: UseStateHandle<Option<FetchError>>,
-                        pub cancel: Callback<()>,
-                    }
+                if http_method != "WS" {
+                    methods.push(quote! {
+                        pub async fn #fetch_method_name(&self, url: String, abort_signal: Rc<web_sys::AbortSignal>, params: #method_params_struct_name) -> Result<String, FetchError> {
+                            let fetch_options = FetchOptions {
+                                slugs: params.slugs,
+                                query: params.query,
+                                body: params.body,
+                                middlewares: self.middlewares.as_slice(),
+                                abort_signal: abort_signal.clone(),
+                            };
 
-                    impl PartialEq for #hook_handle_name {
-                        fn eq(&self, other: &Self) -> bool {
-                            self.data == other.data
-                                && self.loading == other.loading
+                            fetch::<#slugs, #query, #body>(
+                                HttpMethod::from(#http_method),
+                                url.as_str(),
+                                fetch_options,
+                            ).await
                         }
-                    }
+                    });
+                }
 
-                    #[derive(Clone, Debug)]
-                    pub struct #hook_async_handle_name {
-                        pub data: UseStateHandle<Option<#res>>,
-                        pub loading: UseStateHandle<bool>,
-                        pub error: UseStateHandle<Option<FetchError>>,
-                        pub trigger: Callback<#method_params_struct_name>,
-                        pub cancel: Callback<()>,
-                    }
+                if http_method == "WS" {
+                    hooks.push(quote! {
+                        #[hook]
+                        fn #common_hook_name(options: Option<#hook_options_name>) -> #hook_async_handle_name {
+                            let client = use_context::<Rc<#fetch_client_name>>()
+                                .expect(
+                                    &format!(
+                                        "{} must be used within a {} provider",
+                                        stringify!(#hook_name),
+                                        stringify!(#fetch_client_context_provider_name)
+                                    )
+                                );
 
-                    impl PartialEq for #hook_async_handle_name {
-                        fn eq(&self, other: &Self) -> bool {
-                            self.data == other.data
-                                && self.loading == other.loading
-                        }
-                    }
+                            let data = use_state(|| None::<#res>);
+                            let status = use_state(|| WsStatus::Closed);
+                            let error = use_state(|| None::<FetchError>);
+                            let state_key_ref = use_mut_ref(|| None::<String>);
+                            let slot_key_ref = use_mut_ref(|| None::<usize>);
 
-                    #[derive(Clone, PartialEq, Default)]
-                    pub struct #hook_options_name {
-                        pub cache_options: Option<CacheOptions>,
-                        pub on_success: Option<Callback<#res>>,
-                        pub on_error: Option<Callback<FetchError>>,
-                    }
+                            let onopen = use_callback((), {
+                                let status = status.clone();
 
-                    #[hook]
-                    fn #common_hook_name(options: Option<#hook_options_name>) -> #hook_async_handle_name {
-                        let client = use_context::<#fetch_client_name>()
-                            .expect(
-                                &format!(
-                                    "{} must be used within a {} provider",
-                                    stringify!(#hook_name),
-                                    stringify!(#fetch_client_context_provider_name)
-                                )
+                                move |_event: web_sys::Event, ()| {
+                                    status.set(WsStatus::Open);
+                                }
+                            });
+
+                            let onmessage = use_callback(options.clone(), {
+                                let data = data.clone();
+                                let error = error.clone();
+
+                                move |res: #data_enum_name, options| {
+                                    if let #data_enum_name::#variant_name(res) = res {
+                                        data.set(Some(res));
+                                    }
+                                }
+                            });
+
+                            let onerror = use_callback((), {
+                                let error = error.clone();
+
+                                move |err: FetchError, ()| {
+                                    error.set(Some(err));
+                                }
+                            });
+
+                            let onclose = use_callback((), {
+                                let status = status.clone();
+
+                                move |_event: web_sys::CloseEvent, ()| {
+                                    status.set(WsStatus::Closed);
+                                }
+                            });
+
+                            let subscriber = use_memo(
+                                (onopen.clone(), onmessage.clone(), onerror.clone(), onclose.clone()),
+                                |(onopen, onmessage, onerror, onclose)| WebSocketSubscriber {
+                                        onopen: onopen.clone(),
+                                        onmessage: onmessage.clone(),
+                                        onerror: onerror.clone(),
+                                        onclose: onclose.clone(),
+                                }
                             );
 
-                        let data = use_state(|| None::<#res>);
-                        let loading = use_state(|| false);
-                        let error = use_state(|| None::<FetchError>);
-
-                        let abort_controller = match web_sys::AbortController::new() {
-                            Ok(controller) => Rc::new(controller),
-                            Err(abort_controller_error) => {
-                                error.set(Some(FetchError::UnknownError(format!("{abort_controller_error:?}"))));
-
-                                return #hook_async_handle_name {
-                                    data,
-                                    loading,
-                                    error,
-                                    trigger: Callback::noop(),
-                                    cancel: Callback::noop(),
-                                };
-                            }
-                        };
-
-                        let abort_signal = Rc::new(abort_controller.signal());
-
-                        let trigger = use_callback(client.clone(), {
-                            let data = data.clone();
-                            let loading = loading.clone();
-                            let error = error.clone();
-                            let abort_signal = abort_signal.clone();
-                            let options = options.clone();
-
-                            move |params: #method_params_struct_name, client| {
-                                let data = data.clone();
-                                let loading = loading.clone();
+                            let open = use_callback((client.clone(), subscriber.clone()), {
                                 let error = error.clone();
-                                let client = client.clone();
-                                let options = options.clone();
-                                let abort_signal = abort_signal.clone();
+                                let status = status.clone();
+                                let state_key_ref = state_key_ref.clone();
+                                let slot_key_ref = slot_key_ref.clone();
 
-                                let cache_policy = {
-                                    let custom_cache_policy = options.as_ref().and_then(
-                                        |o| o.cache_options.as_ref().and_then(|options| options.policy.clone())
-                                    );
+                                move |params: #hook_open_params_struct_name, (client, subscriber)| {
+                                    let url = client.#prepare_url_method_name();
 
-                                    custom_cache_policy.unwrap_or_else(|| {
-                                        let cache_ref = client.cache.borrow();
-                                        cache_ref.policy().clone()
-                                    })
-                                };
+                                    let Ok(state_key) = generate_state_key("ws", url.as_str(), &params.slugs, &params.query) else {
+                                        error.set(Some(FetchError::UnknownError("Failed to generate state key".to_string())));
+                                        return;
+                                    };
 
-                                let method = HttpMethod::from(#http_method);
-                                let url = client.#prepare_url_method_name();
+                                    state_key_ref.replace(Some(state_key.clone()));
+                                    let mut queries = (*client.queries).borrow_mut();
 
-                                let (cache_key, cache_entry) = match cache_policy {
-                                    CachePolicy::NetworkOnly => {
-                                        (None, None)
-                                    }
-                                    _ => {
-                                        if let Ok(cache_key) = generate_cache_key(&method, url.as_str(), &params.slugs, &params.query, &params.body) {
-                                            let cache_entry = {
-                                                let cache_ref = client.cache.borrow();
-                                                cache_ref.get(&cache_key).cloned()
-                                            };
-
-                                            (Some(cache_key), cache_entry)
-                                        } else {
-                                            (None, None)
+                                    if let Some(mut slotmap) = queries.get_mut(&state_key) {
+                                        if slot_key_ref.borrow().is_some() {
+                                            return;
                                         }
-                                    }
-                                };
 
+                                        if let Some(#state_enum_name::Ws(state)) = slotmap.first().cloned() {
+                                            match (*state.web_socket_watcher).borrow_mut().subscribe((**subscriber).clone()) {
+                                                Ok(()) => {
+                                                    let slot_key = slotmap.insert(#state_enum_name::Ws(#ws_state_struct_name {
+                                                        web_socket_watcher: state.web_socket_watcher.clone(),
+                                                    }));
 
-                                spawn_local(async move {
-                                    loading.set(true);
+                                                    slot_key_ref.replace(Some(slot_key));
+                                                    error.set(None);
+                                                }
+                                                Err(err) => {
+                                                    error.set(Some(err));
+                                                }
+                                            }
+                                        }
+                                    } else {
+                                        match build_url(url.as_str(), &params.slugs, &params.query) {
+                                            Ok(url) => {
+                                                let mut slotmap = SlotMap::<#state_enum_name>::new();
+                                                let mut watcher = WebSocketWatcher::<#data_enum_name>::new(String::from(url.to_string()));
 
-                                    match cache_policy {
-                                        CachePolicy::StaleWhileRevalidate => {
-                                            if let Some(key) = cache_key {
-                                                if let Some(entry) = cache_entry {
-                                                    match deserialize_cached_data::<#res>(&entry.data) {
-                                                        Ok(res) => {
-                                                            data.set(Some(res));
-                                                        }
-                                                        Err(err) => {
-                                                            error.set(Some(err));
-                                                        }
+                                                match watcher.subscribe((**subscriber).clone()) {
+                                                    Ok(()) => {
+                                                        error.set(None);
+                                                    }
+                                                    Err(err) => {
+                                                        error.set(Some(err));
+                                                        return;
                                                     }
                                                 }
 
-                                                match client.#fetch_method_name(url, abort_signal, params).await {
-                                                    Ok(res) => {
-                                                        match deserialize_response_and_store_cache::<#res>(
-                                                            &res,
-                                                            &client.cache,
-                                                            &key,
-                                                            options.as_ref().and_then(
-                                                                |o| o.cache_options.as_ref().and_then(|options| options.max_age)
-                                                            )
-                                                        ) {
+                                                let slot_key = slotmap.insert(#state_enum_name::Ws(#ws_state_struct_name {
+                                                    web_socket_watcher: Rc::new(RefCell::new(watcher)),
+                                                }));
+
+                                                slot_key_ref.replace(Some(slot_key));
+                                                queries.insert(state_key, slotmap);
+                                            },
+                                            Err(err) => {
+                                                error.set(Some(err));
+                                            }
+                                        }
+                                    }
+                                }
+                            });
+
+                            let send = use_callback((client.clone(), state_key_ref.clone(), slot_key_ref.clone()), {
+                                let error = error.clone();
+
+                                move |params: #method_params_struct_name, (client, state_key_ref, slot_key_ref)| {
+                                    let (Some(state_key), Some(slot_key)) = (state_key_ref.borrow().as_ref().cloned(), slot_key_ref.borrow().as_ref().cloned()) else {
+                                        error.set(Some(FetchError::UnknownError(
+                                            format!("State key or slot key is missing. state key: {state_key_ref:?}, slot key: {slot_key_ref:?}")
+                                        )));
+
+                                        return;
+                                    };
+
+                                    if let Some(slotmap) = client.queries.borrow().get(&state_key) {
+                                        if let Some(#state_enum_name::Ws(state)) = slotmap.get(slot_key) {
+                                            match state.web_socket_watcher.borrow().send(&params.body) {
+                                                Ok(()) => {
+                                                    error.set(None);
+                                                }
+                                                Err(err) => {
+                                                    error.set(Some(err));
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            });
+
+                            let close = use_callback((client.clone(), subscriber.clone(), state_key_ref.clone(), slot_key_ref.clone()), {
+                                let status = status.clone();
+                                let error = error.clone();
+
+                                move |(), (client, subscriber, state_key_ref, slot_key_ref)| {
+                                    let (Some(state_key), Some(slot_key)) = (state_key_ref.borrow().as_ref().cloned(), slot_key_ref.borrow().as_ref().cloned()) else {
+                                        error.set(Some(FetchError::UnknownError("State key or slot key is missing".to_string())));
+                                        return;
+                                    };
+
+                                    if let Some(slotmap) = client.queries.borrow().get(&state_key) {
+                                        if let Some(#state_enum_name::Ws(state)) = slotmap.get(slot_key) {
+                                            match (*state.web_socket_watcher).borrow_mut().unsubscribe(&*subscriber.as_ref()) {
+                                                Ok(()) => {}
+                                                Err(err) => {
+                                                    error.set(Some(err));
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            });
+
+                            use_effect_with((error.clone(), options.clone()), |(error, options)| {
+                                if let Some(error) = (**error).as_ref() {
+                                    let on_error = options.as_ref().and_then(|o| o.on_error.clone()).unwrap_or_else(Callback::noop);
+                                    on_error.emit(error.clone());
+                                }
+                            });
+
+                            use_effect_with((data.clone(), options.clone()), |(data, options)| {
+                                if let Some(data) = (**data).as_ref() {
+                                    let on_success = options.as_ref().and_then(|o| o.on_success.clone()).unwrap_or_else(Callback::noop);
+                                    on_success.emit(data.clone());
+                                }
+                            });
+
+                            use_effect_with((client.clone(), close.clone(), state_key_ref.clone(), slot_key_ref.clone()), {
+                                let error = error.clone();
+
+                                move |(client, close, state_key_ref, slot_key_ref)| {
+                                    let client = client.clone();
+                                    let close = close.clone();
+                                    let state_key_ref = state_key_ref.clone();
+                                    let slot_key_ref = slot_key_ref.clone();
+
+                                    move || {
+                                        close.emit(());
+
+                                        let (Some(state_key), Some(slot_key)) = (state_key_ref.borrow().as_ref().cloned(), slot_key_ref.borrow().as_ref().cloned()) else {
+                                            error.set(Some(FetchError::UnknownError("State key or slot key is missing".to_string())));
+                                            return;
+                                        };
+
+                                        let mut queries = (*client.queries).borrow_mut();
+
+                                        if let Some(slotmap) = queries.get_mut(&state_key) {
+                                            slotmap.remove(slot_key);
+
+                                            if slotmap.is_empty() {
+                                                queries.remove(&state_key);
+                                            }
+                                        }
+                                    }
+                                }
+                            });
+
+                            #hook_async_handle_name {
+                                data,
+                                status,
+                                error,
+                                send,
+                                open,
+                                close,
+                            }
+                        }
+
+                        #[hook]
+                        pub fn #hook_name_async() -> #hook_async_handle_name {
+                            #common_hook_name(None)
+                        }
+
+                        #[hook]
+                        pub fn #hook_name(params: #hook_open_params_struct_name) -> #hook_handle_name {
+                            let hook = #common_hook_name(None);
+
+                            use_effect_with((params.clone(), hook.open.clone(), hook.close.clone()), |(params, open, close)| {
+                                open.emit(params.clone());
+                                let close = close.clone();
+
+                                move || {
+                                    close.emit(());
+                                }
+                            });
+
+                            #hook_handle_name {
+                                data: hook.data,
+                                status: hook.status,
+                                error: hook.error,
+                                send: hook.send.clone(),
+                                close: hook.close.clone(),
+                            }
+                        }
+                    });
+                } else {
+                    hooks.push(quote! {
+                        #[hook]
+                        fn #common_hook_name(options: Option<#hook_options_name>) -> #hook_async_handle_name {
+                            let client = use_context::<Rc<#fetch_client_name>>()
+                                .expect(
+                                    &format!(
+                                        "{} must be used within a {} provider",
+                                        stringify!(#hook_name),
+                                        stringify!(#fetch_client_context_provider_name)
+                                    )
+                                );
+
+                            let data = use_state(|| None::<#res>);
+                            let loading = use_state(|| false);
+                            let error = use_state(|| None::<FetchError>);
+
+                            let abort_controller = match web_sys::AbortController::new() {
+                                Ok(controller) => Rc::new(controller),
+                                Err(abort_controller_error) => {
+                                    error.set(Some(FetchError::UnknownError(format!("{abort_controller_error:?}"))));
+
+                                    return #hook_async_handle_name {
+                                        data,
+                                        loading,
+                                        error,
+                                        trigger: Callback::noop(),
+                                        cancel: Callback::noop(),
+                                    };
+                                }
+                            };
+
+                            let abort_signal = Rc::new(abort_controller.signal());
+
+                            let trigger = use_callback((client.clone(), options.clone()), {
+                                let data = data.clone();
+                                let loading = loading.clone();
+                                let error = error.clone();
+                                let abort_signal = abort_signal.clone();
+
+                                move |params: #method_params_struct_name, (client, options)| {
+                                    let data = data.clone();
+                                    let loading = loading.clone();
+                                    let error = error.clone();
+                                    let client = client.clone();
+                                    let options = options.clone();
+                                    let abort_signal = abort_signal.clone();
+
+                                    let cache_policy = {
+                                        let custom_cache_policy = options.as_ref().and_then(
+                                            |o| o.cache_options.as_ref().and_then(|options| options.policy.clone())
+                                        );
+
+                                        custom_cache_policy.unwrap_or_else(|| {
+                                            let cache_ref = client.cache.borrow();
+                                            cache_ref.policy().clone()
+                                        })
+                                    };
+
+                                    let method = HttpMethod::from(#http_method);
+                                    let url = client.#prepare_url_method_name();
+
+                                    let (cache_key, cache_entry) = match cache_policy {
+                                        CachePolicy::NetworkOnly => {
+                                            (None, None)
+                                        }
+                                        _ => {
+                                            if let Ok(cache_key) = generate_cache_key(&method, url.as_str(), &params.slugs, &params.query, &params.body) {
+                                                let cache_entry = {
+                                                    let cache_ref = client.cache.borrow();
+                                                    cache_ref.get(&cache_key).cloned()
+                                                };
+
+                                                (Some(cache_key), cache_entry)
+                                            } else {
+                                                (None, None)
+                                            }
+                                        }
+                                    };
+
+                                    spawn_local(async move {
+                                        loading.set(true);
+
+                                        match cache_policy {
+                                            CachePolicy::StaleWhileRevalidate => {
+                                                if let Some(key) = cache_key {
+                                                    if let Some(entry) = cache_entry {
+                                                        match deserialize_cached_data::<#res>(&entry.data) {
                                                             Ok(res) => {
                                                                 data.set(Some(res));
                                                             }
@@ -352,24 +688,7 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                                                             }
                                                         }
                                                     }
-                                                    Err(err) => {
-                                                        error.set(Some(err));
-                                                    }
-                                                }
-                                            }
-                                        }
-                                        CachePolicy::CacheThenNetwork => {
-                                            if let Some(key) = cache_key {
-                                                if let Some(entry) = cache_entry {
-                                                    match deserialize_cached_data::<#res>(&entry.data) {
-                                                        Ok(res) => {
-                                                            data.set(Some(res));
-                                                        }
-                                                        Err(err) => {
-                                                            error.set(Some(err));
-                                                        }
-                                                    }
-                                                } else {
+
                                                     match client.#fetch_method_name(url, abort_signal, params).await {
                                                         Ok(res) => {
                                                             match deserialize_response_and_store_cache::<#res>(
@@ -394,11 +713,63 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                                                     }
                                                 }
                                             }
-                                        }
-                                        CachePolicy::NetworkOnly => {
-                                            match client.#fetch_method_name(url, abort_signal, params).await {
-                                                Ok(res) => {
-                                                    match deserialize_response::<#res>(&res) {
+                                            CachePolicy::CacheThenNetwork => {
+                                                if let Some(key) = cache_key {
+                                                    if let Some(entry) = cache_entry {
+                                                        match deserialize_cached_data::<#res>(&entry.data) {
+                                                            Ok(res) => {
+                                                                data.set(Some(res));
+                                                            }
+                                                            Err(err) => {
+                                                                error.set(Some(err));
+                                                            }
+                                                        }
+                                                    } else {
+                                                        match client.#fetch_method_name(url, abort_signal, params).await {
+                                                            Ok(res) => {
+                                                                match deserialize_response_and_store_cache::<#res>(
+                                                                    &res,
+                                                                    &client.cache,
+                                                                    &key,
+                                                                    options.as_ref().and_then(
+                                                                        |o| o.cache_options.as_ref().and_then(|options| options.max_age)
+                                                                    )
+                                                                ) {
+                                                                    Ok(res) => {
+                                                                        data.set(Some(res));
+                                                                    }
+                                                                    Err(err) => {
+                                                                        error.set(Some(err));
+                                                                    }
+                                                                }
+                                                            }
+                                                            Err(err) => {
+                                                                error.set(Some(err));
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                            CachePolicy::NetworkOnly => {
+                                                match client.#fetch_method_name(url, abort_signal, params).await {
+                                                    Ok(res) => {
+                                                        match deserialize_response::<#res>(&res) {
+                                                            Ok(res) => {
+                                                                data.set(Some(res));
+                                                            }
+                                                            Err(err) => {
+                                                                error.set(Some(err));
+                                                            }
+                                                        }
+                                                    }
+                                                    Err(err) => {
+                                                        error.set(Some(err));
+                                                    }
+                                                }
+                                            }
+                                            CachePolicy::CacheOnly => {
+                                                if let Some(entry) = cache_entry {
+                                                    match deserialize_cached_data::<#res>(&entry.data) {
                                                         Ok(res) => {
                                                             data.set(Some(res));
                                                         }
@@ -407,100 +778,84 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                                                         }
                                                     }
                                                 }
-                                                Err(err) => {
-                                                    error.set(Some(err));
-                                                }
                                             }
                                         }
-                                        CachePolicy::CacheOnly => {
-                                            if let Some(entry) = cache_entry {
-                                                match deserialize_cached_data::<#res>(&entry.data) {
-                                                    Ok(res) => {
-                                                        data.set(Some(res));
-                                                    }
-                                                    Err(err) => {
-                                                        error.set(Some(err));
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
 
-                                    loading.set(false);
-                                });
+                                        loading.set(false);
+                                    });
+                                }
+                            });
+
+                            use_effect_with((error.clone(), options.clone()), |(error, options)| {
+                                if let Some(error) = (**error).as_ref() {
+                                    let on_error = options.as_ref().and_then(|o| o.on_error.clone()).unwrap_or_else(Callback::noop);
+                                    on_error.emit(error.clone());
+                                }
+                            });
+
+                            use_effect_with((data.clone(), options.clone()), |(data, options)| {
+                                if let Some(data) = (**data).as_ref() {
+                                    let on_success = options.as_ref().and_then(|o| o.on_success.clone()).unwrap_or_else(Callback::noop);
+                                    on_success.emit(data.clone());
+                                }
+                            });
+
+                            let cancel = use_callback(abort_controller.clone(), |(), controller| {
+                                controller.abort();
+                            });
+
+                            #hook_async_handle_name {
+                                data,
+                                loading,
+                                error,
+                                trigger,
+                                cancel,
                             }
-                        });
-
-                        use_effect_with((error.clone(), options.clone()), |(error, options)| {
-                            if let Some(error) = (**error).as_ref() {
-                                let on_error = options.as_ref().and_then(|o| o.on_error.clone()).unwrap_or_else(Callback::noop);
-                                on_error.emit(error.clone());
-                            }
-                        });
-
-                        use_effect_with((data.clone(), options.clone()), |(data, options)| {
-                            if let Some(data) = (**data).as_ref() {
-                                let on_success = options.as_ref().and_then(|o| o.on_success.clone()).unwrap_or_else(Callback::noop);
-                                on_success.emit(data.clone());
-                            }
-                        });
-
-                        let cancel = use_callback(abort_controller.clone(), |(), controller| {
-                            controller.abort();
-                        });
-
-                        #hook_async_handle_name {
-                            data,
-                            loading,
-                            error,
-                            trigger,
-                            cancel,
                         }
 
-                    }
-
-                    #[hook]
-                    pub fn #hook_with_options_name_async(options: #hook_options_name) -> #hook_async_handle_name {
-                        #common_hook_name(Some(options))
-                    }
-
-                    #[hook]
-                    pub fn #hook_name_async() -> #hook_async_handle_name {
-                        #common_hook_name(None)
-                    }
-
-                    #[hook]
-                    pub fn #hook_name(params: #method_params_struct_name) -> #hook_handle_name {
-                        let hook = #common_hook_name(None);
-
-                        use_effect_with((params.clone(), hook.trigger.clone()), |(params, trigger)| {
-                            trigger.emit(params.clone());
-                        });
-
-                        #hook_handle_name {
-                            data: hook.data,
-                            loading: hook.loading,
-                            error: hook.error,
-                            cancel: hook.cancel,
+                        #[hook]
+                        pub fn #hook_with_options_name_async(options: #hook_options_name) -> #hook_async_handle_name {
+                            #common_hook_name(Some(options))
                         }
-                    }
 
-                    #[hook]
-                    pub fn #hook_with_options_name(params: #method_params_struct_name, options: #hook_options_name) -> #hook_handle_name {
-                        let hook = #common_hook_name(Some(options));
-
-                        use_effect_with((params.clone(), hook.trigger.clone()), |(params, trigger)| {
-                            trigger.emit(params.clone());
-                        });
-
-                        #hook_handle_name {
-                            data: hook.data,
-                            loading: hook.loading,
-                            error: hook.error,
-                            cancel: hook.cancel,
+                        #[hook]
+                        pub fn #hook_name_async() -> #hook_async_handle_name {
+                            #common_hook_name(None)
                         }
-                    }
-                });
+
+                        #[hook]
+                        pub fn #hook_name(params: #method_params_struct_name) -> #hook_handle_name {
+                            let hook = #common_hook_name(None);
+
+                            use_effect_with((params.clone(), hook.trigger.clone()), |(params, trigger)| {
+                                trigger.emit(params.clone());
+                            });
+
+                            #hook_handle_name {
+                                data: hook.data,
+                                loading: hook.loading,
+                                error: hook.error,
+                                cancel: hook.cancel,
+                            }
+                        }
+
+                        #[hook]
+                        pub fn #hook_with_options_name(params: #method_params_struct_name, options: #hook_options_name) -> #hook_handle_name {
+                            let hook = #common_hook_name(Some(options));
+
+                            use_effect_with((params.clone(), hook.trigger.clone()), |(params, trigger)| {
+                                trigger.emit(params.clone());
+                            });
+
+                            #hook_handle_name {
+                                data: hook.data,
+                                loading: hook.loading,
+                                error: hook.error,
+                                cancel: hook.cancel,
+                            }
+                        }
+                    });
+                }
             }
             Err(error) => {
                 errors.push(error);
@@ -531,22 +886,39 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
             use std::cell::RefCell;
             use std::any::TypeId;
             use std::borrow::BorrowMut;
-            use yewlish_fetch_utils::{
-                fetch, FetchOptions, HttpMethod, FetchError, Middleware, Cacheable, Cache, CacheOptions, CacheEntry,
-                generate_cache_key, CachePolicy, deserialize_cached_data, deserialize_response, deserialize_response_and_store_cache
-            };
+            use yewlish_fetch_utils::*;
             use yew::prelude::*;
             use yew::platform::spawn_local;
+            use std::collections::HashMap;
+            use std::any::Any;
+            use wasm_bindgen::JsCast;
 
             #(#structs)*
             #(#errors)*
 
+            #[derive(Clone, Debug, PartialEq, Deserialize)]
+            #[serde(untagged)]
+            enum #data_enum_name {
+                #(#data_enum_variants)*
+            }
+
+            #[derive(Clone, Debug, PartialEq)]
+            struct #ws_state_struct_name {
+                pub web_socket_watcher: Rc<RefCell<WebSocketWatcher<#data_enum_name>>>,
+            }
+
+            #[derive(Clone, Debug, PartialEq)]
+            enum #state_enum_name {
+                #(#state_enum_variants)*
+                Ws(#ws_state_struct_name),
+            }
 
             #[derive(Clone)]
             pub struct #fetch_client_name {
                 pub base_url: String,
                 pub middlewares: Vec<Middleware>,
                 pub cache: Rc<RefCell<dyn Cacheable>>,
+                pub queries: Rc<RefCell<HashMap<String, SlotMap<#state_enum_name>>>>,
                 _marker: std::marker::PhantomData<#enum_name>,
             }
 
@@ -563,6 +935,7 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                         base_url: base_url.to_string(),
                         middlewares: Vec::new(),
                         cache: Rc::new(RefCell::new(Cache::default())),
+                        queries: Rc::new(RefCell::new(HashMap::new())),
                         _marker: std::marker::PhantomData
                     }
                 }
@@ -601,9 +974,9 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
             #[function_component(#fetch_client_context_provider_name)]
             pub fn #fetch_client_context_snake_case_provider_name(props: &#fetch_client_context_props_name) -> Html {
                 html! {
-                    <ContextProvider<#fetch_client_name> context={props.client.clone()}>
+                    <ContextProvider<Rc<#fetch_client_name>> context={Rc::new(props.client.clone())}>
                         {for props.children.iter()}
-                    </ContextProvider<#fetch_client_name>>
+                    </ContextProvider<Rc<#fetch_client_name>>>
                 }
             }
 
