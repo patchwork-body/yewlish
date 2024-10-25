@@ -162,7 +162,7 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                         }
 
                         #[derive(Default, Clone, PartialEq)]
-                        pub struct #method_open_params_struct_name {
+                        struct #method_open_params_struct_name {
                             pub slugs: #slugs,
                             pub query: #query,
                             pub onopen: Option<Callback<web_sys::Event>>,
@@ -211,7 +211,8 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
 
                         #[derive(Clone, PartialEq, Default)]
                         pub struct #hook_options_name {
-                            pub on_success: Option<Callback<#res>>,
+                            pub on_data: Option<Callback<#res>>,
+                            pub on_status_change: Option<Callback<WsStatus>>,
                             pub on_error: Option<Callback<FetchError>>,
                         }
                     });
@@ -520,9 +521,14 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
 
                             use_effect_with((data.clone(), options.clone()), |(data, options)| {
                                 if let Some(data) = (**data).as_ref() {
-                                    let on_success = options.as_ref().and_then(|o| o.on_success.clone()).unwrap_or_else(Callback::noop);
-                                    on_success.emit(data.clone());
+                                    let on_data = options.as_ref().and_then(|o| o.on_data.clone()).unwrap_or_else(Callback::noop);
+                                    on_data.emit(data.clone());
                                 }
+                            });
+
+                            use_effect_with((status.clone(), options.clone()), |(status, options)| {
+                                let on_status_change = options.as_ref().and_then(|o| o.on_status_change.clone()).unwrap_or_else(Callback::noop);
+                                on_status_change.emit((**status).clone());
                             });
 
                             use_effect_with((client.clone(), close.clone(), state_key_ref.clone(), slot_key_ref.clone()), {
