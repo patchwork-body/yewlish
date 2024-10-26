@@ -152,8 +152,8 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
         let hook_options_name = format_ident!("{}Options", variant_name);
 
         match extract_attrs(&variant.attrs) {
-            Ok((http_method, path, slugs, query, body, res)) => {
-                if http_method == "WS" {
+            Ok((verb, path, slugs, query, body, res)) => {
+                if verb == "WS" {
                     structs.push(quote! {
                         #[derive(Default, Clone, PartialEq)]
                         pub struct #hook_open_params_struct_name {
@@ -272,7 +272,7 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                     });
                 }
 
-                if http_method == "WS" {
+                if verb == "WS" {
                     data_enum_variants.push(quote! {
                         #variant_name(#res),
                     });
@@ -310,7 +310,7 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                     }
                 });
 
-                if http_method != "WS" {
+                if verb != "WS" {
                     methods.push(quote! {
                         pub async fn #fetch_method_name(&self, url: String, abort_signal: Rc<web_sys::AbortSignal>, params: #method_params_struct_name) -> Result<String, FetchError> {
                             let fetch_options = FetchOptions {
@@ -322,7 +322,7 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                             };
 
                             fetch::<#slugs, #query, #body>(
-                                HttpMethod::from(#http_method),
+                                HttpMethod::from(#verb),
                                 url.as_str(),
                                 fetch_options,
                             ).await
@@ -330,7 +330,7 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                     });
                 }
 
-                if http_method == "WS" {
+                if verb == "WS" {
                     hooks.push(quote! {
                         #[hook]
                         fn #common_hook_name(options: Option<#hook_options_name>) -> #hook_async_handle_name {
@@ -657,7 +657,7 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                                         })
                                     };
 
-                                    let method = HttpMethod::from(#http_method);
+                                    let method = HttpMethod::from(#verb);
                                     let url = client.#prepare_url_method_name();
 
                                     let (cache_key, cache_entry) = match cache_policy {
