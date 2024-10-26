@@ -194,17 +194,12 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                             pub onclose: Option<Callback<web_sys::CloseEvent>>,
                         }
 
-                        #[derive(Default, Clone, PartialEq)]
-                        pub struct #method_params_struct_name {
-                            pub body: #body,
-                        }
-
                         #[derive(Clone, Debug)]
                         pub struct #hook_handle_name {
                             pub data: UseStateHandle<Option<#res>>,
                             pub status: UseStateHandle<WsStatus>,
                             pub error: UseStateHandle<Option<FetchError>>,
-                            pub send: Callback<#method_params_struct_name>,
+                            pub send: Callback<#body>,
                             pub close: Callback<()>,
                         }
 
@@ -220,7 +215,7 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                             pub data: UseStateHandle<Option<#res>>,
                             pub status: UseStateHandle<WsStatus>,
                             pub error: UseStateHandle<Option<FetchError>>,
-                            pub send: Callback<#method_params_struct_name>,
+                            pub send: Callback<#body>,
                             pub open: Callback<#hook_open_params_struct_name>,
                             pub close: Callback<()>,
                         }
@@ -234,9 +229,12 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
 
                         #[derive(Clone, PartialEq, Default)]
                         pub struct #hook_options_name {
-                            pub on_data: Option<Callback<#res>>,
+                            pub on_message: Option<Callback<web_sys::MessageEvent>>,
+                            pub on_data: Option<Callback<#res, Option<#res>>>,
                             pub on_status_change: Option<Callback<WsStatus>>,
                             pub on_error: Option<Callback<FetchError>>,
+                            pub on_open: Option<Callback<web_sys::Event>>,
+                            pub on_close: Option<Callback<web_sys::CloseEvent>>,
                         }
                     });
                 } else {
@@ -386,10 +384,14 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                             let state_key_ref = use_mut_ref(|| None::<String>);
                             let slot_key_ref = use_mut_ref(|| None::<usize>);
 
-                            let onopen = use_callback((), {
+                            let onopen = use_callback(options.clone(), {
                                 let status = status.clone();
 
-                                move |_event: web_sys::Event, ()| {
+                                move |event: web_sys::Event, options| {
+                                    if let Some(on_open) = options.as_ref().and_then(|o| o.on_open.clone()) {
+                                        on_open.emit(event.clone());
+                                    }
+
                                     status.set(WsStatus::Open);
                                 }
                             });
@@ -398,25 +400,43 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                                 let data = data.clone();
                                 let error = error.clone();
 
-                                move |res: #data_enum_name, options| {
+                                move |(event, res): (web_sys::MessageEvent, #data_enum_name), options| {
+                                    if let Some(on_message) = options.as_ref().and_then(|o| o.on_message.clone()) {
+                                        on_message.emit(event.clone());
+                                    }
+
                                     if let #data_enum_name::#variant_name(res) = res {
-                                        data.set(Some(res));
+                                        if let Some(on_data) = options.as_ref().and_then(|o| o.on_data.clone()) {
+                                            if let Some(res) = on_data.emit(res.clone()) {
+                                                data.set(Some(res));
+                                            }
+                                        } else {
+                                            data.set(Some(res));
+                                        }
                                     }
                                 }
                             });
 
-                            let onerror = use_callback((), {
+                            let onerror = use_callback(options.clone(), {
                                 let error = error.clone();
 
-                                move |err: FetchError, ()| {
+                                move |err: FetchError, options| {
+                                    if let Some(on_error) = options.as_ref().and_then(|o| o.on_error.clone()) {
+                                        on_error.emit(err.clone());
+                                    }
+
                                     error.set(Some(err));
                                 }
                             });
 
-                            let onclose = use_callback((), {
+                            let onclose = use_callback(options.clone(), {
                                 let status = status.clone();
 
-                                move |_event: web_sys::CloseEvent, ()| {
+                                move |event: web_sys::CloseEvent, options| {
+                                    if let Some(on_close) = options.as_ref().and_then(|o| o.on_close.clone()) {
+                                        on_close.emit(event.clone());
+                                    }
+
                                     status.set(WsStatus::Closed);
                                 }
                             });
@@ -424,10 +444,10 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                             let subscriber = use_memo(
                                 (onopen.clone(), onmessage.clone(), onerror.clone(), onclose.clone()),
                                 |(onopen, onmessage, onerror, onclose)| WebSocketSubscriber {
-                                        onopen: onopen.clone(),
-                                        onmessage: onmessage.clone(),
-                                        onerror: onerror.clone(),
-                                        onclose: onclose.clone(),
+                                    onopen: onopen.clone(),
+                                    onmessage: onmessage.clone(),
+                                    onerror: onerror.clone(),
+                                    onclose: onclose.clone(),
                                 }
                             );
 
@@ -438,6 +458,7 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                                 let slot_key_ref = slot_key_ref.clone();
 
                                 move |params: #hook_open_params_struct_name, (client, subscriber)| {
+                                    status.set(WsStatus::Opening);
                                     let url = client.#prepare_url_method_name();
 
                                     let Ok(state_key) = generate_state_key("ws", url.as_str(), &params.slugs, &params.query) else {
@@ -502,7 +523,7 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                             let send = use_callback((client.clone(), state_key_ref.clone(), slot_key_ref.clone()), {
                                 let error = error.clone();
 
-                                move |params: #method_params_struct_name, (client, state_key_ref, slot_key_ref)| {
+                                move |message: #body, (client, state_key_ref, slot_key_ref)| {
                                     let (Some(state_key), Some(slot_key)) = (state_key_ref.borrow().as_ref().cloned(), slot_key_ref.borrow().as_ref().cloned()) else {
                                         error.set(Some(FetchError::UnknownError(
                                             format!("State key or slot key is missing. state key: {state_key_ref:?}, slot key: {slot_key_ref:?}")
@@ -513,7 +534,7 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
 
                                     if let Some(slotmap) = client.queries.borrow().get(&state_key) {
                                         if let Some(#state_enum_name::Ws(state)) = slotmap.get(slot_key) {
-                                            match state.web_socket_watcher.borrow().send(&params.body) {
+                                            match state.web_socket_watcher.borrow().send(&message) {
                                                 Ok(()) => {
                                                     error.set(None);
                                                 }
@@ -531,6 +552,8 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                                 let error = error.clone();
 
                                 move |(), (client, subscriber, state_key_ref, slot_key_ref)| {
+                                    status.set(WsStatus::Closing);
+
                                     let (Some(state_key), Some(slot_key)) = (state_key_ref.borrow().as_ref().cloned(), slot_key_ref.borrow().as_ref().cloned()) else {
                                         error.set(Some(FetchError::UnknownError("State key or slot key is missing".to_string())));
                                         return;
@@ -546,20 +569,6 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                                             }
                                         }
                                     }
-                                }
-                            });
-
-                            use_effect_with((error.clone(), options.clone()), |(error, options)| {
-                                if let Some(error) = (**error).as_ref() {
-                                    let on_error = options.as_ref().and_then(|o| o.on_error.clone()).unwrap_or_else(Callback::noop);
-                                    on_error.emit(error.clone());
-                                }
-                            });
-
-                            use_effect_with((data.clone(), options.clone()), |(data, options)| {
-                                if let Some(data) = (**data).as_ref() {
-                                    let on_data = options.as_ref().and_then(|o| o.on_data.clone()).unwrap_or_else(Callback::noop);
-                                    on_data.emit(data.clone());
                                 }
                             });
 
@@ -616,6 +625,33 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                         #[hook]
                         pub fn #hook_name(params: #hook_open_params_struct_name) -> #hook_handle_name {
                             let hook = #common_hook_name(None);
+
+                            use_effect_with((params.clone(), hook.open.clone(), hook.close.clone()), |(params, open, close)| {
+                                open.emit(params.clone());
+                                let close = close.clone();
+
+                                move || {
+                                    close.emit(());
+                                }
+                            });
+
+                            #hook_handle_name {
+                                data: hook.data,
+                                status: hook.status,
+                                error: hook.error,
+                                send: hook.send.clone(),
+                                close: hook.close.clone(),
+                            }
+                        }
+
+                        #[hook]
+                        pub fn #hook_with_options_name_async(options: #hook_options_name) -> #hook_async_handle_name {
+                            #common_hook_name(Some(options))
+                        }
+
+                        #[hook]
+                        pub fn #hook_with_options_name(params: #hook_open_params_struct_name, options: #hook_options_name) -> #hook_handle_name {
+                            let hook = #common_hook_name(Some(options));
 
                             use_effect_with((params.clone(), hook.open.clone(), hook.close.clone()), |(params, open, close)| {
                                 open.emit(params.clone());
