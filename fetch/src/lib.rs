@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use heck::ToSnakeCase;
 use proc_macro::TokenStream;
 use quote::{format_ident, quote};
@@ -131,6 +133,26 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
     let mut state_enum_variants = Vec::new();
     let mut data_enum_variants = Vec::new();
 
+    let mut merged_data_enum_variants = HashMap::new();
+
+    for variant in variants {
+        match extract_attrs(&variant.attrs) {
+            Ok((verb, _path, _slugs, _query, _body, res)) => {
+                if verb == "WS" {
+                    let res_string = quote!(#res).to_string();
+                    let variant_name = &variant.ident;
+
+                    merged_data_enum_variants
+                        .entry(res_string)
+                        .or_insert(variant_name);
+                }
+            }
+            Err(error) => {
+                errors.push(error);
+            }
+        }
+    }
+
     for variant in variants {
         let variant_name = &variant.ident;
         variant_names.push(variant_name);
@@ -153,6 +175,7 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
 
         match extract_attrs(&variant.attrs) {
             Ok((verb, path, slugs, query, body, res)) => {
+                // Structs for hooks and methods
                 if verb == "WS" {
                     structs.push(quote! {
                         #[derive(Default, Clone, PartialEq)]
@@ -272,16 +295,7 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                     });
                 }
 
-                if verb == "WS" {
-                    data_enum_variants.push(quote! {
-                        #variant_name(#res),
-                    });
-                } else {
-                    state_enum_variants.push(quote! {
-                        #variant_name(#state_struct_name),
-                    });
-                }
-
+                // Common Prepare URL method
                 methods.push(quote! {
                     pub fn #prepare_url_method_name(&self) -> String {
                         let path = if #path.starts_with('/') {
@@ -310,7 +324,12 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                     }
                 });
 
+                // Non-WS methods
                 if verb != "WS" {
+                    state_enum_variants.push(quote! {
+                        #variant_name(#state_struct_name),
+                    });
+
                     methods.push(quote! {
                         pub async fn #fetch_method_name(&self, url: String, abort_signal: Rc<web_sys::AbortSignal>, params: #method_params_struct_name) -> Result<String, FetchError> {
                             let fetch_options = FetchOptions {
@@ -330,7 +349,20 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                     });
                 }
 
+                // Hooks
                 if verb == "WS" {
+                    let Some(variant_name) =
+                        merged_data_enum_variants.get(&quote!(#res).to_string())
+                    else {
+                        return TokenStream::from(quote! {
+                            compile_error!("Variant name not found");
+                        });
+                    };
+
+                    data_enum_variants.push(quote! {
+                        #variant_name(#res),
+                    });
+
                     hooks.push(quote! {
                         #[hook]
                         fn #common_hook_name(options: Option<#hook_options_name>) -> #hook_async_handle_name {
