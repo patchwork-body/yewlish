@@ -359,9 +359,14 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                         });
                     };
 
-                    data_enum_variants.push(quote! {
-                        #variant_name(#res),
-                    });
+                    if !data_enum_variants
+                        .iter()
+                        .any(|v| quote!(#v).to_string().contains(&variant_name.to_string()))
+                    {
+                        data_enum_variants.push(quote! {
+                            #variant_name(#res),
+                        });
+                    }
 
                     hooks.push(quote! {
                         #[hook]
