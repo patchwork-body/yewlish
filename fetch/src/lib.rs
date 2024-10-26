@@ -733,22 +733,16 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                                     let method = HttpMethod::from(#verb);
                                     let url = client.#prepare_url_method_name();
 
-                                    let (cache_key, cache_entry) = match cache_policy {
-                                        CachePolicy::NetworkOnly => {
-                                            (None, None)
-                                        }
-                                        _ => {
-                                            if let Ok(cache_key) = generate_cache_key(&method, url.as_str(), &params.slugs, &params.query, &params.body) {
-                                                let cache_entry = {
-                                                    let cache_ref = client.cache.borrow();
-                                                    cache_ref.get(&cache_key).cloned()
-                                                };
+                                    let Ok(cache_key) = generate_cache_key(
+                                        &method, url.as_str(), &params.slugs, &params.query, &params.body
+                                    ) else {
+                                        error.set(Some(FetchError::UnknownError("Failed to generate cache key".to_string())));
+                                        return;
+                                    };
 
-                                                (Some(cache_key), cache_entry)
-                                            } else {
-                                                (None, None)
-                                            }
-                                        }
+                                    let cache_entry = {
+                                        let cache_ref = client.cache.borrow();
+                                        cache_ref.get(&cache_key).cloned()
                                     };
 
                                     spawn_local(async move {
@@ -756,7 +750,6 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
 
                                         match cache_policy {
                                             CachePolicy::StaleWhileRevalidate => {
-                                                if let Some(key) = cache_key {
                                                     if let Some(entry) = cache_entry {
                                                         match deserialize_cached_data::<#res>(&entry.data) {
                                                             Ok(res) => {
@@ -773,7 +766,7 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                                                             match deserialize_response_and_store_cache::<#res>(
                                                                 &res,
                                                                 &client.cache,
-                                                                &key,
+                                                                &cache_key,
                                                                 options.as_ref().and_then(
                                                                     |o| o.cache_options.as_ref().and_then(|options| options.max_age)
                                                                 )
@@ -790,10 +783,8 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                                                             error.set(Some(err));
                                                         }
                                                     }
-                                                }
                                             }
                                             CachePolicy::CacheThenNetwork => {
-                                                if let Some(key) = cache_key {
                                                     if let Some(entry) = cache_entry {
                                                         match deserialize_cached_data::<#res>(&entry.data) {
                                                             Ok(res) => {
@@ -809,7 +800,7 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                                                                 match deserialize_response_and_store_cache::<#res>(
                                                                     &res,
                                                                     &client.cache,
-                                                                    &key,
+                                                                    &cache_key,
                                                                     options.as_ref().and_then(
                                                                         |o| o.cache_options.as_ref().and_then(|options| options.max_age)
                                                                     )
@@ -827,23 +818,29 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                                                             }
                                                         }
                                                     }
-                                                }
                                             }
                                             CachePolicy::NetworkOnly => {
-                                                match client.#fetch_method_name(url, abort_signal, params).await {
-                                                    Ok(res) => {
-                                                        match deserialize_response::<#res>(&res) {
-                                                            Ok(res) => {
-                                                                data.set(Some(res));
-                                                            }
-                                                            Err(err) => {
-                                                                error.set(Some(err));
+                                                    match client.#fetch_method_name(url, abort_signal, params).await {
+                                                        Ok(res) => {
+                                                            match deserialize_response_and_store_cache::<#res>(
+                                                                &res,
+                                                                &client.cache,
+                                                                &cache_key,
+                                                                options.as_ref().and_then(
+                                                                    |o| o.cache_options.as_ref().and_then(|options| options.max_age)
+                                                                )
+                                                            ) {
+                                                                Ok(res) => {
+                                                                    data.set(Some(res));
+                                                                }
+                                                                Err(err) => {
+                                                                    error.set(Some(err));
+                                                                }
                                                             }
                                                         }
-                                                    }
-                                                    Err(err) => {
-                                                        error.set(Some(err));
-                                                    }
+                                                        Err(err) => {
+                                                            error.set(Some(err));
+                                                        }
                                                 }
                                             }
                                             CachePolicy::CacheOnly => {
