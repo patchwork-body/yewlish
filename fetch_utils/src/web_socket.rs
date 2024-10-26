@@ -14,7 +14,7 @@ where
     T: for<'de> serde::Deserialize<'de> + Clone + PartialEq + 'static,
 {
     pub onopen: Callback<Event>,
-    pub onmessage: Callback<T>,
+    pub onmessage: Callback<(MessageEvent, T)>,
     pub onerror: Callback<FetchError>,
     pub onclose: Callback<CloseEvent>,
 }
@@ -74,7 +74,7 @@ where
                 Ok(message) => match deserialize_response::<T>(String::from(message).as_str()) {
                     Ok(res) => {
                         for subscriber in subscribers.borrow().iter() {
-                            subscriber.onmessage.emit(res.clone());
+                            subscriber.onmessage.emit((event.clone(), res.clone()));
                         }
                     }
                     Err(err) => {
