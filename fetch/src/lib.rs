@@ -158,9 +158,7 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
         variant_names.push(variant_name);
 
         let state_struct_name = format_ident!("{}State", variant_name);
-        let method_params_struct_name = format_ident!("{}Params", variant_name);
-        let method_open_params_struct_name = format_ident!("{}HookOpenParams", variant_name);
-        let hook_open_params_struct_name = format_ident!("{}OpenParams", variant_name);
+        let params_struct_name = format_ident!("{}Params", variant_name);
         let variant_snake_case = variant_name.to_string().to_snake_case();
         let fetch_method_name = format_ident!("{}", variant_snake_case);
         let prepare_url_method_name = format_ident!("prepare_{}_url", variant_snake_case);
@@ -179,19 +177,9 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                 if verb == "WS" {
                     structs.push(quote! {
                         #[derive(Default, Clone, PartialEq)]
-                        pub struct #hook_open_params_struct_name {
+                        pub struct #params_struct_name {
                             pub slugs: #slugs,
                             pub query: #query,
-                        }
-
-                        #[derive(Default, Clone, PartialEq)]
-                        struct #method_open_params_struct_name {
-                            pub slugs: #slugs,
-                            pub query: #query,
-                            pub onopen: Option<Callback<web_sys::Event>>,
-                            pub onmessage: Option<Callback<web_sys::MessageEvent>>,
-                            pub onerror: Option<Callback<web_sys::ErrorEvent>>,
-                            pub onclose: Option<Callback<web_sys::CloseEvent>>,
                         }
 
                         #[derive(Clone, Debug)]
@@ -216,7 +204,7 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                             pub status: UseStateHandle<WsStatus>,
                             pub error: UseStateHandle<Option<FetchError>>,
                             pub send: Callback<#body>,
-                            pub open: Callback<#hook_open_params_struct_name>,
+                            pub open: Callback<#params_struct_name>,
                             pub close: Callback<()>,
                         }
 
@@ -240,7 +228,7 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                 } else {
                     structs.push(quote! {
                         #[derive(Default, Clone, PartialEq)]
-                        pub struct #method_params_struct_name {
+                        pub struct #params_struct_name {
                             pub slugs: #slugs,
                             pub query: #query,
                             pub body: #body,
@@ -273,7 +261,7 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                             pub data: UseStateHandle<Option<#res>>,
                             pub loading: UseStateHandle<bool>,
                             pub error: UseStateHandle<Option<FetchError>>,
-                            pub trigger: Callback<#method_params_struct_name>,
+                            pub trigger: Callback<#params_struct_name>,
                             pub cancel: Callback<()>,
                         }
 
@@ -329,7 +317,7 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                     });
 
                     methods.push(quote! {
-                        pub async fn #fetch_method_name(&self, url: String, abort_signal: Rc<web_sys::AbortSignal>, params: #method_params_struct_name) -> Result<String, FetchError> {
+                        pub async fn #fetch_method_name(&self, url: String, abort_signal: Rc<web_sys::AbortSignal>, params: #params_struct_name) -> Result<String, FetchError> {
                             let fetch_options = FetchOptions {
                                 slugs: params.slugs,
                                 query: params.query,
@@ -457,7 +445,7 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                                 let state_key_ref = state_key_ref.clone();
                                 let slot_key_ref = slot_key_ref.clone();
 
-                                move |params: #hook_open_params_struct_name, (client, subscriber)| {
+                                move |params: #params_struct_name, (client, subscriber)| {
                                     status.set(WsStatus::Opening);
                                     let url = client.#prepare_url_method_name();
 
@@ -623,7 +611,7 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                         }
 
                         #[hook]
-                        pub fn #hook_name(params: #hook_open_params_struct_name) -> #hook_handle_name {
+                        pub fn #hook_name(params: #params_struct_name) -> #hook_handle_name {
                             let hook = #common_hook_name(None);
 
                             use_effect_with((params.clone(), hook.open.clone(), hook.close.clone()), |(params, open, close)| {
@@ -650,7 +638,7 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                         }
 
                         #[hook]
-                        pub fn #hook_with_options_name(params: #hook_open_params_struct_name, options: #hook_options_name) -> #hook_handle_name {
+                        pub fn #hook_with_options_name(params: #params_struct_name, options: #hook_options_name) -> #hook_handle_name {
                             let hook = #common_hook_name(Some(options));
 
                             use_effect_with((params.clone(), hook.open.clone(), hook.close.clone()), |(params, open, close)| {
@@ -711,7 +699,7 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                                 let error = error.clone();
                                 let abort_signal = abort_signal.clone();
 
-                                move |params: #method_params_struct_name, (client, options)| {
+                                move |params: #params_struct_name, (client, options)| {
                                     let data = data.clone();
                                     let loading = loading.clone();
                                     let error = error.clone();
@@ -900,7 +888,7 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                         }
 
                         #[hook]
-                        pub fn #hook_name(params: #method_params_struct_name) -> #hook_handle_name {
+                        pub fn #hook_name(params: #params_struct_name) -> #hook_handle_name {
                             let hook = #common_hook_name(None);
 
                             use_effect_with((params.clone(), hook.trigger.clone()), |(params, trigger)| {
@@ -916,7 +904,7 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                         }
 
                         #[hook]
-                        pub fn #hook_with_options_name(params: #method_params_struct_name, options: #hook_options_name) -> #hook_handle_name {
+                        pub fn #hook_with_options_name(params: #params_struct_name, options: #hook_options_name) -> #hook_handle_name {
                             let hook = #common_hook_name(Some(options));
 
                             use_effect_with((params.clone(), hook.trigger.clone()), |(params, trigger)| {
