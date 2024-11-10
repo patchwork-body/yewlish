@@ -1029,6 +1029,18 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                 }
             }
 
+            #[hook]
+            pub fn use_fetch_client() -> #fetch_client_name {
+                use_context::<#fetch_client_name>()
+                    .expect(
+                        &format!(
+                            "{} must be used within a {} provider",
+                            stringify!(use_fetch_client),
+                            stringify!(#fetch_client_context_provider_name)
+                        )
+                    )
+            }
+
             #[derive(Clone, PartialEq, Properties)]
             pub struct #fetch_client_context_props_name {
                 pub client: #fetch_client_name,
