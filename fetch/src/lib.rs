@@ -541,7 +541,6 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
             #(#structs)*
             #(#errors)*
 
-
             #[derive(Clone)]
             pub struct #fetch_client_name {
                 pub base_url: String,
@@ -590,6 +589,18 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                 fn eq(&self, other: &Self) -> bool {
                     self.middlewares.len() == other.middlewares.len()
                 }
+            }
+
+            #[hook]
+            pub fn use_fetch_client() -> #fetch_client_name {
+                use_context::<#fetch_client_name>()
+                    .expect(
+                        &format!(
+                            "{} must be used within a {} provider",
+                            stringify!(use_fetch_client),
+                            stringify!(#fetch_client_context_provider_name)
+                        )
+                    )
             }
 
             #[derive(Clone, PartialEq, Properties)]
