@@ -663,18 +663,26 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                     hooks.push(quote! {
                         #[hook]
                         fn #common_hook_name(options: Option<#hook_options_name>) -> #hook_async_handle_name {
-                            let client = use_context::<Rc<#fetch_client_name>>()
-                                .expect(
-                                    &format!(
-                                        "{} must be used within a {} provider",
-                                        stringify!(#hook_name),
-                                        stringify!(#fetch_client_context_provider_name)
-                                    )
-                                );
-
+                            let client = use_fetch_client();
                             let data = use_state(|| None::<#res>);
                             let loading = use_state(|| false);
                             let error = use_state(|| None::<FetchError>);
+
+                            let signal_subscriber = use_callback((), {
+                                let data = data.clone();
+                                let error = error.clone();
+
+                                move |value: &serde_json::Value| {
+                                    match deserialize_cached_data::<#res>(value) {
+                                        Ok(res) => {
+                                            data.set(Some(res));
+                                        }
+                                        Err(err) => {
+                                            error.set(Some(err));
+                                        }
+                                    }
+                                }
+                            });
 
                             let abort_controller = match web_sys::AbortController::new() {
                                 Ok(controller) => Rc::new(controller),
@@ -698,6 +706,7 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                                 let loading = loading.clone();
                                 let error = error.clone();
                                 let abort_signal = abort_signal.clone();
+                                let signal_subscriber = signal_subscriber.clone();
 
                                 move |params: #params_struct_name, (client, options)| {
                                     let data = data.clone();
@@ -706,6 +715,7 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                                     let client = client.clone();
                                     let options = options.clone();
                                     let abort_signal = abort_signal.clone();
+                                    let signal_subscriber = signal_subscriber.clone();
 
                                     let cache_policy = {
                                         let custom_cache_policy = options.as_ref().and_then(
@@ -738,8 +748,20 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
 
                                         match cache_policy {
                                             CachePolicy::StaleWhileRevalidate => {
-                                                    if let Some(entry) = cache_entry {
-                                                        match deserialize_cached_data::<#res>(&entry.data) {
+                                                if let Some(entry) = cache_entry {
+                                                    entry.subscribe_once(signal_subscriber);
+                                                }
+
+                                                match client.#fetch_method_name(url, abort_signal, params).await {
+                                                    Ok(res) => {
+                                                        match deserialize_response_and_store_cache::<#res>(
+                                                            &res,
+                                                            &client.cache,
+                                                            &cache_key,
+                                                            options.as_ref().and_then(
+                                                                |o| o.cache_options.as_ref().and_then(|options| options.max_age)
+                                                            )
+                                                        ) {
                                                             Ok(res) => {
                                                                 data.set(Some(res));
                                                             }
@@ -748,66 +770,22 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                                                             }
                                                         }
                                                     }
-
-                                                    match client.#fetch_method_name(url, abort_signal, params).await {
-                                                        Ok(res) => {
-                                                            match deserialize_response_and_store_cache::<#res>(
-                                                                &res,
-                                                                &client.cache,
-                                                                &cache_key,
-                                                                options.as_ref().and_then(
-                                                                    |o| o.cache_options.as_ref().and_then(|options| options.max_age)
-                                                                )
-                                                            ) {
-                                                                Ok(res) => {
-                                                                    data.set(Some(res));
-                                                                }
-                                                                Err(err) => {
-                                                                    error.set(Some(err));
-                                                                }
-                                                            }
-                                                        }
-                                                        Err(err) => {
-                                                            error.set(Some(err));
-                                                        }
+                                                    Err(err) => {
+                                                        error.set(Some(err));
                                                     }
+                                                }
                                             }
                                             CachePolicy::CacheThenNetwork => {
-                                                    if let Some(entry) = cache_entry {
-                                                        match deserialize_cached_data::<#res>(&entry.data) {
-                                                            Ok(res) => {
-                                                                data.set(Some(res));
-                                                            }
-                                                            Err(err) => {
-                                                                error.set(Some(err));
-                                                            }
+                                                if let Some(entry) = cache_entry {
+                                                    match deserialize_cached_data::<#res>(&entry.data) {
+                                                        Ok(res) => {
+                                                            data.set(Some(res));
                                                         }
-                                                    } else {
-                                                        match client.#fetch_method_name(url, abort_signal, params).await {
-                                                            Ok(res) => {
-                                                                match deserialize_response_and_store_cache::<#res>(
-                                                                    &res,
-                                                                    &client.cache,
-                                                                    &cache_key,
-                                                                    options.as_ref().and_then(
-                                                                        |o| o.cache_options.as_ref().and_then(|options| options.max_age)
-                                                                    )
-                                                                ) {
-                                                                    Ok(res) => {
-                                                                        data.set(Some(res));
-                                                                    }
-                                                                    Err(err) => {
-                                                                        error.set(Some(err));
-                                                                    }
-                                                                }
-                                                            }
-                                                            Err(err) => {
-                                                                error.set(Some(err));
-                                                            }
+                                                        Err(err) => {
+                                                            error.set(Some(err));
                                                         }
                                                     }
-                                            }
-                                            CachePolicy::NetworkOnly => {
+                                                } else {
                                                     match client.#fetch_method_name(url, abort_signal, params).await {
                                                         Ok(res) => {
                                                             match deserialize_response_and_store_cache::<#res>(
@@ -829,6 +807,31 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                                                         Err(err) => {
                                                             error.set(Some(err));
                                                         }
+                                                    }
+                                                }
+                                            }
+                                            CachePolicy::NetworkOnly => {
+                                                match client.#fetch_method_name(url, abort_signal, params).await {
+                                                    Ok(res) => {
+                                                        match deserialize_response_and_store_cache::<#res>(
+                                                            &res,
+                                                            &client.cache,
+                                                            &cache_key,
+                                                            options.as_ref().and_then(
+                                                                |o| o.cache_options.as_ref().and_then(|options| options.max_age)
+                                                            )
+                                                        ) {
+                                                            Ok(res) => {
+                                                                data.set(Some(res));
+                                                            }
+                                                            Err(err) => {
+                                                                error.set(Some(err));
+                                                            }
+                                                        }
+                                                    }
+                                                    Err(err) => {
+                                                        error.set(Some(err));
+                                                    }
                                                 }
                                             }
                                             CachePolicy::CacheOnly => {
