@@ -16,6 +16,7 @@ quote = "^1.0.0"
 syn = "^2.0.0"
 yew = "0.21.0"
 yewlish-fetch-utils = "0.3.0-beta.4"
+signal = { path = "../signal" }
 
 [dev-dependencies]
 yewlish-testing-tools = "1.2.1"
