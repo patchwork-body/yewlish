@@ -668,22 +668,6 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                             let loading = use_state(|| false);
                             let error = use_state(|| None::<FetchError>);
 
-                            let signal_subscriber = use_callback((), {
-                                let data = data.clone();
-                                let error = error.clone();
-
-                                move |value: &serde_json::Value| {
-                                    match deserialize_cached_data::<#res>(value) {
-                                        Ok(res) => {
-                                            data.set(Some(res));
-                                        }
-                                        Err(err) => {
-                                            error.set(Some(err));
-                                        }
-                                    }
-                                }
-                            });
-
                             let abort_controller = match web_sys::AbortController::new() {
                                 Ok(controller) => Rc::new(controller),
                                 Err(abort_controller_error) => {
@@ -706,7 +690,6 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                                 let loading = loading.clone();
                                 let error = error.clone();
                                 let abort_signal = abort_signal.clone();
-                                let signal_subscriber = signal_subscriber.clone();
 
                                 move |params: #params_struct_name, (client, options)| {
                                     let data = data.clone();
@@ -715,7 +698,6 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                                     let client = client.clone();
                                     let options = options.clone();
                                     let abort_signal = abort_signal.clone();
-                                    let signal_subscriber = signal_subscriber.clone();
 
                                     let cache_policy = {
                                         let custom_cache_policy = options.as_ref().and_then(
@@ -749,7 +731,14 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                                         match cache_policy {
                                             CachePolicy::StaleWhileRevalidate => {
                                                 if let Some(entry) = cache_entry {
-                                                    entry.subscribe_once(signal_subscriber);
+                                                    match deserialize_cached_data::<#res>(&entry.data) {
+                                                        Ok(res) => {
+                                                            data.set(Some(res));
+                                                        }
+                                                        Err(err) => {
+                                                            error.set(Some(err));
+                                                        }
+                                                    }
                                                 }
 
                                                 match client.#fetch_method_name(url, abort_signal, params).await {
