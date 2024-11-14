@@ -996,6 +996,7 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
             use crate::*;
             use yew::hook;
             use std::rc::Rc;
+            use serde::Deserialize;
             use std::cell::RefCell;
             use std::any::TypeId;
             use std::borrow::BorrowMut;
