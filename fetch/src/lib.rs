@@ -103,7 +103,7 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
     let enum_name = &input.ident;
     let state_enum_name = format_ident!("{}State", enum_name);
-    let data_enum_name = format_ident!("{}WsData", enum_name);
+    let ws_data_enum_name = format_ident!("{}WsData", enum_name);
     let ws_state_struct_name = format_ident!("{}WsState", enum_name);
     let module_name = format_ident!("{}_fetch_schema", enum_name.to_string().to_snake_case());
     let fetch_client_name = format_ident!("{}FetchClient", enum_name);
@@ -131,9 +131,9 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
     let mut errors = Vec::new();
     let mut variant_names = Vec::new();
     let mut state_enum_variants = Vec::new();
-    let mut data_enum_variants = Vec::new();
+    let mut ws_data_enum_variants = Vec::new();
 
-    let mut merged_data_enum_variants = HashMap::new();
+    let mut merged_ws_data_enum_variants = HashMap::new();
 
     for variant in variants {
         match extract_attrs(&variant.attrs) {
@@ -142,7 +142,7 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                     let res_string = quote!(#res).to_string();
                     let variant_name = &variant.ident;
 
-                    merged_data_enum_variants
+                    merged_ws_data_enum_variants
                         .entry(res_string)
                         .or_insert(variant_name);
                 }
@@ -162,6 +162,7 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
         let variant_snake_case = variant_name.to_string().to_snake_case();
         let fetch_method_name = format_ident!("{}", variant_snake_case);
         let prepare_url_method_name = format_ident!("prepare_{}_url", variant_snake_case);
+        let update_queries_method_name = format_ident!("update_{}_queries", variant_snake_case);
         let common_hook_name = format_ident!("use_common_{}", fetch_method_name);
         let hook_handle_name = format_ident!("Use{}Handle", variant_name);
         let hook_async_handle_name = format_ident!("Use{}AsyncHandle", variant_name);
@@ -236,9 +237,7 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
 
                         #[derive(Clone, Debug, PartialEq)]
                         pub struct #state_struct_name {
-                            pub data: UseStateHandle<Option<#res>>,
-                            pub loading: UseStateHandle<bool>,
-                            pub error: UseStateHandle<Option<FetchError>>,
+                            pub data: Rc<RefCell<Signal<Option<#res>>>>,
                         }
 
                         #[derive(Clone, Debug)]
@@ -332,24 +331,38 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                                 fetch_options,
                             ).await
                         }
+
+                        pub fn #update_queries_method_name(&mut self, cb: impl Fn(Option<#res>) -> Option<#res>) {
+                            let state_key = stringify!(#variant_snake_case).to_string();
+
+                            let mut queries = (*self.queries).borrow_mut();
+
+                            if let Some(slotmap) = queries.get_mut(&state_key) {
+                                for (_, value) in slotmap.iter_mut() {
+                                    if let #state_enum_name::#variant_name(state) = value {
+                                        state.data.borrow().set(cb(state.data.borrow().get()));
+                                    }
+                                }
+                            }
+                        }
                     });
                 }
 
                 // Hooks
                 if verb == "WS" {
                     let Some(variant_name) =
-                        merged_data_enum_variants.get(&quote!(#res).to_string())
+                        merged_ws_data_enum_variants.get(&quote!(#res).to_string())
                     else {
                         return TokenStream::from(quote! {
                             compile_error!("Variant name not found");
                         });
                     };
 
-                    if !data_enum_variants
+                    if !ws_data_enum_variants
                         .iter()
                         .any(|v| quote!(#v).to_string().contains(&variant_name.to_string()))
                     {
-                        data_enum_variants.push(quote! {
+                        ws_data_enum_variants.push(quote! {
                             #variant_name(#res),
                         });
                     }
@@ -357,15 +370,7 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                     hooks.push(quote! {
                         #[hook]
                         fn #common_hook_name(options: Option<#hook_options_name>) -> #hook_async_handle_name {
-                            let client = use_context::<Rc<#fetch_client_name>>()
-                                .expect(
-                                    &format!(
-                                        "{} must be used within a {} provider",
-                                        stringify!(#hook_name),
-                                        stringify!(#fetch_client_context_provider_name)
-                                    )
-                                );
-
+                            let client = use_fetch_client();
                             let data = use_state(|| None::<#res>);
                             let status = use_state(|| WsStatus::Closed);
                             let error = use_state(|| None::<FetchError>);
@@ -388,12 +393,12 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                                 let data = data.clone();
                                 let error = error.clone();
 
-                                move |(event, res): (web_sys::MessageEvent, #data_enum_name), options| {
+                                move |(event, res): (web_sys::MessageEvent, #ws_data_enum_name), options| {
                                     if let Some(on_message) = options.as_ref().and_then(|o| o.on_message.clone()) {
                                         on_message.emit(event.clone());
                                     }
 
-                                    if let #data_enum_name::#variant_name(res) = res {
+                                    if let #ws_data_enum_name::#variant_name(res) = res {
                                         if let Some(on_data) = options.as_ref().and_then(|o| o.on_data.clone()) {
                                             if let Some(res) = on_data.emit(res.clone()) {
                                                 data.set(Some(res));
@@ -481,7 +486,7 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                                         match build_url(url.as_str(), &params.slugs, &params.query) {
                                             Ok(url) => {
                                                 let mut slotmap = SlotMap::<#state_enum_name>::new();
-                                                let mut watcher = WebSocketWatcher::<#data_enum_name>::new(String::from(url.to_string()));
+                                                let mut watcher = WebSocketWatcher::<#ws_data_enum_name>::new(String::from(url.to_string()));
 
                                                 match watcher.subscribe((**subscriber).clone()) {
                                                     Ok(()) => {
@@ -664,9 +669,61 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                         #[hook]
                         fn #common_hook_name(options: Option<#hook_options_name>) -> #hook_async_handle_name {
                             let client = use_fetch_client();
-                            let data = use_state(|| None::<#res>);
+                            let signal = use_mut_ref(|| Signal::new(None::<#res>));
+                            let data = use_signal_state(signal.clone());
                             let loading = use_state(|| false);
                             let error = use_state(|| None::<FetchError>);
+                            let state_key_ref = use_mut_ref(|| #variant_snake_case);
+                            let slot_key_ref = use_mut_ref(|| None::<usize>);
+
+                            use_effect_with(client.clone(), {
+                                let state_key_ref = state_key_ref.clone();
+                                let slot_key_ref = slot_key_ref.clone();
+                                let signal = signal.clone();
+
+                                move |client| {
+                                    let state_key = state_key_ref.borrow().to_string();
+
+                                    if slot_key_ref.borrow().is_none() {
+                                        let mut queries = (*client.queries).borrow_mut();
+
+                                        if let Some(mut slotmap) = queries.get_mut(&state_key) {
+                                            let slot_key = slotmap.insert(#state_enum_name::#variant_name(#state_struct_name {
+                                                data: signal.clone(),
+                                            }));
+
+                                            slot_key_ref.replace(Some(slot_key));
+                                        } else {
+                                            let mut slotmap = SlotMap::<#state_enum_name>::new();
+
+                                            let slot_key = slotmap.insert(#state_enum_name::#variant_name(#state_struct_name {
+                                                data: signal.clone(),
+                                            }));
+
+                                            slot_key_ref.replace(Some(slot_key));
+                                            queries.insert(state_key.clone(), slotmap);
+                                        }
+                                    }
+
+                                    {
+                                        let client = client.clone();
+
+                                        move || {
+                                            if let Some(slot_key) = slot_key_ref.borrow().as_ref() {
+                                                let mut queries = (*client.queries).borrow_mut();
+
+                                                if let Some(mut slotmap) = queries.get_mut(&state_key) {
+                                                    slotmap.remove(*slot_key);
+
+                                                    if slotmap.is_empty() {
+                                                        queries.remove(&state_key);
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            });
 
                             let abort_controller = match web_sys::AbortController::new() {
                                 Ok(controller) => Rc::new(controller),
@@ -686,17 +743,17 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                             let abort_signal = Rc::new(abort_controller.signal());
 
                             let trigger = use_callback((client.clone(), options.clone()), {
-                                let data = data.clone();
                                 let loading = loading.clone();
                                 let error = error.clone();
+                                let signal = signal.clone();
                                 let abort_signal = abort_signal.clone();
 
                                 move |params: #params_struct_name, (client, options)| {
-                                    let data = data.clone();
                                     let loading = loading.clone();
                                     let error = error.clone();
                                     let client = client.clone();
                                     let options = options.clone();
+                                    let signal = signal.clone();
                                     let abort_signal = abort_signal.clone();
 
                                     let cache_policy = {
@@ -733,7 +790,7 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                                                 if let Some(entry) = cache_entry {
                                                     match deserialize_cached_data::<#res>(&entry.data) {
                                                         Ok(res) => {
-                                                            data.set(Some(res));
+                                                            signal.borrow().set(Some(res));
                                                         }
                                                         Err(err) => {
                                                             error.set(Some(err));
@@ -752,7 +809,7 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                                                             )
                                                         ) {
                                                             Ok(res) => {
-                                                                data.set(Some(res));
+                                                                signal.borrow().set(Some(res));
                                                             }
                                                             Err(err) => {
                                                                 error.set(Some(err));
@@ -768,7 +825,7 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                                                 if let Some(entry) = cache_entry {
                                                     match deserialize_cached_data::<#res>(&entry.data) {
                                                         Ok(res) => {
-                                                            data.set(Some(res));
+                                                            signal.borrow().set(Some(res));
                                                         }
                                                         Err(err) => {
                                                             error.set(Some(err));
@@ -786,7 +843,7 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                                                                 )
                                                             ) {
                                                                 Ok(res) => {
-                                                                    data.set(Some(res));
+                                                                    signal.borrow().set(Some(res));
                                                                 }
                                                                 Err(err) => {
                                                                     error.set(Some(err));
@@ -811,7 +868,7 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                                                             )
                                                         ) {
                                                             Ok(res) => {
-                                                                data.set(Some(res));
+                                                                signal.borrow().set(Some(res));
                                                             }
                                                             Err(err) => {
                                                                 error.set(Some(err));
@@ -827,7 +884,7 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                                                 if let Some(entry) = cache_entry {
                                                     match deserialize_cached_data::<#res>(&entry.data) {
                                                         Ok(res) => {
-                                                            data.set(Some(res));
+                                                            signal.borrow().set(Some(res));
                                                         }
                                                         Err(err) => {
                                                             error.set(Some(err));
@@ -954,13 +1011,13 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
 
             #[derive(Clone, Debug, PartialEq, Deserialize)]
             #[serde(untagged)]
-            enum #data_enum_name {
-                #(#data_enum_variants)*
+            enum #ws_data_enum_name {
+                #(#ws_data_enum_variants)*
             }
 
             #[derive(Clone, Debug, PartialEq)]
             struct #ws_state_struct_name {
-                pub web_socket_watcher: Rc<RefCell<WebSocketWatcher<#data_enum_name>>>,
+                pub web_socket_watcher: Rc<RefCell<WebSocketWatcher<#ws_data_enum_name>>>,
             }
 
             #[derive(Clone, Debug, PartialEq)]
@@ -1022,8 +1079,8 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
             }
 
             #[hook]
-            pub fn use_fetch_client() -> #fetch_client_name {
-                use_context::<#fetch_client_name>()
+            pub fn use_fetch_client() -> Rc<#fetch_client_name> {
+                use_context::<Rc<#fetch_client_name>>()
                     .expect(
                         &format!(
                             "{} must be used within a {} provider",

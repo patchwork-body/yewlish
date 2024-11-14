@@ -40,3 +40,25 @@ impl<T: 'static + Clone> Signal<T> {
         }
     }
 }
+
+#[hook]
+pub fn use_signal_state<T>(signal: Rc<RefCell<Signal<T>>>) -> UseStateHandle<T>
+where
+    T: Clone + 'static,
+{
+    let state = use_state(|| signal.borrow().get());
+
+    {
+        let state = state.clone();
+
+        use_effect_with((), move |()| {
+            signal
+                .borrow()
+                .subscribe_once(Callback::from(move |value: T| {
+                    state.set(value);
+                }));
+        });
+    }
+
+    state
+}
