@@ -332,7 +332,7 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                             ).await
                         }
 
-                        pub fn #update_queries_method_name(&mut self, cb: impl Fn(Option<#res>) -> Option<#res>) {
+                        pub fn #update_queries_method_name(&self, cb: impl Fn(Option<#res>) -> Option<#res>) {
                             let state_key = stringify!(#variant_snake_case).to_string();
 
                             let mut queries = (*self.queries).borrow_mut();
