@@ -1288,6 +1288,8 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                                     padding: 1rem;
                                     margin: 1rem;
                                     color: white;
+                                    width: 3rem;
+                                    height: 3rem;
                                     background-color: #1c1c1c;
                                     border-radius: 100%;
                                     z-index: 9998;
@@ -1327,11 +1329,19 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                                     max-width: 50vw;
                                     height: 100%;
                                     background-color: #1c1c1c;
+                                    color: white;
                                     box-shadow: -2px 0 5px rgba(0, 0, 0, 0.3);
                                     transform: translateX(100%);
                                     transition: transform 0.3s ease-in-out;
                                     overflow-y: auto;
                                     z-index: 9999;
+                                }
+
+                                .fetch-debug-sheet button {
+                                    background-color: transparent;
+                                    border: none;
+                                    color: white;
+                                    cursor: pointer;
                                 }
 
                                 .fetch-debug-sheet-open {
