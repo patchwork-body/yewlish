@@ -133,7 +133,6 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
     let mut state_enum_variants = Vec::new();
     let mut state_enum_variant_names = Vec::new();
     let mut ws_data_enum_variants = Vec::new();
-
     let mut merged_ws_data_enum_variants = HashMap::new();
     let mut res_types = Vec::new(); // Add this line
 
@@ -172,7 +171,6 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
         let hook_with_options_name = format_ident!("{}_with_options", hook_name);
         let hook_name_async = format_ident!("{}_async", hook_name);
         let hook_with_options_name_async = format_ident!("{}_with_options_async", hook_name);
-
         let hook_options_name = format_ident!("{}Options", variant_name);
 
         match extract_attrs(&variant.attrs) {
@@ -339,7 +337,6 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
 
                         pub fn #update_queries_method_name(&self, cb: impl Fn(Option<#res>) -> Option<#res>) {
                             let state_key = stringify!(#variant_snake_case).to_string();
-
                             let mut queries = (*self.queries).borrow_mut();
 
                             if let Some(slotmap) = queries.get_mut(&state_key) {
