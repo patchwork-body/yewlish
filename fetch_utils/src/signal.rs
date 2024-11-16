@@ -9,7 +9,7 @@ pub struct Signal<T> {
     subscribers: Rc<RefCell<Vec<Callback<T>>>>,
 }
 
-impl<T: 'static + Clone> Signal<T> {
+impl<T: 'static + Clone + std::fmt::Debug> Signal<T> {
     pub fn new(initial: T) -> Self {
         Self {
             value: Rc::new(RefCell::new(initial)),
@@ -24,6 +24,11 @@ impl<T: 'static + Clone> Signal<T> {
 
     pub fn set(&self, new_value: T) {
         *self.value.borrow_mut() = new_value.clone();
+
+        web_sys::console::log_1(&format!("Signal set: {new_value:?}").into());
+        web_sys::console::log_1(
+            &format!("Signal subscribers: {}", self.subscribers.borrow().len()).into(),
+        );
 
         for callback in self.subscribers.borrow().iter() {
             callback.emit(new_value.clone());
@@ -45,7 +50,7 @@ impl<T: 'static + Clone> Signal<T> {
 #[hook]
 pub fn use_signal_state<T>(signal: Rc<RefCell<Signal<T>>>) -> UseStateHandle<T>
 where
-    T: Clone + 'static,
+    T: Clone + std::fmt::Debug + 'static,
 {
     let state = use_state(|| signal.borrow().get());
 
@@ -72,7 +77,7 @@ pub struct SignalStateProps<T: PartialEq> {
 #[function_component(SignalState)]
 pub fn signal_state<T>(props: &SignalStateProps<T>) -> Html
 where
-    T: Clone + PartialEq + Serialize + 'static,
+    T: Clone + std::fmt::Debug + PartialEq + Serialize + 'static,
 {
     let state = use_signal_state(props.signal.clone());
 
