@@ -2,7 +2,7 @@ use yew::prelude::*;
 
 use crate::{
     pages::storybook::common::{Section, Wrapper},
-    use_get_posts, ApiFetchClient, ApiFetchClientProvider, FetchDebug, GetPostsParams,
+    use_get_posts, ApiFetchClient, ApiFetchClientDebug, ApiFetchClientProvider, GetPostsParams,
 };
 
 #[function_component(FetchPage)]
@@ -14,7 +14,7 @@ pub fn fetch_page() -> Html {
             <Wrapper title="Fetch">
                 <Section title="Debug">
                     <GetPosts />
-                    <FetchDebug />
+                    <ApiFetchClientDebug />
                 </Section>
             </Wrapper>
         </ApiFetchClientProvider>
