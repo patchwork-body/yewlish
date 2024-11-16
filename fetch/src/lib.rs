@@ -999,7 +999,9 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
     };
 
     let errors = errors.into_iter().map(|error| error.to_compile_error());
-    let fetch_debug_name = format_ident!("{}FetchDebug", enum_name);
+    let fetch_debug_name = format_ident!("{}FetchClientDebug", enum_name);
+    let fetch_debug_snake_case_name =
+        format_ident!("{}", fetch_debug_name.to_string().to_snake_case());
 
     let expanded = quote! {
         mod #module_name {
@@ -1134,8 +1136,8 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                 }
             }
 
-            #[function_component(FetchDebug)]
-            pub fn #fetch_debug_name() -> Html {
+            #[function_component(#fetch_debug_name)]
+            pub fn #fetch_debug_snake_case_name() -> Html {
                 #[derive(Clone, PartialEq)]
                 enum Tab {
                     Cache,
