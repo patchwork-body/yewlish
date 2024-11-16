@@ -1,3 +1,4 @@
+use serde::Serialize;
 use std::cell::RefCell;
 use std::rc::Rc;
 use yew::prelude::*;
@@ -61,4 +62,25 @@ where
     }
 
     state
+}
+
+#[derive(Clone, Debug, PartialEq, Properties)]
+pub struct SignalStateProps<T: PartialEq> {
+    pub signal: Rc<RefCell<Signal<T>>>,
+}
+
+#[function_component(SignalState)]
+pub fn signal_state<T>(props: &SignalStateProps<T>) -> Html
+where
+    T: Clone + PartialEq + Serialize + 'static,
+{
+    let state = use_signal_state(props.signal.clone());
+
+    html! {
+        <>{
+            serde_json::to_string_pretty(&*state).map(|json| {
+                html! { <pre>{ json }</pre> }
+            }).unwrap_or(html! { "Failed to serialize state" })
+        }</>
+    }
 }

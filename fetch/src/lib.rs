@@ -131,9 +131,11 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
     let mut errors = Vec::new();
     let mut variant_names = Vec::new();
     let mut state_enum_variants = Vec::new();
+    let mut state_enum_variant_names = Vec::new();
     let mut ws_data_enum_variants = Vec::new();
 
     let mut merged_ws_data_enum_variants = HashMap::new();
+    let mut res_types = Vec::new(); // Add this line
 
     for variant in variants {
         match extract_attrs(&variant.attrs) {
@@ -170,6 +172,7 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
         let hook_with_options_name = format_ident!("{}_with_options", hook_name);
         let hook_name_async = format_ident!("{}_async", hook_name);
         let hook_with_options_name_async = format_ident!("{}_with_options_async", hook_name);
+
         let hook_options_name = format_ident!("{}Options", variant_name);
 
         match extract_attrs(&variant.attrs) {
@@ -183,7 +186,7 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                             pub query: #query,
                         }
 
-                        #[derive(Clone, Debug)]
+                        #[derive(Clone)]
                         pub struct #hook_handle_name {
                             pub data: UseStateHandle<Option<#res>>,
                             pub status: UseStateHandle<WsStatus>,
@@ -199,7 +202,7 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                             }
                         }
 
-                        #[derive(Clone, Debug)]
+                        #[derive(Clone)]
                         pub struct #hook_async_handle_name {
                             pub data: UseStateHandle<Option<#res>>,
                             pub status: UseStateHandle<WsStatus>,
@@ -235,12 +238,12 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                             pub body: #body,
                         }
 
-                        #[derive(Clone, Debug, PartialEq)]
+                        #[derive(Clone, PartialEq)]
                         pub struct #state_struct_name {
                             pub data: Rc<RefCell<Signal<Option<#res>>>>,
                         }
 
-                        #[derive(Clone, Debug)]
+                        #[derive(Clone)]
                         pub struct #hook_handle_name {
                             pub data: UseStateHandle<Option<#res>>,
                             pub loading: UseStateHandle<bool>,
@@ -255,7 +258,7 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                             }
                         }
 
-                        #[derive(Clone, Debug)]
+                        #[derive(Clone)]
                         pub struct #hook_async_handle_name {
                             pub data: UseStateHandle<Option<#res>>,
                             pub loading: UseStateHandle<bool>,
@@ -315,6 +318,8 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                         #variant_name(#state_struct_name),
                     });
 
+                    state_enum_variant_names.push(variant_name);
+
                     methods.push(quote! {
                         pub async fn #fetch_method_name(&self, url: String, abort_signal: Rc<web_sys::AbortSignal>, params: #params_struct_name) -> Result<String, FetchError> {
                             let fetch_options = FetchOptions {
@@ -363,7 +368,7 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                         .any(|v| quote!(#v).to_string().contains(&variant_name.to_string()))
                     {
                         ws_data_enum_variants.push(quote! {
-                            #variant_name(#res),
+                            #variant_name(#res)
                         });
                     }
 
@@ -777,6 +782,8 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                                         return;
                                     };
 
+                                    let cache_key = format!("{}:{cache_key}", #variant_snake_case);
+
                                     let cache_entry = {
                                         let cache_ref = client.cache.borrow();
                                         cache_ref.get(&cache_key).cloned()
@@ -969,6 +976,8 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                         }
                     });
                 }
+
+                res_types.push(res);
             }
             Err(error) => {
                 errors.push(error);
@@ -990,13 +999,14 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
     };
 
     let errors = errors.into_iter().map(|error| error.to_compile_error());
+    let fetch_debug_name = format_ident!("{}FetchDebug", enum_name);
 
     let expanded = quote! {
         mod #module_name {
             use crate::*;
             use yew::hook;
             use std::rc::Rc;
-            use serde::Deserialize;
+            use yewlish_fetch_utils::serde::{Serialize, Deserialize};
             use std::cell::RefCell;
             use std::any::TypeId;
             use std::borrow::BorrowMut;
@@ -1005,26 +1015,44 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
             use yew::platform::spawn_local;
             use std::collections::HashMap;
             use std::any::Any;
-            use wasm_bindgen::JsCast;
+            use yewlish_fetch_utils::wasm_bindgen::JsCast;
+            use yewlish_fetch_utils::serde_json;
 
             #(#structs)*
             #(#errors)*
 
-            #[derive(Clone, Debug, PartialEq, Deserialize)]
+            #[derive(Clone, PartialEq, Deserialize)]
             #[serde(untagged)]
             enum #ws_data_enum_name {
                 #(#ws_data_enum_variants)*
             }
 
-            #[derive(Clone, Debug, PartialEq)]
+            #[derive(Clone, PartialEq)]
             struct #ws_state_struct_name {
                 pub web_socket_watcher: Rc<RefCell<WebSocketWatcher<#ws_data_enum_name>>>,
             }
 
-            #[derive(Clone, Debug, PartialEq)]
+            #[derive(Clone, PartialEq)]
             enum #state_enum_name {
                 #(#state_enum_variants)*
-                Ws(#ws_state_struct_name),
+                Ws(#ws_state_struct_name)
+            }
+
+            impl yew::ToHtml for #state_enum_name {
+                fn to_html(&self) -> yew::Html {
+                    match self {
+                        #(
+                            #state_enum_name::#state_enum_variant_names(state) => {
+                                html! {
+                                    <SignalState<Option<#res_types>> signal={state.data.clone()} />
+                                }
+                            },
+                        )*
+                        #state_enum_name::Ws(_) => {
+                            html! {}
+                        }
+                    }
+                }
             }
 
             #[derive(Clone)]
@@ -1103,6 +1131,227 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                     <ContextProvider<Rc<#fetch_client_name>> context={Rc::new(props.client.clone())}>
                         {for props.children.iter()}
                     </ContextProvider<Rc<#fetch_client_name>>>
+                }
+            }
+
+            #[function_component(FetchDebug)]
+            pub fn #fetch_debug_name() -> Html {
+                #[derive(Clone, PartialEq)]
+                enum Tab {
+                    Cache,
+                    Queries,
+                }
+
+                let client = use_fetch_client();
+                let is_open = use_state(|| false);
+                let active_tab = use_state(|| Tab::Cache);
+
+                let toggle_sheet = {
+                    let is_open = is_open.clone();
+                    Callback::from(move |_| is_open.set(!*is_open))
+                };
+
+                let activate_cache_tab = use_callback((), {
+                    let active_tab = active_tab.clone();
+
+                    move |event: MouseEvent, ()| {
+                        event.prevent_default();
+                        active_tab.set(Tab::Cache);
+                    }
+                });
+
+                let activate_queries_tab = use_callback((), {
+                    let active_tab = active_tab.clone();
+
+                    move |event: MouseEvent, ()| {
+                        event.prevent_default();
+                        active_tab.set(Tab::Queries);
+                    }
+                });
+
+                html! {
+                    <>
+                        <button class="fetch-debug" onclick={&toggle_sheet}>
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                width="24"
+                                height="24"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="2"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                            >
+                                <path d="M12 20a8 8 0 1 0 0-16 8 8 0 0 0 0 16Z"/>
+                                <path d="M12 14a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z"/>
+                                <path d="M12 2v2"/>
+                                <path d="M12 22v-2"/>
+                                <path d="m17 20.66-1-1.73"/>
+                                <path d="M11 10.27 7 3.34"/>
+                                <path d="m20.66 17-1.73-1"/>
+                                <path d="m3.34 7 1.73 1"/>
+                                <path d="M14 12h8"/>
+                                <path d="M2 12h2"/>
+                                <path d="m20.66 7-1.73 1"/>
+                                <path d="m3.34 17 1.73-1"/>
+                                <path d="m17 3.34-1 1.73"/>
+                                <path d="m11 13.73-4 6.93"/>
+                            </svg>
+                        </button>
+
+                        <aside class={
+                            if *is_open { "fetch-debug-sheet fetch-debug-sheet-open" } else { "fetch-debug-sheet" }
+                        }>
+                            <header class="fetch-debug-header">
+                                <div class="fetch-debug-title">
+                                    <h2>{ "Yewlish Fetch Debug" }</h2>
+
+                                    <button onclick={&toggle_sheet}>
+                                        <svg
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            width="24"
+                                            height="24"
+                                            viewBox="0 0 24 24"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            stroke-width="2"
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                        >
+                                            <path d="M18 6 6 18"/>
+                                            <path d="m6 6 12 12"/>
+                                        </svg>
+                                    </button>
+                                </div>
+
+                                <nav class="fetch-debug-nav">
+                                    <button onclick={&activate_cache_tab}>{"Cache"}</button>
+                                    <button onclick={&activate_queries_tab}>{"Queries"}</button>
+                                </nav>
+                            </header>
+
+                            { if *active_tab == Tab::Cache {
+                                html! {
+                                    <ul>
+                                        {for client.cache.borrow().iter().map(|(key, entry)| {
+                                            html! {
+                                                <li class="fetch-debug-item">
+                                                    <strong>{ key }</strong>
+                                                    <span>{ &entry.timestamp }</span>
+
+                                                    <pre class="fetch-debug-data">
+                                                        { serde_json::to_string_pretty(
+                                                            &entry.data
+                                                        ).unwrap_or_else(|_| "Invalid JSON".to_string()) }
+                                                    </pre>
+                                                </li>
+                                            }
+                                        })}
+                                    </ul>
+                                }
+                            } else {
+                                html! {
+                                    <ul>
+                                        {for client.queries.borrow().iter().map(|(key, slotmap)| {
+                                            html! {
+                                                <li key={key.to_string()} class="fetch-debug-item">
+                                                    <strong>{ key }</strong>
+
+                                                    <ul>
+                                                        {for slotmap.iter().map(|(key, value)| {
+                                                            html! {
+                                                                <li key={key.to_string()}>
+                                                                    <pre class="fetch-debug-data">
+                                                                        {value}
+                                                                    </pre>
+                                                                </li>
+                                                            }
+                                                        })}
+                                                    </ul>
+                                                </li>
+                                            }
+                                        })}
+                                    </ul>
+                                }
+                            } }
+                        </aside>
+
+                        <style>
+                            {r"
+                                .fetch-debug {
+                                    position: fixed;
+                                    bottom: 0;
+                                    right: 0;
+                                    padding: 1rem;
+                                    margin: 1rem;
+                                    color: white;
+                                    background-color: #1c1c1c;
+                                    border-radius: 100%;
+                                    z-index: 9998;
+                                    transition: box-shadow 0.3s ease-in-out;
+                                }
+
+                                .fetch-debug-header {
+                                    position: sticky;
+                                    top: 0;
+                                    display: flex;
+                                    flex-direction: column;
+                                    padding: 1rem;
+                                    background-color: #1c1c1c;
+                                }
+
+                                .fetch-debug-title {
+                                    display: flex;
+                                    justify-content: space-between;
+                                    align-items: center;
+                                }
+
+                                .fetch-debug-nav {
+                                    display: flex;
+                                    justify-content: space-between;
+                                    align-items: center;
+                                }
+
+                                .fetch-debug:hover {
+                                    box-shadow: 0 0 5px 1px rgb(58, 58, 58);
+                                }
+
+                                .fetch-debug-sheet {
+                                    position: fixed;
+                                    top: 0;
+                                    right: 0;
+                                    min-width: 600px;
+                                    max-width: 50vw;
+                                    height: 100%;
+                                    background-color: #1c1c1c;
+                                    box-shadow: -2px 0 5px rgba(0, 0, 0, 0.3);
+                                    transform: translateX(100%);
+                                    transition: transform 0.3s ease-in-out;
+                                    overflow-y: auto;
+                                    z-index: 9999;
+                                }
+
+                                .fetch-debug-sheet-open {
+                                    transform: translateX(0);
+                                }
+
+                                .fetch-debug-item {
+                                    margin-bottom: 10px;
+                                    padding: 10px;
+                                    border-radius: 5px;
+                                    font-size: 0.8rem;
+                                }
+
+                                .fetch-debug-data {
+                                    background-color: #1c1c1c;
+                                    padding: 10px;
+                                    border-radius: 3px;
+                                    overflow-x: auto;
+                                }
+                            "}
+                        </style>
+                    </>
                 }
             }
 

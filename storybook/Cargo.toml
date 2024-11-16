@@ -16,7 +16,6 @@ required-features = ["hydration"]
 [dependencies]
 yew = "0.21.0"
 log = "0.4.21"
-serde_json = "1.0.117"
 serde = "1.0.203"
 web-sys = {version = "0.3.70", features = ["Document", "HtmlElement", "Location"]}
 toggle = { path = "../toggle" }
@@ -33,6 +32,8 @@ popover = { path = "../popover" }
 yewlish-attr-passer = { path = "../attr_passer" }
 listbox = { path = "../listbox" }
 virtual-list = { path = "../virtual_list" }
+yewlish-fetch = { path = "../fetch" }
+yewlish-fetch-utils = { path = "../fetch_utils" }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 wasm-bindgen-futures = "0.4.42"
@@ -44,5 +45,6 @@ clap = { version = "4.5.4", features = ["derive"] }
 tokio = "1.38.0"
 
 [features]
+default = []
 hydration = ["yew/hydration"]
 ssr = ["yew/ssr"]

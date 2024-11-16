@@ -1,3 +1,5 @@
+use std::collections::hash_map::Iter;
+
 use js_sys::Date;
 
 #[derive(Default, Clone, PartialEq)]
@@ -38,6 +40,7 @@ pub trait Cacheable {
     fn max_age(&self) -> f64;
     fn set(&mut self, key: &str, value: &serde_json::Value, max_age: Option<f64>);
     fn get(&self, key: &str) -> Option<&CacheEntry>;
+    fn iter(&self) -> Iter<String, CacheEntry>;
     fn remove(&mut self, key: &str);
     fn clear(&mut self);
 }
@@ -81,6 +84,11 @@ impl Cacheable for Cache {
         }
 
         None
+    }
+
+    #[must_use]
+    fn iter(&self) -> Iter<String, CacheEntry> {
+        self.entries.iter()
     }
 
     fn remove(&mut self, key: &str) {

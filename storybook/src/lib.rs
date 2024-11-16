@@ -1,8 +1,61 @@
 use std::{collections::HashMap, rc::Rc};
+use yewlish_fetch::FetchSchema;
 
+use serde::{Deserialize, Serialize};
 #[cfg(target_arch = "wasm32")]
 use web_sys::wasm_bindgen::UnwrapThrowExt;
 use yew::prelude::*;
+
+#[derive(Default, Serialize, PartialEq, Clone)]
+struct PostSlugs {
+    id: u32,
+}
+
+#[derive(Default, Serialize, PartialEq, Clone)]
+struct GetPostCommentsQuery {
+    id: u32,
+}
+
+#[derive(Default, Deserialize, Debug, Serialize, PartialEq, Clone)]
+struct PostBody {
+    id: u32,
+    title: String,
+    body: String,
+    #[serde(rename = "userId")]
+    user_id: u32,
+}
+
+#[derive(Default, Debug, Deserialize, Serialize, PartialEq, Clone)]
+struct CommentBody {
+    id: u32,
+    name: String,
+    email: String,
+    body: String,
+    #[serde(rename = "postId")]
+    post_id: u32,
+}
+
+#[derive(FetchSchema)]
+pub enum Api {
+    #[get("/posts", res = Vec<PostBody>)]
+    GetPosts,
+    #[get("/posts/{id}", slugs = PostSlugs, res = PostBody)]
+    GetPost,
+    #[get("/posts/{id}/comments", slugs = PostSlugs, res = Vec<CommentBody>)]
+    GetPostComments,
+    #[get("/comments", query = GetPostCommentsQuery, res = Vec<CommentBody>)]
+    GetComments,
+    #[post("/posts", body = PostBody)]
+    CreatePost,
+    #[put("/posts/{id}", slugs = PostSlugs, body = PostBody)]
+    UpdatePost,
+    #[patch("/posts/{id}", slugs = PostSlugs, body = PostBody)]
+    PatchPost,
+    #[delete("/posts/{id}", slugs = PostSlugs)]
+    DeletePost,
+    #[ws("/ws")]
+    WebSocket,
+}
 
 mod pages;
 
@@ -87,6 +140,9 @@ pub fn app(props: &AppProps) -> Html {
                             </li>
                             <li>
                                 <a href="/virtual-list">{"Virtual List"}</a>
+                            </li>
+                            <li>
+                                <a href="/fetch">{"Fetch"}</a>
                             </li>
                         </ul>
                     </nav>

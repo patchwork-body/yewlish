@@ -1,4 +1,5 @@
 use checkbox::CheckboxPage;
+use fetch::FetchPage;
 use popover::PopoverPage;
 use radio_group::RadioGroupPage;
 use switch::SwitchPage;
@@ -11,6 +12,7 @@ use crate::Router;
 
 mod checkbox;
 mod common;
+mod fetch;
 mod popover;
 mod radio_group;
 mod switch;
@@ -33,6 +35,7 @@ pub fn storybook_page(_props: &StorybookProps) -> Html {
         "toggle-group" | "/toggle-group" => html! { <ToggleGroupPage /> },
         "popover" | "/popover" => html! { <PopoverPage /> },
         "virtual-list" | "/virtual-list" => html! { <VirtualListPage /> },
+        "fetch" | "/fetch" => html! { <FetchPage /> },
         _ => html! {{ "Not Found!" }},
     }
 }
