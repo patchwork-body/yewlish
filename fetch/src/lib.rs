@@ -339,6 +339,7 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                             let state_key = stringify!(#variant_snake_case).to_string();
                             let mut queries = (*self.queries).borrow_mut();
                             web_sys::console::log_1(&format!("Updating queries for {state_key}").into());
+                            web_sys::console::log_1(&format!("Queries: {queries:?}").into());
 
                             if let Some(slotmap) = queries.get_mut(&state_key) {
                                 web_sys::console::log_1(&format!("Updating queries for {state_key}").into());
