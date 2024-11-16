@@ -1285,12 +1285,11 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                                     position: fixed;
                                     bottom: 0;
                                     right: 0;
-                                    padding: 1rem;
+                                    padding: 0.5rem;
                                     margin: 1rem;
                                     display: flex;
                                     justify-content: center;
                                     align-items: center;
-                                    color: white;
                                     width: 3rem;
                                     height: 3rem;
                                     background-color: #1c1c1c;
@@ -1302,7 +1301,6 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                                 .fetch-debug-header {
                                     position: sticky;
                                     top: 0;
-                                    color: white;
                                     display: flex;
                                     flex-direction: column;
                                     padding: 1rem;
@@ -1316,9 +1314,13 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                                     align-items: center;
                                 }
 
+                                .fetch-debug-title h2 {
+                                    margin: 0;
+                                    color: white;
+                                }
+
                                 .fetch-debug-nav {
                                     display: flex;
-                                    color: white;
                                     justify-content: space-between;
                                     align-items: center;
                                 }
