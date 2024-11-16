@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct SlotMap<T> {
     pub counter: usize,
     pub items: HashMap<usize, T>,
