@@ -236,7 +236,7 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                             pub body: #body,
                         }
 
-                        #[derive(Clone, PartialEq)]
+                        #[derive(Clone, Debug, PartialEq)]
                         pub struct #state_struct_name {
                             pub data: Rc<RefCell<Signal<Option<#res>>>>,
                         }
@@ -341,7 +341,11 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
 
                             if let Some(slotmap) = queries.get_mut(&state_key) {
                                 for (_, value) in slotmap.iter_mut() {
+                                    web_sys::console::log_1(&format!("Updating queries for {state_key}").into());
+                                    web_sys::console::log_1(&format!("Value: {value:?}").into());
+
                                     if let #state_enum_name::#variant_name(state) = value {
+                                        web_sys::console::log_1(&format!("State: {state:?}").into());
                                         state.data.borrow().set(cb(state.data.borrow().get()));
                                     }
                                 }
@@ -1020,18 +1024,18 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
             #(#structs)*
             #(#errors)*
 
-            #[derive(Clone, PartialEq, Deserialize)]
+            #[derive(Clone, Debug, PartialEq, Deserialize)]
             #[serde(untagged)]
             enum #ws_data_enum_name {
                 #(#ws_data_enum_variants)*
             }
 
-            #[derive(Clone, PartialEq)]
+            #[derive(Clone, Debug, PartialEq)]
             struct #ws_state_struct_name {
                 pub web_socket_watcher: Rc<RefCell<WebSocketWatcher<#ws_data_enum_name>>>,
             }
 
-            #[derive(Clone, PartialEq)]
+            #[derive(Clone, Debug, PartialEq)]
             enum #state_enum_name {
                 #(#state_enum_variants)*
                 Ws(#ws_state_struct_name)
