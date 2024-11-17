@@ -25,7 +25,7 @@ impl<T: 'static + Clone + std::fmt::Debug> Signal<T> {
     pub fn set(&self, new_value: T) {
         *self.value.borrow_mut() = new_value.clone();
 
-        web_sys::console::log_1(&format!("Signal set: {new_value:?}").into());
+        web_sys::console::log_1(&format!("Signal set: {:?} {new_value:?}", self.value).into());
         web_sys::console::log_1(
             &format!("Signal subscribers: {}", self.subscribers.borrow().len()).into(),
         );
@@ -61,6 +61,7 @@ where
             signal
                 .borrow()
                 .subscribe_once(Callback::from(move |value: T| {
+                    web_sys::console::log_1(&format!("Signal state updated: {value:?}").into());
                     state.set(value);
                 }));
         });
