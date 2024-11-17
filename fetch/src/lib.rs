@@ -336,27 +336,25 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                         }
 
                         pub fn #update_queries_method_name(&self, cb: impl Fn(Option<#res>) -> Option<#res>) {
-                            // Convert state_key to uppercase to match the keys in `queries`
-                            let state_key = stringify!(#variant_snake_case).to_uppercase();
                             let mut queries = (*self.queries).borrow_mut();
 
-                            web_sys::console::log_1(&format!("Updating queries for {state_key}").into());
+                            web_sys::console::log_1(&format!("Updating queries for {}", #variant_snake_case).into());
                             web_sys::console::log_1(&format!("Queries: {queries:?}").into());
                             web_sys::console::log_1(&format!("Queries keys: {:?}", queries.keys()).into());
 
                             web_sys::console::log_1(
                                 &format!(
                                     "Filtered queries key: {:?}",
-                                    queries.keys().filter(|k| k.contains(&state_key)).collect::<Vec<&String>>()
+                                    queries.keys().filter(|k| k.contains(#variant_snake_case)).collect::<Vec<&String>>()
                                 ).into());
 
-                            web_sys::console::log_1(&format!("Queries: {:?}", queries.get_mut(&state_key)).into());
+                            web_sys::console::log_1(&format!("Queries: {:?}", queries.get_mut(#variant_snake_case)).into());
 
-                            if let Some(slotmap) = queries.get_mut(&state_key) {
-                                web_sys::console::log_1(&format!("Updating queries for {state_key}").into());
+                            if let Some(slotmap) = queries.get_mut(#variant_snake_case) {
+                                web_sys::console::log_1(&format!("Updating queries for {}", #variant_snake_case).into());
 
                                 for (_, value) in slotmap.iter_mut() {
-                                    web_sys::console::log_1(&format!("Updating queries for {state_key}").into());
+                                    web_sys::console::log_1(&format!("Updating queries for {}", #variant_snake_case).into());
                                     web_sys::console::log_1(&format!("Value: {value:?}").into());
 
                                     if let #state_enum_name::#variant_name(state) = value {
