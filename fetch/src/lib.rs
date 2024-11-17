@@ -134,7 +134,7 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
     let mut state_enum_variant_names = Vec::new();
     let mut ws_data_enum_variants = Vec::new();
     let mut merged_ws_data_enum_variants = HashMap::new();
-    let mut res_types = Vec::new(); // Add this line
+    let mut res_types = Vec::new();
 
     for variant in variants {
         match extract_attrs(&variant.attrs) {
@@ -336,7 +336,8 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                         }
 
                         pub fn #update_queries_method_name(&self, cb: impl Fn(Option<#res>) -> Option<#res>) {
-                            let state_key = stringify!(#variant_snake_case).to_string();
+                            // Convert state_key to uppercase to match the keys in `queries`
+                            let state_key = stringify!(#variant_snake_case).to_uppercase();
                             let mut queries = (*self.queries).borrow_mut();
 
                             web_sys::console::log_1(&format!("Updating queries for {state_key}").into());
