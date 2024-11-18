@@ -434,7 +434,6 @@ mod tests {
     use crate::{render, Extractor, Query, TesterEvent};
     use std::rc::Rc;
     use wasm_bindgen_test::*;
-    use web_sys::wasm_bindgen::JsCast;
     use yew::prelude::*;
 
     wasm_bindgen_test::wasm_bindgen_test_configure!(run_in_browser);
@@ -2842,5 +2841,51 @@ mod tests {
         assert!(button.text().contains("Click me 1"));
 
         assert_eq!(*t.get_remembered_value::<UseStateHandle<i32>>(), 1);
+    }
+
+    #[wasm_bindgen_test]
+    async fn test_mock_fetch() {
+        use gloo::net::http::Request;
+        use serde::{Deserialize, Serialize};
+        use yew::platform::spawn_local;
+
+        #[derive(Deserialize, Debug, Serialize, Clone, PartialEq, Default)]
+        struct FetchData {
+            title: String,
+        }
+
+        let t = render!({
+            let url = "https://jsonplaceholder.typicode.com/posts/1";
+            let data = use_state(FetchData::default);
+
+            use_mock_fetch(&[(
+                url.to_string(),
+                serde_json::to_value(FetchData {
+                    title: "Hello".to_string(),
+                })
+                .unwrap(),
+            )]);
+
+            use_effect_with((), {
+                let data = data.clone();
+
+                move |()| {
+                    spawn_local(async move {
+                        let resp = Request::get(url).send().await.unwrap();
+                        let json = resp.json::<FetchData>().await.unwrap();
+
+                        data.set(json);
+                    });
+                }
+            });
+
+            html! {
+                <div>{&data.title}</div>
+            }
+        })
+        .await;
+
+        t.wait_for(100.0, || t.query_by_text("Hello").exists())
+            .await;
     }
 }

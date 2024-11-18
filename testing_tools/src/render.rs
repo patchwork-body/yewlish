@@ -72,6 +72,7 @@ macro_rules! render {
         use std::cell::RefCell;
         use std::rc::Rc;
         use std::time::Duration;
+        use web_sys::wasm_bindgen::JsCast;
         use $crate::tester::ResultRef;
         use $crate::yew::platform::time::sleep;
         use $crate::yew::prelude::{function_component, Html};
@@ -105,6 +106,96 @@ macro_rules! render {
                 RESULT_REF.with(|result_ref| {
                     *result_ref.borrow_mut() = Some(Box::new(value.clone()) as Box<dyn Any>);
                 });
+            });
+        }
+
+        #[allow(dead_code)]
+        #[hook]
+        pub fn use_mock_fetch(responses: &[(String, serde_json::Value)]) {
+            let responses = responses.to_owned();
+
+            use_effect(move || {
+                let window = gloo_utils::window();
+
+                let original_fetch = web_sys::js_sys::Reflect::get(
+                    &window,
+                    &wasm_bindgen::JsValue::from_str("fetch"),
+                )
+                .unwrap();
+
+                let original_fetch_fn = original_fetch
+                    .clone()
+                    .unchecked_into::<web_sys::js_sys::Function>();
+
+                let closure = wasm_bindgen::closure::Closure::wrap(Box::new(
+                    move |input: wasm_bindgen::JsValue, init: wasm_bindgen::JsValue| {
+                        let url = {
+                            if let Some(request) = input.dyn_ref::<web_sys::Request>() {
+                                request.url()
+                            } else {
+                                input.as_string().unwrap_or_default()
+                            }
+                        };
+
+                        if let Some(json_body) = responses
+                            .iter()
+                            .find(|(pattern, _)| url.contains(pattern))
+                            .map(|(_, json_body)| json_body)
+                        {
+                            let json_body = match serde_json::to_string(json_body) {
+                                Ok(json_body) => json_body,
+                                Err(err) => {
+                                    log::error!("Failed to serialize JSON body: {:?}", err);
+                                    return wasm_bindgen::JsValue::NULL;
+                                }
+                            };
+
+                            let response = web_sys::Response::new_with_opt_str_and_init(
+                                Some(&json_body),
+                                &web_sys::ResponseInit::new(),
+                            )
+                            .unwrap();
+
+                            let promise = web_sys::js_sys::Promise::new(&mut |resolve, _| {
+                                resolve
+                                    .call1(&wasm_bindgen::JsValue::NULL, &response)
+                                    .unwrap();
+                            });
+
+                            return promise.into();
+                        }
+
+                        return original_fetch_fn
+                            .call2(&wasm_bindgen::JsValue::NULL, &input, &init)
+                            .unwrap();
+                    },
+                )
+                    as Box<
+                        dyn FnMut(
+                            wasm_bindgen::JsValue,
+                            wasm_bindgen::JsValue,
+                        ) -> wasm_bindgen::JsValue,
+                    >);
+
+                web_sys::js_sys::Reflect::set(
+                    &window,
+                    &wasm_bindgen::JsValue::from_str("fetch"),
+                    closure.as_ref(),
+                )
+                .unwrap();
+
+                // Keep the closure alive
+                closure.forget();
+
+                // Cleanup to restore original fetch
+                move || {
+                    web_sys::js_sys::Reflect::set(
+                        &window,
+                        &wasm_bindgen::JsValue::from_str("fetch"),
+                        &original_fetch,
+                    )
+                    .unwrap();
+                }
             });
         }
 
