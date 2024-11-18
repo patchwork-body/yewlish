@@ -338,27 +338,9 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                         pub fn #update_queries_method_name(&self, cb: impl Fn(Option<#res>) -> Option<#res>) {
                             let mut queries = (*self.queries).borrow_mut();
 
-                            web_sys::console::log_1(&format!("Updating queries for {}", #variant_snake_case).into());
-                            web_sys::console::log_1(&format!("Queries: {queries:?}").into());
-                            web_sys::console::log_1(&format!("Queries keys: {:?}", queries.keys()).into());
-
-                            web_sys::console::log_1(
-                                &format!(
-                                    "Filtered queries key: {:?}",
-                                    queries.keys().filter(|k| k.contains(#variant_snake_case)).collect::<Vec<&String>>()
-                                ).into());
-
-                            web_sys::console::log_1(&format!("Queries: {:?}", queries.get_mut(#variant_snake_case)).into());
-
                             if let Some(slotmap) = queries.get_mut(#variant_snake_case) {
-                                web_sys::console::log_1(&format!("Updating queries for {}", #variant_snake_case).into());
-
                                 for (_, value) in slotmap.iter_mut() {
-                                    web_sys::console::log_1(&format!("Updating queries for {}", #variant_snake_case).into());
-                                    web_sys::console::log_1(&format!("Value: {value:?}").into());
-
                                     if let #state_enum_name::#variant_name(state) = value {
-                                        web_sys::console::log_1(&format!("State: {state:?}").into());
                                         state.data.borrow().set(cb(state.data.borrow().get()));
                                     }
                                 }
@@ -1299,6 +1281,7 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                                     position: fixed;
                                     bottom: 0;
                                     right: 0;
+                                    color: white;
                                     padding: 0.5rem;
                                     margin: 1rem;
                                     display: flex;
