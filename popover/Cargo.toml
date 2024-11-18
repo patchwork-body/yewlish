@@ -1,15 +1,20 @@
 [package]
 name = "popover"
-version = "0.1.0"
+version = "0.1.0-beta.1"
 edition = "2021"
+authors = ["Kirill Korotkov <personal.gugfug@gmail.com>"]
+license = "MIT OR Apache-2.0"
+description = "A Yew component for creating popovers."
+repository = "https://github.com/patchwork-body/yewlish-popover.git"
+documentation = "https://docs.rs/yewlish-popover"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-yew = "0.21.0"
-web-sys = { version = "0.3.70", features = ["Element", "DomRect"] }
-log = "0.4.21"
-yewlish-presence = { version = "0.1.1" }
-yewlish-attr-passer = "0.1.4"
-yewlish-utils = "0.1.8"
-yewlish-roving-focus = "0.1.2"
+yew = "0.21"
+web-sys = { version = "0.3", features = ["Element", "DomRect"] }
+log = "0.4"
+yewlish-presence = "0.1"
+yewlish-attr-passer = "0.1"
+yewlish-utils = "0.1"
+yewlish-roving-focus = "0.1"
