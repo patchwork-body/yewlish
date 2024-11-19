@@ -1,8 +1,8 @@
 use super::common::*;
-use popover::*;
 use virtual_list::VirtualList;
 use yew::prelude::*;
 use yewlish_attr_passer::AttrReceiver;
+use yewlish_popover::*;
 use yewlish_switch::{Switch, SwitchThumb};
 
 #[function_component(VirtualListPage)]
