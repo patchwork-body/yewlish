@@ -162,6 +162,8 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
         let params_struct_name = format_ident!("{}Params", variant_name);
         let variant_snake_case = variant_name.to_string().to_snake_case();
         let fetch_method_name = format_ident!("{}", variant_snake_case);
+        let on_fetched_struct_name = format_ident!("On{}Fetched", variant_name);
+        let get_cache_entry_method_name = format_ident!("get_{}_cache_entry", variant_snake_case);
         let prepare_url_method_name = format_ident!("prepare_{}_url", variant_snake_case);
         let update_queries_method_name = format_ident!("update_{}_queries", variant_snake_case);
         let common_hook_name = format_ident!("use_common_{}", fetch_method_name);
@@ -273,9 +275,18 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                         }
 
                         #[derive(Clone, PartialEq, Default)]
+                        pub struct #on_fetched_struct_name {
+                            pub params: #params_struct_name,
+                            pub res: #res,
+                        }
+
+                        #[derive(Clone, PartialEq, Default)]
                         pub struct #hook_options_name {
                             pub cache_options: Option<CacheOptions>,
+                            #[deprecated(note = "Use `on_data` instead")]
                             pub on_success: Option<Callback<#res>>,
+                            pub on_data: Option<Callback<#res>>,
+                            pub on_fetched: Option<Callback<#on_fetched_struct_name>>,
                             pub on_error: Option<Callback<FetchError>>,
                         }
                     });
@@ -333,6 +344,24 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                                 url.as_str(),
                                 fetch_options,
                             ).await
+                        }
+
+                        pub fn #get_cache_entry_method_name(&self, params: &#params_struct_name) -> Result<Option<CacheEntry>, FetchError> {
+                            let url = self.#prepare_url_method_name();
+                            let method = HttpMethod::from(#verb);
+
+                            let Ok(cache_key) = generate_cache_key(
+                                &method, url.as_str(), &params.slugs, &params.query, &params.body
+                            ) else {
+                                return Err(FetchError::UnknownError("Failed to generate cache key".to_string()));
+                            };
+
+                            let cache_key = format!("{}:{cache_key}", #variant_snake_case);
+
+                            Ok({
+                                let cache_ref = self.cache.borrow();
+                                cache_ref.get(&cache_key).cloned()
+                            })
                         }
 
                         pub fn #update_queries_method_name(&self, cb: impl Fn(Option<#res>) -> Option<#res>) {
@@ -768,8 +797,8 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                                         })
                                     };
 
-                                    let method = HttpMethod::from(#verb);
                                     let url = client.#prepare_url_method_name();
+                                    let method = HttpMethod::from(#verb);
 
                                     let Ok(cache_key) = generate_cache_key(
                                         &method, url.as_str(), &params.slugs, &params.query, &params.body
@@ -801,7 +830,7 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                                                     }
                                                 }
 
-                                                match client.#fetch_method_name(url, abort_signal, params).await {
+                                                match client.#fetch_method_name(url, abort_signal, params.clone()).await {
                                                     Ok(res) => {
                                                         match deserialize_response_and_store_cache::<#res>(
                                                             &res,
@@ -812,7 +841,14 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                                                             )
                                                         ) {
                                                             Ok(res) => {
-                                                                signal.borrow().set(Some(res));
+                                                                signal.borrow().set(Some(res.clone()));
+
+                                                                if let Some(on_fetched) = options.as_ref().and_then(|o| o.on_fetched.clone()) {
+                                                                    on_fetched.emit(#on_fetched_struct_name {
+                                                                        params,
+                                                                        res,
+                                                                    });
+                                                                }
                                                             }
                                                             Err(err) => {
                                                                 error.set(Some(err));
@@ -835,7 +871,7 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                                                         }
                                                     }
                                                 } else {
-                                                    match client.#fetch_method_name(url, abort_signal, params).await {
+                                                    match client.#fetch_method_name(url, abort_signal, params.clone()).await {
                                                         Ok(res) => {
                                                             match deserialize_response_and_store_cache::<#res>(
                                                                 &res,
@@ -846,7 +882,14 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                                                                 )
                                                             ) {
                                                                 Ok(res) => {
-                                                                    signal.borrow().set(Some(res));
+                                                                    signal.borrow().set(Some(res.clone()));
+
+                                                                    if let Some(on_fetched) = options.as_ref().and_then(|o| o.on_fetched.clone()) {
+                                                                        on_fetched.emit(#on_fetched_struct_name {
+                                                                            params,
+                                                                            res,
+                                                                        });
+                                                                    }
                                                                 }
                                                                 Err(err) => {
                                                                     error.set(Some(err));
@@ -860,7 +903,7 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                                                 }
                                             }
                                             CachePolicy::NetworkOnly => {
-                                                match client.#fetch_method_name(url, abort_signal, params).await {
+                                                match client.#fetch_method_name(url, abort_signal, params.clone()).await {
                                                     Ok(res) => {
                                                         match deserialize_response_and_store_cache::<#res>(
                                                             &res,
@@ -871,7 +914,14 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                                                             )
                                                         ) {
                                                             Ok(res) => {
-                                                                signal.borrow().set(Some(res));
+                                                                signal.borrow().set(Some(res.clone()));
+
+                                                                if let Some(on_fetched) = options.as_ref().and_then(|o| o.on_fetched.clone()) {
+                                                                    on_fetched.emit(#on_fetched_struct_name {
+                                                                        params,
+                                                                        res,
+                                                                    });
+                                                                }
                                                             }
                                                             Err(err) => {
                                                                 error.set(Some(err));
@@ -911,8 +961,11 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
 
                             use_effect_with((data.clone(), options.clone()), |(data, options)| {
                                 if let Some(data) = (**data).as_ref() {
-                                    let on_success = options.as_ref().and_then(|o| o.on_success.clone()).unwrap_or_else(Callback::noop);
-                                    on_success.emit(data.clone());
+                                    if let Some(on_data) = options.as_ref().and_then(|o| o.on_data.clone()) {
+                                        on_data.emit(data.clone());
+                                    } else if let Some(on_success) = options.as_ref().and_then(|o| o.on_success.clone()) {
+                                        on_success.emit(data.clone());
+                                    }
                                 }
                             });
 
