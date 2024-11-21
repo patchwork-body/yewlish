@@ -242,7 +242,9 @@ pub fn deserialize_response_and_store_cache<R>(
 where
     R: for<'de> serde::Deserialize<'de> + Default + 'static,
 {
-    if response_text.trim().is_empty() && TypeId::of::<R>() == TypeId::of::<String>() {
+    if response_text.trim().is_empty()
+        && (TypeId::of::<R>() == TypeId::of::<String>() || TypeId::of::<R>() == TypeId::of::<()>())
+    {
         return Ok(R::default());
     }
 
