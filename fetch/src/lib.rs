@@ -107,6 +107,8 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
     let ws_state_struct_name = format_ident!("{}WsState", enum_name);
     let module_name = format_ident!("{}_fetch_schema", enum_name.to_string().to_snake_case());
     let fetch_client_name = format_ident!("{}FetchClient", enum_name);
+    let fetch_client_hook_name =
+        format_ident!("use_{}_fetch_client", enum_name.to_string().to_snake_case());
     let fetch_client_options_name = format_ident!("{}Options", fetch_client_name);
     let fetch_client_context_props_name = format_ident!("{}ProviderProps", fetch_client_name);
     let fetch_client_context_provider_name = format_ident!("{}Provider", fetch_client_name);
@@ -163,7 +165,7 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
         let variant_snake_case = variant_name.to_string().to_snake_case();
         let fetch_method_name = format_ident!("{}", variant_snake_case);
         let on_fetched_struct_name = format_ident!("On{}Fetched", variant_name);
-        let get_cache_entry_method_name = format_ident!("get_{}_cache_entry", variant_snake_case);
+        let get_cache_key_method_name = format_ident!("get_{}_cache_entry", variant_snake_case);
         let prepare_url_method_name = format_ident!("prepare_{}_url", variant_snake_case);
         let update_queries_method_name = format_ident!("update_{}_queries", variant_snake_case);
         let common_hook_name = format_ident!("use_common_{}", fetch_method_name);
@@ -346,7 +348,7 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                             ).await
                         }
 
-                        pub fn #get_cache_entry_method_name(&self, params: &#params_struct_name) -> Result<Option<CacheEntry>, FetchError> {
+                        pub fn #get_cache_key_method_name(&self, params: &#params_struct_name) -> Result<String, FetchError> {
                             let url = self.#prepare_url_method_name();
                             let method = HttpMethod::from(#verb);
 
@@ -356,12 +358,7 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                                 return Err(FetchError::UnknownError("Failed to generate cache key".to_string()));
                             };
 
-                            let cache_key = format!("{}:{cache_key}", #variant_snake_case);
-
-                            Ok({
-                                let cache_ref = self.cache.borrow();
-                                cache_ref.get(&cache_key).cloned()
-                            })
+                            Ok(format!("{}:{cache_key}", #variant_snake_case))
                         }
 
                         pub fn #update_queries_method_name(&self, cb: impl Fn(Option<#res>) -> Option<#res>) {
@@ -400,7 +397,7 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                     hooks.push(quote! {
                         #[hook]
                         fn #common_hook_name(options: Option<#hook_options_name>) -> #hook_async_handle_name {
-                            let client = use_fetch_client();
+                            let client = #fetch_client_hook_name();
                             let data = use_state(|| None::<#res>);
                             let status = use_state(|| WsStatus::Closed);
                             let error = use_state(|| None::<FetchError>);
@@ -698,7 +695,7 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                     hooks.push(quote! {
                         #[hook]
                         fn #common_hook_name(options: Option<#hook_options_name>) -> #hook_async_handle_name {
-                            let client = use_fetch_client();
+                            let client = #fetch_client_hook_name();
                             let signal = use_mut_ref(|| Signal::new(None::<#res>));
                             let data = use_signal_state(signal.clone());
                             let loading = use_state(|| false);
@@ -1057,17 +1054,19 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
             use crate::*;
             use yew::hook;
             use std::rc::Rc;
-            use yewlish_fetch_utils::serde::{Serialize, Deserialize};
             use std::cell::RefCell;
             use std::any::TypeId;
             use std::borrow::BorrowMut;
+            use yewlish_fetch_utils::serde::{Serialize, Deserialize};
+            use yewlish_fetch_utils::wasm_bindgen::JsCast;
+            use yewlish_fetch_utils::serde_json;
+            use yewlish_fetch_utils::wasm_bindgen::JsValue;
+            use yewlish_fetch_utils::js_sys::Date;
             use yewlish_fetch_utils::*;
             use yew::prelude::*;
             use yew::platform::spawn_local;
             use std::collections::HashMap;
             use std::any::Any;
-            use yewlish_fetch_utils::wasm_bindgen::JsCast;
-            use yewlish_fetch_utils::serde_json;
 
             #(#structs)*
             #(#errors)*
@@ -1159,12 +1158,12 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
             }
 
             #[hook]
-            pub fn use_fetch_client() -> Rc<#fetch_client_name> {
+            pub fn #fetch_client_hook_name() -> Rc<#fetch_client_name> {
                 use_context::<Rc<#fetch_client_name>>()
                     .expect(
                         &format!(
                             "{} must be used within a {} provider",
-                            stringify!(use_fetch_client),
+                            stringify!(#fetch_client_hook_name),
                             stringify!(#fetch_client_context_provider_name)
                         )
                     )
@@ -1193,7 +1192,7 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                     Queries,
                 }
 
-                let client = use_fetch_client();
+                let client = #fetch_client_hook_name();
                 let is_open = use_state(|| false);
                 let active_tab = use_state(|| Tab::Cache);
 
@@ -1277,8 +1276,8 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                                 </div>
 
                                 <nav class="fetch-debug-nav">
-                                    <button onclick={&activate_cache_tab}>{"Cache"}</button>
-                                    <button onclick={&activate_queries_tab}>{"Queries"}</button>
+                                    <button class={classes!("fetch-debug-nav-item", if *active_tab == Tab::Cache { Some("fetch-debug-nav-item-active") } else { None })} onclick={&activate_cache_tab}>{"Cache"}</button>
+                                    <button class={classes!("fetch-debug-nav-item", if *active_tab == Tab::Queries { Some("fetch-debug-nav-item-active") } else { None })} onclick={&activate_queries_tab}>{"Queries"}</button>
                                 </nav>
                             </header>
 
@@ -1287,16 +1286,29 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                                     <ul>
                                         {for client.cache.borrow().iter().map(|(key, entry)| {
                                             html! {
-                                                <li class="fetch-debug-item">
-                                                    <strong>{ key }</strong>
-                                                    <span>{ &entry.timestamp }</span>
+                                                <Accordion>
+                                                    <li class="fetch-debug-item">
+                                                        <AccordionTrigger>
+                                                            <div class="fetch-debug-item-title">
+                                                                <strong>{ key }</strong>
 
-                                                    <pre class="fetch-debug-data">
-                                                        { serde_json::to_string_pretty(
-                                                            &entry.data
-                                                        ).unwrap_or_else(|_| "Invalid JSON".to_string()) }
-                                                    </pre>
-                                                </li>
+                                                                <span>{"Expires at: "}{
+                                                                    Date::new(&JsValue::from_f64(entry.timestamp))
+                                                                        .to_locale_string("en-US", &JsValue::from_str("full"))
+                                                                        .as_string()
+                                                                }</span>
+                                                            </div>
+                                                        </AccordionTrigger>
+
+                                                        <AccordionContent>
+                                                            <pre class="fetch-debug-data">
+                                                                { serde_json::to_string_pretty(
+                                                                    &entry.data
+                                                                ).unwrap_or_else(|_| "Invalid JSON".to_string()) }
+                                                            </pre>
+                                                        </AccordionContent>
+                                                    </li>
+                                                </Accordion>
                                             }
                                         })}
                                     </ul>
@@ -1306,21 +1318,29 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                                     <ul>
                                         {for client.queries.borrow().iter().map(|(key, slotmap)| {
                                             html! {
-                                                <li key={key.to_string()} class="fetch-debug-item">
-                                                    <strong>{ key }</strong>
+                                                <Accordion>
+                                                    <li key={key.to_string()} class="fetch-debug-item">
+                                                        <AccordionTrigger>
+                                                            <div class="fetch-debug-item-title">
+                                                                <strong>{ key }</strong>
+                                                            </div>
+                                                        </AccordionTrigger>
 
-                                                    <ul>
-                                                        {for slotmap.iter().map(|(key, value)| {
-                                                            html! {
-                                                                <li key={key.to_string()}>
-                                                                    <pre class="fetch-debug-data">
-                                                                        {value}
-                                                                    </pre>
-                                                                </li>
-                                                            }
-                                                        })}
-                                                    </ul>
-                                                </li>
+                                                        <AccordionContent>
+                                                            <ul>
+                                                                {for slotmap.iter().map(|(key, value)| {
+                                                                    html! {
+                                                                        <li key={key.to_string()}>
+                                                                            <pre class="fetch-debug-data">
+                                                                                {value}
+                                                                            </pre>
+                                                                        </li>
+                                                                    }
+                                                                })}
+                                                            </ul>
+                                                        </AccordionContent>
+                                                    </li>
+                                                </Accordion>
                                             }
                                         })}
                                     </ul>
@@ -1371,12 +1391,22 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
 
                                 .fetch-debug-nav {
                                     display: flex;
+                                    margin-top: 1rem;
                                     justify-content: space-between;
                                     align-items: center;
                                 }
 
-                                .fetch-debug:hover {
-                                    box-shadow: 0 0 5px 1px rgb(58, 58, 58);
+                                .fetch-debug-nav-item {
+                                    flex: 1;
+                                    justify-content: center;
+                                    background-color: transparent;
+                                    border: none;
+                                    color: white;
+                                    cursor: pointer;
+                                }
+
+                                .fetch-debug-nav-item-active {
+                                    text-decoration: underline;
                                 }
 
                                 .fetch-debug-sheet {
@@ -1395,22 +1425,28 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                                     z-index: 9999;
                                 }
 
-                                .fetch-debug-sheet button {
-                                    background-color: transparent;
-                                    border: none;
-                                    color: white;
-                                    cursor: pointer;
-                                }
-
                                 .fetch-debug-sheet-open {
                                     transform: translateX(0);
                                 }
 
                                 .fetch-debug-item {
+                                    display: flex;
+                                    flex-direction: column;
+                                    gap: 6px;
                                     margin-bottom: 10px;
+                                    margin-left: 8px;
+                                    margin-right: 8px;
                                     padding: 10px;
                                     border-radius: 5px;
                                     font-size: 0.8rem;
+                                    background-color: #2c2c2c;
+                                }
+
+                                 .fetch-debug-item-title {
+                                    display: flex;
+                                    flex-direction: column;
+                                    gap: 6px;
+                                    cursor: pointer;
                                 }
 
                                 .fetch-debug-data {

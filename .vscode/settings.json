@@ -12,6 +12,7 @@
     "blockquote",
     "bools",
     "Cacheable",
+    "chrono",
     "columnheader",
     "Combobox",
     "contentinfo",
