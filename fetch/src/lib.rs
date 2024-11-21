@@ -307,7 +307,7 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                             &self.base_url
                         };
 
-                        let mut url = format!("{}/{}", base_url, path);
+                        let mut url = format!("{base_url}/{path}");
 
                         if TypeId::of::<#query>() != TypeId::of::<()>() {
                             if url.contains('?') {
