@@ -30,6 +30,8 @@
     "keydown",
     "labeledby",
     "labelledby",
+    "linecap",
+    "linejoin",
     "Listbox",
     "listitem",
     "mousedown",
