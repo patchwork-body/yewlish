@@ -35,7 +35,7 @@ web-sys = {version = "0.3.72", features = ["AbortController", "WebSocket"]}
 
 Ensure that your project is set up to run in a browser environment, as this library is designed for web applications using Yew.
 
-## Usage
+## Quick Start
 
 ### Basic Example
 
@@ -190,6 +190,36 @@ fn app() -> Html {
     }
 }
 ```
+
+## Architecture
+
+Yewlish Fetch is built on several key components:
+
+### Core Components
+
+1. **FetchSchema Derive Macro**
+   - Generates type-safe API client code from enum definitions
+   - Handles URL parameter substitution and query string building
+   - Creates strongly-typed request/response handling
+
+2. **Client Layer**
+   - Manages HTTP requests and WebSocket connections
+   - Handles request lifecycle (preparation, execution, response handling)
+   - Provides middleware support for request/response transformation
+
+3. **Cache System**
+   - Implements various caching strategies:
+     - StaleWhileRevalidate: Update cache while serving stale data
+     - CacheThenNetwork: Serve from cache first, then network (only if cache is expired)
+     - NetworkOnly: Always fetch from network
+     - CacheOnly: Serve only from cache
+   - Automatic cache invalidation
+   - Configurable cache duration
+
+4. **State Management**
+   - Hooks for managing request state
+   - Automatic state synchronization across components based on signals
+   - Built-in loading and error states
 
 ## Documentation
 
