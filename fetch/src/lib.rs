@@ -599,8 +599,7 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
 
                                 move |(), (client, subscriber, state_key_ref, slot_key_ref)| {
                                     let (Some(state_key), Some(slot_key)) = (state_key_ref.borrow().as_ref().cloned(), slot_key_ref.borrow().as_ref().cloned()) else {
-                                        error.set(Some(FetchError::UnknownError("State key or slot key is missing".to_string())));
-                                        log::error!("State key or slot key is missing, state key: {state_key_ref:?}, slot key: {slot_key_ref:?}");
+                                        error.set(Some(FetchError::UnknownError("State key or slot key is missing. state key: {state_key_ref:?}, slot key: {slot_key_ref:?}".to_string())));
                                         return;
                                     };
 
@@ -609,19 +608,16 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                                             match (*state.web_socket_watcher).borrow_mut().unsubscribe(&*subscriber.as_ref()) {
                                                 Ok(()) => {}
                                                 Err(err) => {
-                                                    log::error!("Failed to unsubscribe: {err:?}");
                                                     error.set(Some(err));
                                                     return
                                                 }
                                             }
                                         } else {
                                             error.set(Some(FetchError::UnknownError("Slot not found: {slot_key}".to_string())));
-                                            log::error!("Slot not found: {slot_key}");
                                             return
                                         }
                                     } else {
                                         error.set(Some(FetchError::UnknownError("Query not found: {state_key}".to_string())));
-                                        log::error!("Query not found: {state_key}");
                                         return
                                     }
 
