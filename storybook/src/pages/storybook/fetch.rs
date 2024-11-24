@@ -1,7 +1,7 @@
 use chrono::{DateTime, Utc};
 use web_sys::CloseEvent;
 use yew::prelude::*;
-use yewlish_fetch_utils::{use_signal_state, Signal, WsStatus};
+use yewlish_fetch_utils::{use_signal_state, FetchError, Signal, WsStatus};
 
 use crate::{
     pages::storybook::common::{Section, Wrapper},
@@ -26,7 +26,9 @@ pub fn fetch_page() -> Html {
 
                 <Wrapper title="web sockets">
                     <Section title="data">
-                        <WebSocket />
+                        <Chart />
+                        <Chart />
+                        <Chart />
                     </Section>
                 </Wrapper>
 
@@ -64,8 +66,8 @@ struct DataPoint {
     pub timestamp: DateTime<Utc>,
 }
 
-#[function_component(WebSocket)]
-fn web_socket() -> Html {
+#[function_component(Chart)]
+fn chart() -> Html {
     let signal = use_mut_ref(|| Signal::<Vec<DataPoint>>::new(vec![]));
     let data = use_signal_state(signal.clone());
 
@@ -94,10 +96,15 @@ fn web_socket() -> Html {
         log::info!("Close event: {:?}", event);
     });
 
+    let on_error = use_callback((), |error: FetchError, ()| {
+        log::error!("Error: {:?}", error);
+    });
+
     let chart = use_chart_with_options_async(ChartOptions {
         on_update: on_update.into(),
         on_status_change: on_status.into(),
         on_close: on_close.into(),
+        on_error: on_error.into(),
         ..Default::default()
     });
 
@@ -135,14 +142,6 @@ fn web_socket() -> Html {
             } else if *chart.status == WsStatus::Open {
                 html! {
                     <button onclick={&stop_ws}>{ "Stop" }</button>
-                }
-            } else if *chart.status == WsStatus::Opening {
-                html! {
-                    <p>{ "Connecting..." }</p>
-                }
-            } else if *chart.status == WsStatus::Closing {
-                html! {
-                    <p>{ "Disconnecting..." }</p>
                 }
             } else {
                 html! {}
