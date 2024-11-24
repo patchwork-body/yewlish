@@ -129,8 +129,10 @@ where
                 return Ok(());
             };
 
-            ws.close()
-                .map_err(|error| FetchError::NetworkError(format!("{error:?}")))?;
+            if ws.ready_state() == WebSocket::OPEN {
+                ws.close()
+                    .map_err(|error| FetchError::NetworkError(format!("{error:?}")))?;
+            }
         }
 
         Ok(())

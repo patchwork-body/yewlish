@@ -24,11 +24,9 @@ pub fn fetch_page() -> Html {
                     </Section>
                 </Wrapper>
 
-                <Wrapper title="web sockets">
-                    <Section title="data">
-                        <Chart />
-                        <Chart />
-                        <Chart />
+                <Wrapper title="Web Sockets">
+                    <Section title="charts">
+                        <Charts />
                     </Section>
                 </Wrapper>
 
@@ -53,6 +51,38 @@ fn get_posts() -> Html {
                             <p>{ &post.body }</p>
                         </li>
                     }) }
+                }) }
+            </ul>
+        </div>
+    }
+}
+
+#[function_component(Charts)]
+pub fn charts() -> Html {
+    let charts_vec = use_state(std::vec::Vec::new);
+
+    let inc = use_callback(charts_vec.clone(), {
+        |event: MouseEvent, charts_vec| {
+            event.prevent_default();
+            let mut charts_vec_data = (**charts_vec).clone();
+            charts_vec_data.push(uuid::Uuid::new_v4());
+            charts_vec.set(charts_vec_data);
+        }
+    });
+
+    html! {
+        <div>
+            <div class="flex justify-center gap-2">
+                <button class="border rounded-lg p-2" onclick={&inc}>{ "Add" }</button>
+            </div>
+
+            <ul class="flex flex-wrap justify-center">
+                { for charts_vec.iter().map(|id| {
+                    html! {
+                        <li data-id={id.to_string()} key={id.to_string()}>
+                            <Chart />
+                        </li>
+                    }
                 }) }
             </ul>
         </div>
@@ -134,14 +164,14 @@ fn chart() -> Html {
     });
 
     html! {
-        <div>
+        <div class="border border-lg m-4 p-4">
             { if *chart.status == WsStatus::Closed {
                 html! {
-                    <button onclick={&start_ws}>{ "Start" }</button>
+                    <button class="border rounded-lg p-2" onclick={&start_ws}>{ "Start" }</button>
                 }
             } else if *chart.status == WsStatus::Open {
                 html! {
-                    <button onclick={&stop_ws}>{ "Stop" }</button>
+                    <button class="border rounded-lg p-2" onclick={&stop_ws}>{ "Stop" }</button>
                 }
             } else {
                 html! {}
