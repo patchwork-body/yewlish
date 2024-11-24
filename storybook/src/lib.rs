@@ -53,8 +53,12 @@ pub enum Api {
     PatchPost,
     #[delete("/posts/{id}", slugs = PostSlugs)]
     DeletePost,
-    #[ws("/ws")]
-    WebSocket,
+}
+
+#[derive(FetchSchema)]
+pub enum WsApi {
+    #[ws("/ws/chart", res = f64)]
+    Chart,
 }
 
 mod pages;
