@@ -160,13 +160,17 @@ where
 
         Ok(())
     }
+
+    #[must_use]
+    pub fn get_ready_state(&self) -> Option<u16> {
+        let ws = self.ws.as_ref()?;
+        ws.ready_state().into()
+    }
 }
 
 #[derive(Default, Debug, Clone, PartialEq)]
 pub enum WsStatus {
     Open,
-    Opening,
-    Closing,
     #[default]
     Closed,
 }

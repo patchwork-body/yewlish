@@ -473,8 +473,6 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                                 let status = status.clone();
 
                                 move |event: web_sys::CloseEvent, options| {
-                                    log::info!("Close event: {:?}", event);
-
                                     if let Some(on_close) = options.as_ref().and_then(|o| o.on_close.clone()) {
                                         on_close.emit(event.clone());
                                     }
@@ -500,7 +498,6 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                                 let slot_key_ref = slot_key_ref.clone();
 
                                 move |params: #params_struct_name, (client, subscriber)| {
-                                    status.set(WsStatus::Opening);
                                     let url = client.#prepare_url_method_name();
 
                                     let Ok(state_key) = generate_state_key("ws", url.as_str(), &params.slugs, &params.query) else {
@@ -522,11 +519,21 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                                                     let slot_key = slotmap.insert(#state_enum_name::Ws(#ws_state_struct_name {
                                                         web_socket_watcher: state.web_socket_watcher.clone(),
                                                     }));
+
+                                                    slot_key_ref.replace(Some(slot_key));
+                                                    error.set(None);
                                                 }
                                                 Err(err) => {
                                                     error.set(Some(err));
                                                 }
                                             }
+
+                                            match state.web_socket_watcher.borrow().get_ready_state() {
+                                                Some(web_sys::WebSocket::OPEN) => {
+                                                    status.set(WsStatus::Open);
+                                                },
+                                                _ => {}
+                                            };
                                         }
                                     } else {
                                         match build_url(url.as_str(), &params.slugs, &params.query) {
@@ -591,10 +598,9 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                                 let error = error.clone();
 
                                 move |(), (client, subscriber, state_key_ref, slot_key_ref)| {
-                                    status.set(WsStatus::Closing);
-
                                     let (Some(state_key), Some(slot_key)) = (state_key_ref.borrow().as_ref().cloned(), slot_key_ref.borrow().as_ref().cloned()) else {
                                         error.set(Some(FetchError::UnknownError("State key or slot key is missing".to_string())));
+                                        log::error!("State key or slot key is missing, state key: {state_key_ref:?}, slot key: {slot_key_ref:?}");
                                         return;
                                     };
 
@@ -603,15 +609,19 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                                             match (*state.web_socket_watcher).borrow_mut().unsubscribe(&*subscriber.as_ref()) {
                                                 Ok(()) => {}
                                                 Err(err) => {
-                                                    web_sys::console::error_1(&JsValue::from_str(&format!("{err:?}")));
+                                                    log::error!("Failed to unsubscribe: {err:?}");
                                                     error.set(Some(err));
                                                     return
                                                 }
                                             }
                                         } else {
+                                            error.set(Some(FetchError::UnknownError("Slot not found: {slot_key}".to_string())));
+                                            log::error!("Slot not found: {slot_key}");
                                             return
                                         }
                                     } else {
+                                        error.set(Some(FetchError::UnknownError("Query not found: {state_key}".to_string())));
+                                        log::error!("Query not found: {state_key}");
                                         return
                                     }
 

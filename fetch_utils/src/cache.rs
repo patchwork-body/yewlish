@@ -1,6 +1,5 @@
 use js_sys::Date;
 use std::collections::hash_map::Iter;
-use wasm_bindgen::prelude::*;
 
 #[derive(Default, Clone, PartialEq)]
 pub enum CachePolicy {
@@ -15,7 +14,6 @@ pub enum CachePolicy {
 pub struct CacheOptions {
     pub policy: Option<CachePolicy>,
     pub max_age: Option<f64>,
-    pub cleanup_interval: Option<f64>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -28,7 +26,6 @@ pub struct Cache {
     entries: std::collections::HashMap<String, CacheEntry>,
     policy: CachePolicy,
     max_age: f64,
-    cleanup_handle: Option<i32>,
 }
 
 impl Default for Cache {
@@ -48,56 +45,13 @@ pub trait Cacheable {
 }
 
 const CACHE_MAX_AGE: f64 = 10.0 * 60.0 * 1000.0; // Ten minutes
-const DEFAULT_CLEANUP_INTERVAL: f64 = 60.0 * 1000.0; // One minute
 
 impl Cache {
     fn new(options: CacheOptions) -> Self {
-        let mut cache = Self {
+        Self {
             entries: std::collections::HashMap::new(),
             policy: options.policy.unwrap_or_default(),
             max_age: options.max_age.unwrap_or(CACHE_MAX_AGE),
-            cleanup_handle: None,
-        };
-
-        let interval = options.cleanup_interval.unwrap_or(DEFAULT_CLEANUP_INTERVAL);
-        cache.start_cleanup(interval as i32);
-
-        cache
-    }
-
-    fn start_cleanup(&mut self, interval_ms: i32) {
-        let window = web_sys::window().expect("no global window exists");
-        let this = self as *mut Cache;
-
-        let closure = Closure::wrap(Box::new(move || {
-            let cache = unsafe { &mut *this };
-            cache.cleanup();
-        }) as Box<dyn FnMut()>);
-
-        let handle = window
-            .set_interval_with_callback_and_timeout_and_arguments_0(
-                closure.as_ref().unchecked_ref(),
-                interval_ms,
-            )
-            .expect("failed to set interval");
-
-        closure.forget();
-
-        self.cleanup_handle = Some(handle);
-    }
-
-    fn cleanup(&mut self) {
-        self.entries
-            .retain(|_, entry| entry.timestamp > Date::now());
-    }
-}
-
-impl Drop for Cache {
-    fn drop(&mut self) {
-        if let Some(handle) = self.cleanup_handle {
-            if let Some(window) = web_sys::window() {
-                window.clear_interval_with_handle(handle);
-            }
         }
     }
 }
