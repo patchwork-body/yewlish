@@ -5,9 +5,9 @@ use yewlish_fetch_utils::{use_signal_state, Signal, WsStatus};
 
 use crate::{
     pages::storybook::common::{Section, Wrapper},
-    use_chart_with_options, use_chart_with_options_async, use_get_posts, ApiFetchClient,
-    ApiFetchClientDebug, ApiFetchClientProvider, ChartOptions, ChartParams, GetPostsParams,
-    OnChartUpdate, WsApiFetchClient, WsApiFetchClientProvider,
+    use_chart_with_options_async, use_get_posts, ApiFetchClient, ApiFetchClientDebug,
+    ApiFetchClientProvider, ChartOptions, ChartParams, GetPostsParams, OnChartUpdate,
+    WsApiFetchClient, WsApiFetchClientProvider,
 };
 
 #[function_component(FetchPage)]
@@ -59,8 +59,9 @@ fn get_posts() -> Html {
 
 #[derive(Clone, Debug)]
 struct DataPoint {
-    value: f64,
-    timestamp: DateTime<Utc>,
+    pub value: f64,
+    #[allow(dead_code)]
+    pub timestamp: DateTime<Utc>,
 }
 
 #[function_component(WebSocket)]
@@ -108,9 +109,10 @@ fn web_socket() -> Html {
         .iter()
         .enumerate()
         .map(|(i, point)| {
+            #[allow(clippy::cast_precision_loss)]
             let x = padding + (i as f64 / data.len() as f64) * (width - 2.0 * padding);
             let y = height - (padding + (point.value / 100.0) * (height - 2.0 * padding));
-            format!("{},{}", x, y)
+            format!("{x},{y}")
         })
         .collect::<Vec<_>>();
 
@@ -123,8 +125,6 @@ fn web_socket() -> Html {
         event.prevent_default();
         close.emit(());
     });
-
-    log::debug!("Error: {:?}", chart.error);
 
     html! {
         <div>
