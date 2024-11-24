@@ -261,12 +261,3 @@ where
 
     Ok(result)
 }
-
-#[derive(Default, Debug, Clone, PartialEq)]
-pub enum WsStatus {
-    Open,
-    Opening,
-    Closing,
-    #[default]
-    Closed,
-}

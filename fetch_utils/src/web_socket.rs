@@ -131,8 +131,6 @@ where
 
             ws.close()
                 .map_err(|error| FetchError::NetworkError(format!("{error:?}")))?;
-
-            self.ws = None;
         }
 
         Ok(())
@@ -162,4 +160,13 @@ where
 
         Ok(())
     }
+}
+
+#[derive(Default, Debug, Clone, PartialEq)]
+pub enum WsStatus {
+    Open,
+    Opening,
+    Closing,
+    #[default]
+    Closed,
 }

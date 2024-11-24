@@ -17,7 +17,7 @@ required-features = ["hydration"]
 yew = "0.21.0"
 log = "0.4.21"
 serde = "1.0.203"
-web-sys = {version = "0.3.70", features = ["Document", "HtmlElement", "Location"]}
+web-sys = {version = "0.3.70", features = ["Document", "HtmlElement", "HtmlFormElement", "HtmlInputElement", "Location"]}
 toggle = { path = "../toggle" }
 yewlish-toggle-group = { path = "../toggle_group" }
 icons = { path = "../icons" }
@@ -34,12 +34,15 @@ listbox = { path = "../listbox" }
 virtual-list = { path = "../virtual_list" }
 yewlish-fetch = { path = "../fetch" }
 yewlish-fetch-utils = { path = "../fetch_utils" }
+rand = "0.8.5"
+chrono = "0.4.38"
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 wasm-bindgen-futures = "0.4.42"
 wasm-logger = "0.2.0"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+rocket_ws = "0.1.1"
 rocket = "0.5.1"
 clap = { version = "4.5.4", features = ["derive"] }
 tokio = "1.38.0"

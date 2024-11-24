@@ -4,8 +4,12 @@ extern crate rocket;
 use std::{collections::HashMap, path::PathBuf};
 
 use clap::Parser;
+use rand::Rng;
+use rocket_ws::Message;
+use rocket::tokio::time::{sleep, Duration};
 use rocket::response::stream::TextStream;
 use rocket::{response::content::RawHtml, State};
+
 use storybook::{App, AppProps};
 
 struct IndexHtml {
@@ -34,6 +38,17 @@ async fn index(
     })
 }
 
+#[get("/ws/chart")]
+async fn chart(ws: rocket_ws::WebSocket) -> rocket_ws::Stream!['static] {
+    rocket_ws::Stream! { ws =>
+        loop {
+            let random_number: f64 = rand::thread_rng().gen::<f64>() * 100.0;
+            yield Message::Text(random_number.to_string());
+            sleep(Duration::from_secs(1)).await;
+        }
+    }
+}
+
 #[derive(Parser)]
 struct Args {
     #[arg(short, long, default_value = "dist")]
@@ -58,5 +73,5 @@ async fn rocket() -> _ {
             body: index_html_after.to_string(),
         })
         .mount("/", rocket::fs::FileServer::from(args.dir))
-        .mount("/", routes![index])
+        .mount("/", routes![chart, index])
 }

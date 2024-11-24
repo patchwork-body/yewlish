@@ -164,7 +164,7 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
         let params_struct_name = format_ident!("{}Params", variant_name);
         let variant_snake_case = variant_name.to_string().to_snake_case();
         let fetch_method_name = format_ident!("{}", variant_snake_case);
-        let on_fetched_struct_name = format_ident!("On{}Fetched", variant_name);
+        let on_update_struct_name = format_ident!("On{}Update", variant_name);
         let get_cache_key_method_name = format_ident!("get_{}_cache_entry", variant_snake_case);
         let prepare_url_method_name = format_ident!("prepare_{}_url", variant_snake_case);
         let update_queries_method_name = format_ident!("update_{}_queries", variant_snake_case);
@@ -222,9 +222,16 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                         }
 
                         #[derive(Clone, PartialEq, Default)]
+                        pub struct #on_update_struct_name {
+                            pub existing: Option<#res>,
+                            pub incoming: #res,
+                        }
+
+                        #[derive(Clone, PartialEq, Default)]
                         pub struct #hook_options_name {
                             pub on_message: Option<Callback<web_sys::MessageEvent>>,
-                            pub on_data: Option<Callback<#res, Option<#res>>>,
+                            pub on_data: Option<Callback<#res>>,
+                            pub on_update: Option<Callback<#on_update_struct_name, Option<#res>>>,
                             pub on_status_change: Option<Callback<WsStatus>>,
                             pub on_error: Option<Callback<FetchError>>,
                             pub on_open: Option<Callback<web_sys::Event>>,
@@ -277,9 +284,10 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                         }
 
                         #[derive(Clone, PartialEq, Default)]
-                        pub struct #on_fetched_struct_name {
+                        pub struct #on_update_struct_name {
                             pub params: #params_struct_name,
-                            pub res: #res,
+                            pub existing: Option<#res>,
+                            pub incoming: #res,
                         }
 
                         #[derive(Clone, PartialEq, Default)]
@@ -288,7 +296,7 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                             #[deprecated(note = "Use `on_data` instead")]
                             pub on_success: Option<Callback<#res>>,
                             pub on_data: Option<Callback<#res>>,
-                            pub on_fetched: Option<Callback<#on_fetched_struct_name>>,
+                            pub on_update: Option<Callback<#on_update_struct_name, Option<#res>>>,
                             pub on_error: Option<Callback<FetchError>>,
                         }
                     });
@@ -398,11 +406,20 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                         #[hook]
                         fn #common_hook_name(options: Option<#hook_options_name>) -> #hook_async_handle_name {
                             let client = #fetch_client_hook_name();
-                            let data = use_state(|| None::<#res>);
+                            let signal = use_mut_ref(|| Signal::new(None::<#res>));
+                            let data = use_signal_state(signal.clone());
                             let status = use_state(|| WsStatus::Closed);
                             let error = use_state(|| None::<FetchError>);
                             let state_key_ref = use_mut_ref(|| None::<String>);
                             let slot_key_ref = use_mut_ref(|| None::<usize>);
+
+                            use_effect_with((data.clone(), options.clone()), |(data, options)| {
+                                if let Some(data) = (**data).as_ref() {
+                                    if let Some(on_data) = options.as_ref().and_then(|o| o.on_data.clone()) {
+                                        on_data.emit(data.clone());
+                                    }
+                                }
+                            });
 
                             let onopen = use_callback(options.clone(), {
                                 let status = status.clone();
@@ -417,7 +434,7 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                             });
 
                             let onmessage = use_callback(options.clone(), {
-                                let data = data.clone();
+                                let signal = signal.clone();
                                 let error = error.clone();
 
                                 move |(event, res): (web_sys::MessageEvent, #ws_data_enum_name), options| {
@@ -426,12 +443,15 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                                     }
 
                                     if let #ws_data_enum_name::#variant_name(res) = res {
-                                        if let Some(on_data) = options.as_ref().and_then(|o| o.on_data.clone()) {
-                                            if let Some(res) = on_data.emit(res.clone()) {
-                                                data.set(Some(res));
-                                            }
+                                        if let Some(on_update) = options.as_ref().and_then(|o| o.on_update.clone()) {
+                                            let res = on_update.emit(#on_update_struct_name {
+                                                existing: signal.borrow().get().clone(),
+                                                incoming: res,
+                                            });
+
+                                            signal.borrow().set(res);
                                         } else {
-                                            data.set(Some(res));
+                                            signal.borrow().set(Some(res.clone()));
                                         }
                                     }
                                 }
@@ -453,6 +473,8 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                                 let status = status.clone();
 
                                 move |event: web_sys::CloseEvent, options| {
+                                    log::info!("Close event: {:?}", event);
+
                                     if let Some(on_close) = options.as_ref().and_then(|o| o.on_close.clone()) {
                                         on_close.emit(event.clone());
                                     }
@@ -500,9 +522,6 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                                                     let slot_key = slotmap.insert(#state_enum_name::Ws(#ws_state_struct_name {
                                                         web_socket_watcher: state.web_socket_watcher.clone(),
                                                     }));
-
-                                                    slot_key_ref.replace(Some(slot_key));
-                                                    error.set(None);
                                                 }
                                                 Err(err) => {
                                                     error.set(Some(err));
@@ -584,11 +603,33 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                                             match (*state.web_socket_watcher).borrow_mut().unsubscribe(&*subscriber.as_ref()) {
                                                 Ok(()) => {}
                                                 Err(err) => {
+                                                    web_sys::console::error_1(&JsValue::from_str(&format!("{err:?}")));
                                                     error.set(Some(err));
+                                                    return
                                                 }
                                             }
+                                        } else {
+                                            return
+                                        }
+                                    } else {
+                                        return
+                                    }
+
+                                    let mut queries = (*client.queries).borrow_mut();
+
+                                    if let Some(slotmap) = queries.get_mut(&state_key) {
+                                        slotmap.remove(slot_key);
+
+                                        if slotmap.is_empty() {
+                                            queries.remove(&state_key);
                                         }
                                     }
+
+                                    state_key_ref.replace(None);
+                                    slot_key_ref.replace(None);
+
+                                    // It's a fake, we don't really close our connection here, but we don't wanna wait for the real close event
+                                    status.set(WsStatus::Closed);
                                 }
                             });
 
@@ -597,32 +638,12 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                                 on_status_change.emit((**status).clone());
                             });
 
-                            use_effect_with((client.clone(), close.clone(), state_key_ref.clone(), slot_key_ref.clone()), {
-                                let error = error.clone();
-
-                                move |(client, close, state_key_ref, slot_key_ref)| {
-                                    let client = client.clone();
+                            use_effect_with(close.clone(), {
+                                |close| {
                                     let close = close.clone();
-                                    let state_key_ref = state_key_ref.clone();
-                                    let slot_key_ref = slot_key_ref.clone();
 
                                     move || {
                                         close.emit(());
-
-                                        let (Some(state_key), Some(slot_key)) = (state_key_ref.borrow().as_ref().cloned(), slot_key_ref.borrow().as_ref().cloned()) else {
-                                            error.set(Some(FetchError::UnknownError("State key or slot key is missing".to_string())));
-                                            return;
-                                        };
-
-                                        let mut queries = (*client.queries).borrow_mut();
-
-                                        if let Some(slotmap) = queries.get_mut(&state_key) {
-                                            slotmap.remove(slot_key);
-
-                                            if slotmap.is_empty() {
-                                                queries.remove(&state_key);
-                                            }
-                                        }
                                     }
                                 }
                             });
@@ -838,13 +859,16 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                                                             )
                                                         ) {
                                                             Ok(res) => {
-                                                                signal.borrow().set(Some(res.clone()));
-
-                                                                if let Some(on_fetched) = options.as_ref().and_then(|o| o.on_fetched.clone()) {
-                                                                    on_fetched.emit(#on_fetched_struct_name {
+                                                                if let Some(on_update) = options.as_ref().and_then(|o| o.on_update.clone()) {
+                                                                    let res = on_update.emit(#on_update_struct_name {
                                                                         params,
-                                                                        res,
+                                                                        existing: signal.borrow().get().clone(),
+                                                                        incoming: res,
                                                                     });
+
+                                                                    signal.borrow().set(res);
+                                                                } else {
+                                                                    signal.borrow().set(Some(res.clone()));
                                                                 }
                                                             }
                                                             Err(err) => {
@@ -879,13 +903,16 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                                                                 )
                                                             ) {
                                                                 Ok(res) => {
-                                                                    signal.borrow().set(Some(res.clone()));
-
-                                                                    if let Some(on_fetched) = options.as_ref().and_then(|o| o.on_fetched.clone()) {
-                                                                        on_fetched.emit(#on_fetched_struct_name {
+                                                                    if let Some(on_update) = options.as_ref().and_then(|o| o.on_update.clone()) {
+                                                                        let res = on_update.emit(#on_update_struct_name {
                                                                             params,
-                                                                            res,
+                                                                            existing: signal.borrow().get().clone(),
+                                                                            incoming: res,
                                                                         });
+
+                                                                        signal.borrow().set(res);
+                                                                    } else {
+                                                                        signal.borrow().set(Some(res.clone()));
                                                                     }
                                                                 }
                                                                 Err(err) => {
@@ -911,13 +938,16 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                                                             )
                                                         ) {
                                                             Ok(res) => {
-                                                                signal.borrow().set(Some(res.clone()));
-
-                                                                if let Some(on_fetched) = options.as_ref().and_then(|o| o.on_fetched.clone()) {
-                                                                    on_fetched.emit(#on_fetched_struct_name {
+                                                                if let Some(on_update) = options.as_ref().and_then(|o| o.on_update.clone()) {
+                                                                    let res = on_update.emit(#on_update_struct_name {
                                                                         params,
-                                                                        res,
+                                                                        existing: signal.borrow().get().clone(),
+                                                                        incoming: res,
                                                                     });
+
+                                                                    signal.borrow().set(res);
+                                                                } else {
+                                                                    signal.borrow().set(Some(res.clone()));
                                                                 }
                                                             }
                                                             Err(err) => {
@@ -934,7 +964,17 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                                                 if let Some(entry) = cache_entry {
                                                     match deserialize_cached_data::<#res>(&entry.data) {
                                                         Ok(res) => {
-                                                            signal.borrow().set(Some(res));
+                                                            if let Some(on_update) = options.as_ref().and_then(|o| o.on_update.clone()) {
+                                                                let res = on_update.emit(#on_update_struct_name {
+                                                                    params,
+                                                                    existing: signal.borrow().get().clone(),
+                                                                    incoming: res,
+                                                                });
+
+                                                                signal.borrow().set(res);
+                                                            } else {
+                                                                signal.borrow().set(Some(res.clone()));
+                                                            }
                                                         }
                                                         Err(err) => {
                                                             error.set(Some(err));
