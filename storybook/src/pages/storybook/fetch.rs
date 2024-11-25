@@ -1,12 +1,18 @@
+use std::rc::Rc;
+
 use chrono::{DateTime, Utc};
 use web_sys::CloseEvent;
 use yew::prelude::*;
-use yewlish_fetch_utils::{use_signal_state, FetchError, Signal, WsStatus};
+use yewlish_fetch_utils::{
+    use_signal_state, CacheOptions, CachePolicy, FetchError, Signal, WsStatus,
+};
 
 use crate::{
     pages::storybook::common::{Section, Wrapper},
-    use_chart_with_options_async, use_get_posts, ApiFetchClient, ApiFetchClientDebug,
-    ApiFetchClientProvider, ChartOptions, ChartParams, GetPostsParams, OnChartUpdate,
+    use_api_fetch_client, use_chart_with_options_async, use_create_post_with_options_async,
+    use_get_posts, use_get_posts_with_options, use_get_posts_with_options_async, ApiFetchClient,
+    ApiFetchClientDebug, ApiFetchClientProvider, ChartOptions, ChartParams, CreatePostOptions,
+    CreatePostParams, GetPostsOptions, GetPostsParams, OnChartUpdate, OnCreatePostUpdate, PostBody,
     WsApiFetchClient, WsApiFetchClientProvider,
 };
 
@@ -17,21 +23,39 @@ pub fn fetch_page() -> Html {
 
     html! {
         <ApiFetchClientProvider client={client}>
-            <WsApiFetchClientProvider client={ws_client}>
-                <Wrapper title="jsonplaceholder">
-                    <Section title="Get Posts">
-                        <GetPosts />
+            <Wrapper title="jsonplaceholder">
+                <Section title="Live">
+                    <CreatePost />
+                    <GetPosts />
+                </Section>
+
+                <Section title="Cached">
+                    <CachedGetPosts />
+                </Section>
+            </Wrapper>
+
+            <AppStateProvider>
+                <Wrapper title="With App State">
+                    <Section title="Yewlish-fetch">
+                        <CreatePostWithAppState />
+                        <GetPostsWithAppState />
+                    </Section>
+
+                    <Section title="Reducer">
+                        <GetPostsFromAppState />
                     </Section>
                 </Wrapper>
+            </AppStateProvider>
 
+            <WsApiFetchClientProvider client={ws_client}>
                 <Wrapper title="Web Sockets">
                     <Section title="charts">
                         <Charts />
                     </Section>
                 </Wrapper>
-
-                <ApiFetchClientDebug />
             </WsApiFetchClientProvider>
+
+            <ApiFetchClientDebug />
         </ApiFetchClientProvider>
     }
 }
@@ -42,16 +66,265 @@ fn get_posts() -> Html {
 
     html! {
         <div class="max-h-[300px] overflow-y-auto">
-            <h2>{ "Posts" }</h2>
             <ul>
-                { for (*posts.data).iter().map(|posts| html! {
-                    { for posts.iter().map(|post| html! {
-                        <li class="max-h-[200px] overflow-hidden" key={post.id}>
+                {(*posts.data).clone().unwrap_or_default().iter().map(|post| {
+                    html! {
+                        <li class="max-h-[200px] overflow-hidden">
                             <h3 class="uppercase underline">{ &post.title }</h3>
                             <p>{ &post.body }</p>
                         </li>
-                    }) }
-                }) }
+                    }
+                }).collect::<Html>()}
+            </ul>
+        </div>
+    }
+}
+
+#[function_component(CachedGetPosts)]
+fn cached_get_posts() -> Html {
+    let posts = use_get_posts_with_options_async(GetPostsOptions {
+        cache_options: CacheOptions {
+            policy: Some(CachePolicy::CacheOnly),
+            ..Default::default()
+        }
+        .into(),
+        ..Default::default()
+    });
+
+    let refresh = use_callback(posts.trigger.clone(), |event: MouseEvent, trigger| {
+        event.prevent_default();
+        trigger.emit(GetPostsParams::default());
+    });
+
+    html! {
+        <div class="max-h-[300px] overflow-y-auto">
+            <button onclick={&refresh}>
+                { "Refresh" }
+            </button>
+
+            <ul>
+                {(*posts.data).clone().unwrap_or_default().iter().map(|post| {
+                    html! {
+                        <li class="max-h-[200px] overflow-hidden">
+                            <h3 class="uppercase underline">{ &post.title }</h3>
+                            <p>{ &post.body }</p>
+                        </li>
+                    }
+                }).collect::<Html>()}
+            </ul>
+        </div>
+    }
+}
+
+#[function_component(CreatePost)]
+fn create_post() -> Html {
+    let client = use_api_fetch_client();
+
+    let on_created = use_callback(client.clone(), |update: OnCreatePostUpdate, client| {
+        client.update_get_posts_queries(|query| {
+            query.map(|data| {
+                data.into_iter()
+                    .chain(std::iter::once(update.incoming.clone()))
+                    .collect()
+            })
+        });
+
+        Some(update.incoming)
+    });
+
+    let create_post = use_create_post_with_options_async(CreatePostOptions {
+        on_update: on_created.into(),
+        ..Default::default()
+    });
+
+    let submit = use_callback(
+        create_post.trigger.clone(),
+        |event: SubmitEvent, create_post| {
+            event.prevent_default();
+
+            let Some(form_element) = event.target_dyn_into::<web_sys::HtmlFormElement>() else {
+                return;
+            };
+
+            let Ok(form_data) = web_sys::FormData::new_with_form(&form_element) else {
+                return;
+            };
+
+            let name = form_data.get("title").as_string().unwrap_or_default();
+            let number = form_data.get("body").as_string().unwrap_or_default();
+
+            create_post.emit(CreatePostParams {
+                body: PostBody {
+                    id: 0,
+                    title: name,
+                    body: number,
+                    user_id: 0,
+                },
+                ..Default::default()
+            });
+        },
+    );
+
+    html! {
+        <form class="flex flex-col gap-y-4" onsubmit={&submit}>
+            <input class="border rounded-md p-2 bg-neutral-950 text-white" name="title" type="text" placeholder="Title" />
+            <textarea class="border rounded-md p-2 bg-neutral-950 text-white" name="body" placeholder="Body"></textarea>
+            <button class="border rounded-md p-2" type="submit">{ "Submit" }</button>
+        </form>
+    }
+}
+
+#[derive(Clone, Default, PartialEq)]
+struct AppState {
+    pub posts: Vec<PostBody>,
+}
+
+enum AppStateAction {
+    InitPosts(Vec<PostBody>),
+    AddPost(PostBody),
+}
+
+impl Reducible for AppState {
+    type Action = AppStateAction;
+
+    fn reduce(self: Rc<Self>, action: Self::Action) -> Rc<Self> {
+        match action {
+            AppStateAction::InitPosts(posts) => Rc::new(Self { posts }),
+            AppStateAction::AddPost(post) => {
+                let mut posts = self.posts.clone();
+                posts.push(post);
+                Rc::new(Self { posts })
+            }
+        }
+    }
+}
+
+#[derive(Clone, PartialEq, Properties)]
+pub struct AppStateProviderProps {
+    pub children: Children,
+}
+
+type ReducibleAppState = UseReducerHandle<AppState>;
+
+#[function_component(AppStateProvider)]
+pub fn app_state_provider(props: &AppStateProviderProps) -> Html {
+    let app_state = use_reducer(AppState::default);
+
+    html! {
+        <ContextProvider<ReducibleAppState> context={app_state}>
+            { props.children.clone() }
+        </ContextProvider<ReducibleAppState>>
+    }
+}
+
+#[function_component(GetPostsWithAppState)]
+fn get_posts_with_app_state() -> Html {
+    let app_state = use_context::<ReducibleAppState>().expect("No app state found");
+
+    let init_app_state = use_callback((), {
+        let app_state = app_state.clone();
+
+        move |posts: Vec<PostBody>, ()| {
+            app_state.dispatch(AppStateAction::InitPosts(posts));
+        }
+    });
+
+    let posts = use_get_posts_with_options(
+        GetPostsParams::default(),
+        GetPostsOptions {
+            on_data: init_app_state.into(),
+            ..Default::default()
+        },
+    );
+
+    html! {
+        <div class="max-h-[300px] overflow-y-auto">
+            <ul>
+                {(*posts.data).clone().unwrap_or_default().iter().map(|post| {
+                    html! {
+                        <li class="max-h-[200px] overflow-hidden">
+                            <h3 class="uppercase underline">{ &post.title }</h3>
+                            <p>{ &post.body }</p>
+                        </li>
+                    }
+                }).collect::<Html>()}
+            </ul>
+        </div>
+    }
+}
+
+#[function_component(CreatePostWithAppState)]
+fn create_post_with_app_state() -> Html {
+    let app_state = use_context::<ReducibleAppState>().expect("No app state found");
+
+    let on_created = use_callback((), {
+        let app_state = app_state.clone();
+
+        move |update: OnCreatePostUpdate, ()| {
+            app_state.dispatch(AppStateAction::AddPost(update.incoming.clone()));
+            Some(update.incoming)
+        }
+    });
+
+    let create_post = use_create_post_with_options_async(CreatePostOptions {
+        on_update: on_created.into(),
+        ..Default::default()
+    });
+
+    let submit = use_callback(
+        create_post.trigger.clone(),
+        |event: SubmitEvent, create_post| {
+            event.prevent_default();
+
+            let Some(form_element) = event.target_dyn_into::<web_sys::HtmlFormElement>() else {
+                return;
+            };
+
+            let Ok(form_data) = web_sys::FormData::new_with_form(&form_element) else {
+                return;
+            };
+
+            let name = form_data.get("title").as_string().unwrap_or_default();
+            let number = form_data.get("body").as_string().unwrap_or_default();
+
+            create_post.emit(CreatePostParams {
+                body: PostBody {
+                    id: 0,
+                    title: name,
+                    body: number,
+                    user_id: 0,
+                },
+                ..Default::default()
+            });
+        },
+    );
+
+    html! {
+        <form class="flex flex-col gap-y-4" onsubmit={&submit}>
+            <input class="border rounded-md p-2 bg-neutral-950 text-white" name="title" type="text" placeholder="Title" />
+            <textarea class="border rounded-md p-2 bg-neutral-950 text-white" name="body" placeholder="Body"></textarea>
+            <button class="border rounded-md p-2" type="submit">{ "Submit" }</button>
+        </form>
+    }
+}
+
+#[function_component(GetPostsFromAppState)]
+pub fn get_posts_from_app_state() -> Html {
+    let app_state = use_context::<ReducibleAppState>().expect("No app state found");
+
+    html! {
+        <div class="max-h-[300px] overflow-y-auto">
+            <ul>
+                {
+                    app_state.posts.iter().map(|post| {
+                        html! {
+                            <li>
+                                <h3>{ &post.title }</h3>
+                                <p>{ &post.body }</p>
+                            </li>
+                        }
+                    }).collect::<Html>()
+                }
             </ul>
         </div>
     }

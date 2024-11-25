@@ -45,9 +45,9 @@ pub enum Api {
     GetPostComments,
     #[get("/comments", query = GetPostCommentsQuery, res = Vec<CommentBody>)]
     GetComments,
-    #[post("/posts", body = PostBody)]
+    #[post("/posts", body = PostBody, res = PostBody)]
     CreatePost,
-    #[put("/posts/{id}", slugs = PostSlugs, body = PostBody)]
+    #[put("/posts/{id}", slugs = PostSlugs, body = PostBody, res = PostBody)]
     UpdatePost,
     #[patch("/posts/{id}", slugs = PostSlugs, body = PostBody)]
     PatchPost,

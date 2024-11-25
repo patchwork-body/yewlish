@@ -176,6 +176,7 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
         let hook_name_async = format_ident!("{}_async", hook_name);
         let hook_with_options_name_async = format_ident!("{}_with_options_async", hook_name);
         let hook_options_name = format_ident!("{}Options", variant_name);
+        let hook_states_name = format_ident!("use_{}_states", fetch_method_name);
 
         match extract_attrs(&variant.attrs) {
             Ok((verb, path, slugs, query, body, res)) => {
@@ -1065,6 +1066,25 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                                 error: hook.error,
                                 cancel: hook.cancel,
                             }
+                        }
+
+                        #[hook]
+                        pub fn #hook_states_name() -> Rc<Vec<#state_struct_name>> {
+                            let client = #fetch_client_hook_name();
+
+                            use_memo(
+                                client.clone(),
+
+                                |client| client.queries.borrow().get(#variant_snake_case).map(
+                                    |slotmap| slotmap.iter().map(|(_, value)| value.clone()).filter_map(|value| {
+                                        if let #state_enum_name::#variant_name(state) = value {
+                                            Some(state)
+                                        } else {
+                                            None
+                                        }
+                                    }).collect()
+                                ).unwrap_or_default()
+                            )
                         }
                     });
                 }
