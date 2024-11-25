@@ -138,7 +138,7 @@ where
             let headers = headers.borrow_mut();
 
             headers
-                .set("Content-Type", "application/json")
+                .set("Content-Type", "application/json; charset=UTF-8")
                 .map_err(|error| FetchError::HeaderMutationError(format!("{error:?}")))?;
         }
     }

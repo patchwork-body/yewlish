@@ -5,10 +5,10 @@ use std::{collections::HashMap, path::PathBuf};
 
 use clap::Parser;
 use rand::Rng;
-use rocket_ws::Message;
-use rocket::tokio::time::{sleep, Duration};
 use rocket::response::stream::TextStream;
+use rocket::tokio::time::{sleep, Duration};
 use rocket::{response::content::RawHtml, State};
+use rocket_ws::Message;
 
 use storybook::{App, AppProps};
 

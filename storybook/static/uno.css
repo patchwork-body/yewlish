@@ -70,6 +70,7 @@
 .gap-5{gap:1.25rem;}
 .gap-x-2{column-gap:0.5rem;}
 .gap-y-10{row-gap:2.5rem;}
+.gap-y-4{row-gap:1rem;}
 .gap-y-5{row-gap:1.25rem;}
 .overflow-hidden{overflow:hidden;}
 .overflow-y-auto{overflow-y:auto;}
