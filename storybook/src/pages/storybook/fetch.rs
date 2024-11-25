@@ -150,14 +150,14 @@ fn create_post() -> Html {
                 return;
             };
 
-            let name = form_data.get("title").as_string().unwrap_or_default();
-            let number = form_data.get("body").as_string().unwrap_or_default();
+            let title = form_data.get("title").as_string().unwrap_or_default();
+            let body = form_data.get("body").as_string().unwrap_or_default();
 
             create_post.emit(CreatePostParams {
                 body: PostBody {
                     id: 0,
-                    title: name,
-                    body: number,
+                    title,
+                    body,
                     user_id: 0,
                 },
                 ..Default::default()
