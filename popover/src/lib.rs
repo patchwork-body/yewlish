@@ -320,7 +320,7 @@ pub fn popover_content(props: &PopoverContentProps) -> Html {
     let dom_rect = host.get_bounding_client_rect();
 
     let style = stringify!(
-        position: fixed;
+        position: absolute;
         top: 0;
         left: 0;
         will-change: transform;
