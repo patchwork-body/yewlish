@@ -332,19 +332,20 @@ pub fn popover_content(props: &PopoverContentProps) -> Html {
         match props.side {
             PopoverSide::Right => format!("calc({}px + {}px)", dom_rect.x(), dom_rect.width()),
             PopoverSide::Top | PopoverSide::Bottom => match props.align {
-                PopoverAlign::Start => format!("calc({}px - 100%)", dom_rect.x()),
+                PopoverAlign::Start =>
+                    format!("calc({}px - 100% + {}px)", dom_rect.x(), dom_rect.width()),
                 PopoverAlign::Center => format!(
                     "calc({}px - (100% - {}px) / 2)",
                     dom_rect.x(),
                     dom_rect.width(),
                 ),
-                PopoverAlign::End => format!("calc({}px + {}px)", dom_rect.x(), dom_rect.width()),
+                PopoverAlign::End => format!("calc({}px)", dom_rect.x()),
             },
             PopoverSide::Left => format!("calc({}px - 100%)", dom_rect.x()),
         },
         match props.side {
             PopoverSide::Top => format!("calc({}px - 100%)", dom_rect.y()),
-            PopoverSide::Bottom => format!("calc({}px + {}px)", dom_rect.y(), dom_rect.height()),
+            PopoverSide::Bottom => format!("calc({}px + {}px)", dom_rect.top(), dom_rect.height(),),
             PopoverSide::Right | PopoverSide::Left => match props.align {
                 PopoverAlign::Start => format!("calc({}px - 100%)", dom_rect.y()),
                 PopoverAlign::Center =>
