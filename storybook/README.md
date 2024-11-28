@@ -6,7 +6,7 @@
 
 - Install Rust and Cargo: [Rust installation guide](https://www.rust-lang.org/tools/install)
 - Install Trunk: `cargo install trunk`
-- Install Bun: [Bun installation guide](https://bun.sh/docs/install)
+- Install Bun: [Bun installation guide](https://bun.sh/)
 - Install dev-dependencies: `bun install`
 - Install Cargo Make: `cargo install cargo-make`
 
