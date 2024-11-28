@@ -1,15 +1,18 @@
 # storybook
 
-To install dependencies:
+## Development
 
-```bash
-bun install
+### Prerequisites
+
+- Install Rust and Cargo: [Rust installation guide](https://www.rust-lang.org/tools/install)
+- Install Trunk: `cargo install trunk`
+- Install Bun: [Bun installation guide](https://bun.sh/docs/install)
+- Install dev-dependencies: `bun install`
+- Install Cargo Make: `cargo install cargo-make`
+
+### Run in dev mode
+```sh
+cargo make dev
 ```
 
-To run:
-
-```bash
-bun run index.ts
-```
-
-This project was created using `bun init` in bun v1.0.23. [Bun](https://bun.sh) is a fast all-in-one JavaScript runtime.
+Now you can visit `http://localhost:8080` to see the app.

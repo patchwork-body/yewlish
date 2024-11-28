@@ -2,6 +2,9 @@
 command = "bunx"
 args = ["unocss", "--watch", "**/*.rs", "-o", "./static/uno.css"]
 
+[tasks.server]
+command = "cargo"
+args = ["run", "--bin", "server", "--features", "ssr"]
 
 [tasks.serve]
 command = "trunk"
