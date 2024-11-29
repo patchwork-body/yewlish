@@ -11,4 +11,4 @@ command = "trunk"
 args = ["serve", "--features", "hydrate", "-w", "./"]
 
 [tasks.dev]
-run_task = { name = ["css", "serve"], parallel = true }
+run_task = { name = ["css", "serve", "server"], parallel = true }
