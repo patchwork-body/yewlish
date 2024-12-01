@@ -12,7 +12,7 @@ documentation = "https://docs.rs/yewlish-popover"
 
 [dependencies]
 yew = "0.21"
-web-sys = { version = "0.3", features = ["Element", "DomRect"] }
+web-sys = { version = "0.3", features = ["Element", "DomRect", "IntersectionObserver", "IntersectionObserverInit", "IntersectionObserverEntry"] }
 log = "0.4"
 yewlish-presence = "0.1"
 yewlish-attr-passer = "0.1"

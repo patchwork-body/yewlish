@@ -8,7 +8,7 @@ use yew::prelude::*;
 use yewlish_attr_passer::*;
 use yewlish_presence::*;
 use yewlish_roving_focus::helpers::get_focusable_element;
-use yewlish_utils::hooks::{use_controllable_state, use_interaction_outside};
+use yewlish_utils::hooks::{use_controllable_state, use_interaction_outside, use_viewport_move};
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct PopoverContext {
@@ -253,33 +253,6 @@ pub fn popover_content(props: &PopoverContentProps) -> Html {
             .expect("PopoverContent must be a child of Popover")
     });
 
-    use_interaction_outside(
-        {
-            let mut nodes = vec![];
-            nodes.push((&host).into());
-
-            if props.container.is_some() {
-                nodes.push((&context.host.clone()).into());
-            }
-
-            nodes
-        },
-        {
-            let context = context.clone();
-            let on_interaction_outside = props.on_interaction_outside.clone();
-
-            move |event: Event| {
-                on_interaction_outside.emit(event.clone());
-
-                if event.default_prevented() {
-                    return;
-                }
-
-                context.on_toggle.emit(false);
-            }
-        },
-    );
-
     {
         let context = context.clone();
 
@@ -317,46 +290,86 @@ pub fn popover_content(props: &PopoverContentProps) -> Html {
         );
     }
 
+    let window = web_sys::window().expect("Failed to get window");
     let dom_rect = host.get_bounding_client_rect();
+    let adjusted_height = use_state(|| dom_rect.height());
+
+    let auto_update_handler = use_callback(host.clone(), {
+        let adjusted_height = adjusted_height.clone();
+
+        move |(), host| {
+            let dom_rect = host.get_bounding_client_rect();
+            adjusted_height.set(dom_rect.height());
+        }
+    });
 
     let style = stringify!(
-        position: absolute;
+        position: fixed;
         top: 0;
         left: 0;
         will-change: transform;
     )
     .to_string();
 
+    use_viewport_move(&context.host, auto_update_handler);
+
     let transform = format!(
         "transform: translate({}, {});",
         match props.side {
             PopoverSide::Right => format!("calc({}px + {}px)", dom_rect.x(), dom_rect.width()),
             PopoverSide::Top | PopoverSide::Bottom => match props.align {
-                PopoverAlign::Start =>
-                    format!("calc({}px - 100% + {}px)", dom_rect.x(), dom_rect.width()),
+                PopoverAlign::Start => format!("calc({}px - 100%)", dom_rect.x()),
                 PopoverAlign::Center => format!(
                     "calc({}px - (100% - {}px) / 2)",
                     dom_rect.x(),
                     dom_rect.width(),
                 ),
-                PopoverAlign::End => format!("calc({}px)", dom_rect.x()),
+                PopoverAlign::End => format!("calc({}px + {}px)", dom_rect.x(), dom_rect.width()),
             },
             PopoverSide::Left => format!("calc({}px - 100%)", dom_rect.x()),
         },
         match props.side {
             PopoverSide::Top => format!("calc({}px - 100%)", dom_rect.y()),
-            PopoverSide::Bottom => format!("calc({}px + {}px)", dom_rect.top(), dom_rect.height(),),
+            PopoverSide::Bottom => format!("calc({}px + {}px)", dom_rect.y(), *adjusted_height),
             PopoverSide::Right | PopoverSide::Left => match props.align {
                 PopoverAlign::Start => format!("calc({}px - 100%)", dom_rect.y()),
                 PopoverAlign::Center =>
-                    format!("calc({}px - {}px)", dom_rect.y(), dom_rect.height()),
-                PopoverAlign::End => format!("calc({}px + {}px)", dom_rect.y(), dom_rect.height()),
+                    format!("calc({}px - {}px)", dom_rect.y(), *adjusted_height),
+                PopoverAlign::End => format!("calc({}px + {}px)", dom_rect.y(), *adjusted_height),
             },
         },
     );
 
     let style = format!("{style} {transform}");
     let content_ref = use_node_ref();
+
+    use_interaction_outside(
+        {
+            let mut nodes = vec![];
+            nodes.push((&host).into());
+            nodes.push((&content_ref).into());
+
+            if props.container.is_some() {
+                nodes.push((&context.host.clone()).into());
+            }
+
+            nodes
+        },
+        {
+            let context = context.clone();
+            let on_interaction_outside = props.on_interaction_outside.clone();
+
+            move |event: Event| {
+                on_interaction_outside.emit(event.clone());
+
+                if event.default_prevented() {
+                    return;
+                }
+
+                context.on_toggle.emit(false);
+            }
+        },
+    );
 
     let focus_on_present = use_callback(content_ref.clone(), |(), content_ref| {
         if let Some(content) = content_ref.cast::<Element>() {
@@ -394,6 +407,13 @@ pub fn popover_content(props: &PopoverContentProps) -> Html {
         }
     };
 
+    let viewport = window
+        .document()
+        .expect("Failed to get document")
+        .body()
+        .expect("Failed to get document element")
+        .into();
+
     create_portal(
         html! {
             <AttrPasser name="popover-content" ..attributify! {
@@ -406,6 +426,6 @@ pub fn popover_content(props: &PopoverContentProps) -> Html {
                 {element}
             </AttrPasser>
         },
-        host,
+        viewport,
     )
 }
