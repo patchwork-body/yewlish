@@ -93,7 +93,7 @@ pub fn popover_page() -> Html {
                             {"Open"}
                         </PopoverTrigger>
 
-                        <PopoverContent class="data-[state=open]:animate-fade-in data-[state=closed]:animate-fade-out">
+                        <PopoverContent side={PopoverSide::Top} align={PopoverAlign::End} class="data-[state=open]:animate-fade-in data-[state=closed]:animate-fade-out">
                             <div class="p-5 bg-neutral-800 rounded-md">
                                 <p class="text-neutral-200">{"Hello, World!"}</p>
 
