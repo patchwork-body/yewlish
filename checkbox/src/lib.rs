@@ -1,6 +1,7 @@
 use html::IntoPropValue;
 use std::default::Default;
 use std::rc::Rc;
+use web_sys::HtmlButtonElement;
 use yew::prelude::*;
 use yewlish_attr_passer::*;
 use yewlish_presence::*;
@@ -66,7 +67,7 @@ type ReducibleCheckboxContext = UseReducerHandle<CheckboxContext>;
 #[derive(Clone, Debug, PartialEq, Properties)]
 pub struct CheckboxRenderAsProps {
     #[prop_or_default]
-    pub children: ChildrenWithProps<CheckboxIndicator>,
+    pub children: Children,
     #[prop_or_default]
     pub r#ref: NodeRef,
     #[prop_or_default]
@@ -92,7 +93,7 @@ pub struct CheckboxRenderAsProps {
 #[derive(Clone, Debug, PartialEq, Properties)]
 pub struct CheckboxProps {
     #[prop_or_default]
-    pub children: ChildrenWithProps<CheckboxIndicator>,
+    pub children: Children,
     #[prop_or_default]
     pub r#ref: NodeRef,
     #[prop_or_default]
@@ -119,6 +120,23 @@ pub struct CheckboxProps {
     pub render_as: Option<Callback<CheckboxRenderAsProps, Html>>,
 }
 
+/// A customizable checkbox component.
+///
+/// # Example
+///
+/// ```rust
+/// use yew::prelude::*;
+/// use yewlish_checkbox::{Checkbox, CheckboxIndicator, CheckedState};
+///
+/// #[function_component(App)]
+/// fn app() -> Html {
+///     html! {
+///         <Checkbox>
+///             <CheckboxIndicator show_when={CheckedState::Checked}>{"✔"}</CheckboxIndicator>
+///         </Checkbox>
+///     }
+/// }
+/// ```
 #[function_component(Checkbox)]
 pub fn checkbox(props: &CheckboxProps) -> Html {
     let (checked, dispatch) = use_controllable_state(
@@ -166,6 +184,13 @@ pub fn checkbox(props: &CheckboxProps) -> Html {
             event.prevent_default();
         }
     });
+
+    // TODO: BubbleInput
+    let _is_form_control = props
+        .r#ref
+        .cast::<HtmlButtonElement>()
+        .map(|element| element.closest("form").is_ok())
+        .is_some();
 
     use_conditional_attr(props.r#ref.clone(), "data-disabled", props.disabled);
 
@@ -250,6 +275,24 @@ pub struct CheckboxIndicatorProps {
     pub render_as: Option<Callback<CheckboxIndicatorRenderAsProps, Html>>,
 }
 
+/// A component that displays an indicator based on the checkbox state.
+///
+/// # Example
+///
+/// ```rust
+/// use yew::prelude::*;
+/// use yewlish_checkbox::{Checkbox, CheckboxIndicator, CheckedState};
+///
+/// #[function_component(App)]
+/// fn app() -> Html {
+///     html! {
+///         <Checkbox>
+///             <CheckboxIndicator show_when={CheckedState::Checked}>{"✔"}</CheckboxIndicator>
+///             <CheckboxIndicator show_when={CheckedState::Indeterminate}>{"-"}</CheckboxIndicator>
+///         </Checkbox>
+///     }
+/// }
+/// ```
 #[function_component(CheckboxIndicator)]
 pub fn checkbox_indicator(props: &CheckboxIndicatorProps) -> Html {
     let context = use_context::<ReducibleCheckboxContext>()
@@ -485,17 +528,22 @@ mod tests {
     async fn test_checkbox_attr_passer() {
         let t = render! {
             html! {
-                <AttrPasser name="checkbox-indicator" ..attributify!{
-                    "data-testid" => "checkbox-indicator-id",
+                <AttrPasser name="checkbox" ..attributify!{
+                    "data-testid" => "checkbox-id",
                 }>
                     <Checkbox>
-                        <CheckboxIndicator></CheckboxIndicator>
+                        <AttrPasser name="checkbox-indicator" ..attributify!{
+                            "data-testid" => "checkbox-indicator-id",
+                        }>
+                            <CheckboxIndicator></CheckboxIndicator>
+                        </AttrPasser>
                     </Checkbox>
                 </AttrPasser>
             }
         }
         .await;
 
+        assert!(t.query_by_testid("checkbox-id").exists());
         assert!(t.query_by_testid("checkbox-indicator-id").exists());
     }
 

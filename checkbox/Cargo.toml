@@ -1,6 +1,6 @@
 [package]
 name = "yewlish-checkbox"
-version = "0.1.10"
+version = "0.1.11"
 edition = "2021"
 authors = ["Kirill Korotkov <personal.gugfug@gmail.com>"]
 license = "MIT OR Apache-2.0"
@@ -11,14 +11,13 @@ documentation = "https://docs.rs/yewlish-checkbox"
 
 [dependencies]
 yew = "0.21.0"
-yewlish-attr-passer = "0.1.4"
-yewlish-presence = "0.1.2"
-yewlish-utils = "0.1.8"
-log = "0.4.22"
+yewlish-attr-passer = "^0.1"
+yewlish-presence = "^0.1"
+yewlish-utils = "^0.1"
+web-sys = {version = "^0.3", features = ["HtmlButtonElement"]}
 
 [dev-dependencies]
-wasm-bindgen-futures = "0.4.45"
-web-sys = "0.3.72"
-wasm-bindgen-test = "0.3.45"
-gloo-utils = "0.2.0"
-yewlish-testing-tools = "1.2.1"
+wasm-bindgen-futures = "^0.4"
+wasm-bindgen-test = "^0.3"
+gloo-utils = "^0.2"
+yewlish-testing-tools = "^1"
