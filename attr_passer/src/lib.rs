@@ -48,11 +48,12 @@ pub fn attr_passer(props: &AttrPasserProps) -> Html {
     html! {
         <ContextProvider<AttrPasserContext> context={AttrPasserContext {
             name: channel.borrow().name,
-            index: if let Some(parent_context) = parent_context {
-                parent_context.index.into_iter().chain(std::iter::once(channel.borrow().index)).collect()
-            } else {
-                vec![channel.borrow().index]
-            },
+            index: parent_context
+                .filter(|ctx| ctx.name == channel.borrow().name)
+                .map_or_else(
+                    || vec![channel.borrow().index],
+                    |ctx| ctx.index.into_iter().chain(std::iter::once(channel.borrow().index)).collect()
+                )
         }}>
             {props.children.clone()}
         </ContextProvider<AttrPasserContext>>
@@ -360,5 +361,56 @@ mod tests {
 
         let button = t.query_by_role("button");
         assert!(button.exists());
+    }
+
+    #[wasm_bindgen_test]
+    async fn test_attr_passer_with_elements_that_mount_and_unmount() {
+        let t = render!({
+            let show = use_state(|| true);
+
+            let toggle_show = {
+                let show = show.clone();
+                use_callback((), move |_: MouseEvent, ()| {
+                    show.set(!*show);
+                })
+            };
+
+            html! {
+                <>
+                    <button onclick={toggle_show.clone()}>{"Toggle"}</button>
+                    <AttrPasser name="test" ..attributify!{ "role" => "button" }>
+                        { if *show {
+                            html! {
+                                <AttrReceiver name="test">
+                                    <div></div>
+                                </AttrReceiver>
+                            }
+                        } else {
+                            html! {}
+                        }}
+                    </AttrPasser>
+                </>
+            }
+        })
+        .await;
+
+        // Initially, the element should exist
+        let element = t.query_by_role("button");
+        assert!(element.exists());
+
+        // Click the toggle button to unmount the element
+        let toggle_button = t.query_by_text("Toggle");
+        let toggle_button = toggle_button.click().await;
+
+        // The element should no longer exist
+        let element = t.query_by_role("button");
+        assert!(!element.exists());
+
+        // Click the toggle button again to remount the element
+        toggle_button.click().await;
+
+        // The element should exist again
+        let element = t.query_by_role("button");
+        assert!(element.exists());
     }
 }
