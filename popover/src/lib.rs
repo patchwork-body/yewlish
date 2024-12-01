@@ -318,14 +318,14 @@ pub fn popover_content(props: &PopoverContentProps) -> Html {
         match props.side {
             PopoverSide::Right => format!("calc({}px + {}px)", dom_rect.x(), dom_rect.width()),
             PopoverSide::Top | PopoverSide::Bottom => match props.align {
-                PopoverAlign::Start =>
-                    format!("calc({}px - 100% + {}px)", dom_rect.x(), dom_rect.width()),
+                PopoverAlign::Start => format!("calc({}px)", dom_rect.x()),
                 PopoverAlign::Center => format!(
                     "calc({}px - (100% - {}px) / 2)",
                     dom_rect.x(),
                     dom_rect.width(),
                 ),
-                PopoverAlign::End => format!("calc({}px)", dom_rect.x()),
+                PopoverAlign::End =>
+                    format!("calc({}px - 100% + {}px)", dom_rect.x(), dom_rect.width()),
             },
             PopoverSide::Left => format!("calc({}px - 100%)", dom_rect.x()),
         },
@@ -333,10 +333,11 @@ pub fn popover_content(props: &PopoverContentProps) -> Html {
             PopoverSide::Top => format!("calc({}px - 100%)", dom_rect.y()),
             PopoverSide::Bottom => format!("calc({}px + {}px)", dom_rect.y(), *adjusted_height),
             PopoverSide::Right | PopoverSide::Left => match props.align {
-                PopoverAlign::Start => format!("calc({}px - 100%)", dom_rect.y()),
+                PopoverAlign::Start => format!("calc({}px)", dom_rect.y()),
                 PopoverAlign::Center =>
                     format!("calc({}px - {}px)", dom_rect.y(), *adjusted_height),
-                PopoverAlign::End => format!("calc({}px + {}px)", dom_rect.y(), *adjusted_height),
+                PopoverAlign::End =>
+                    format!("calc({}px + {}px - 100%)", dom_rect.y(), *adjusted_height),
             },
         },
     );
