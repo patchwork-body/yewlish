@@ -12,7 +12,7 @@ documentation = "https://docs.rs/yewlish-utils"
 
 [dependencies]
 log = "^0.4"
-web-sys = { version = "^0.3", features = ["ResizeObserver", "IntersectionObserverInit", "IntersectionObserverEntry", "IntersectionObserverInit"] }
+web-sys = { version = "^0.3", features = ["ResizeObserver", "IntersectionObserver", "IntersectionObserverInit", "IntersectionObserverEntry", "IntersectionObserverInit"] }
 yew = "0.21.0"
 
 [dev-dependencies]
