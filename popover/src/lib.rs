@@ -292,14 +292,14 @@ pub fn popover_content(props: &PopoverContentProps) -> Html {
 
     let window = web_sys::window().expect("Failed to get window");
     let dom_rect = host.get_bounding_client_rect();
-    let adjusted_height = use_state(|| dom_rect.height());
+    let adjusted_height = use_state(|| None::<f64>);
 
     let auto_update_handler = use_callback(host.clone(), {
         let adjusted_height = adjusted_height.clone();
 
         move |(), host| {
             let dom_rect = host.get_bounding_client_rect();
-            adjusted_height.set(dom_rect.height());
+            adjusted_height.set(dom_rect.height().into());
         }
     });
 
@@ -331,13 +331,23 @@ pub fn popover_content(props: &PopoverContentProps) -> Html {
         },
         match props.side {
             PopoverSide::Top => format!("calc({}px - 100%)", dom_rect.y()),
-            PopoverSide::Bottom => format!("calc({}px + {}px)", dom_rect.y(), *adjusted_height),
+            PopoverSide::Bottom => format!(
+                "calc({}px + {}px)",
+                dom_rect.y(),
+                adjusted_height.unwrap_or_else(|| dom_rect.height())
+            ),
             PopoverSide::Right | PopoverSide::Left => match props.align {
                 PopoverAlign::Start => format!("calc({}px)", dom_rect.y()),
-                PopoverAlign::Center =>
-                    format!("calc({}px - {}px)", dom_rect.y(), *adjusted_height),
-                PopoverAlign::End =>
-                    format!("calc({}px + {}px - 100%)", dom_rect.y(), *adjusted_height),
+                PopoverAlign::Center => format!(
+                    "calc({}px - {}px)",
+                    dom_rect.y(),
+                    adjusted_height.unwrap_or_else(|| dom_rect.height())
+                ),
+                PopoverAlign::End => format!(
+                    "calc({}px + {}px - 100%)",
+                    dom_rect.y(),
+                    adjusted_height.unwrap_or_else(|| dom_rect.height())
+                ),
             },
         },
     );
