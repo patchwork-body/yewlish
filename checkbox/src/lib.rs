@@ -192,7 +192,7 @@ pub fn checkbox(props: &CheckboxProps) -> Html {
         .map(|element| element.closest("form").is_ok())
         .is_some();
 
-    use_conditional_attr(props.r#ref.clone(), "data-disabled", props.disabled);
+    use_conditional_attr(props.r#ref.clone(), "data-disabled", None, props.disabled);
 
     let element = if let Some(render_as) = &props.render_as {
         html! {
@@ -298,7 +298,7 @@ pub fn checkbox_indicator(props: &CheckboxIndicatorProps) -> Html {
     let context = use_context::<ReducibleCheckboxContext>()
         .expect("CheckboxIndicator must be a child of Checkbox");
 
-    use_conditional_attr(props.r#ref.clone(), "data-disabled", context.disabled);
+    use_conditional_attr(props.r#ref.clone(), "data-disabled", None, context.disabled);
 
     let element = if let Some(render_as) = &props.render_as {
         html! {

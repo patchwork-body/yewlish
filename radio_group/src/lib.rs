@@ -235,7 +235,7 @@ pub fn radio_group_item(props: &RadioGroupItemProps) -> Html {
 
     let disabled = props.disabled || group_context.disabled;
 
-    use_conditional_attr(props.r#ref.clone(), "data-disabled", disabled);
+    use_conditional_attr(props.r#ref.clone(), "data-disabled", None, disabled);
 
     let element = if let Some(render_as) = &props.render_as {
         render_as.emit(RadioGroupItemRenderAsProps {

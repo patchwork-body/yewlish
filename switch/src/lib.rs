@@ -129,7 +129,7 @@ pub fn switch(props: &SwitchProps) -> Html {
         toggle.emit(());
     });
 
-    use_conditional_attr(props.r#ref.clone(), "data-disabled", props.disabled);
+    use_conditional_attr(props.r#ref.clone(), "data-disabled", None, props.disabled);
 
     let element = if let Some(render_as) = &props.render_as {
         render_as.emit(SwitchRenderAsProps {
