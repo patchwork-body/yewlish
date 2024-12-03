@@ -399,7 +399,7 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
                         .any(|v| quote!(#v).to_string().contains(&variant_name.to_string()))
                     {
                         ws_data_enum_variants.push(quote! {
-                            #variant_name(#res)
+                            #variant_name(#res),
                         });
                     }
 
@@ -1150,8 +1150,8 @@ pub fn fetch_schema(input: TokenStream) -> TokenStream {
 
             #[derive(Clone, Debug, PartialEq)]
             enum #state_enum_name {
+                Ws(#ws_state_struct_name),
                 #(#state_enum_variants)*
-                Ws(#ws_state_struct_name)
             }
 
             impl yew::ToHtml for #state_enum_name {

@@ -55,8 +55,10 @@ mod schema {
         PatchPost,
         #[delete("/posts/{id}", slugs = PostSlugs)]
         DeletePost,
-        #[ws("/ws")]
+        #[ws("/ws", res = f64)]
         WebSocket,
+        #[ws("/ws", res = String)]
+        WebSocket2,
     }
 }
 
