@@ -422,11 +422,9 @@ pub fn popover_content(props: &PopoverContentProps) -> Html {
     let viewport = context
         .host
         .cast::<Element>()
-        .and_then(|element| {
-            element
-                .owner_document()
-                .and_then(|doc| doc.document_element())
-        })
+        .and_then(|element| element.owner_document())
+        .and_then(|document| document.body())
+        .and_then(|body| body.dyn_into::<Element>().ok())
         .expect("Failed to get viewport");
 
     create_portal(

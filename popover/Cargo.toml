@@ -1,6 +1,6 @@
 [package]
 name = "yewlish-popover"
-version = "0.1.0-beta.9"
+version = "0.1.0-beta.10"
 edition = "2021"
 authors = ["Kirill Korotkov <personal.gugfug@gmail.com>"]
 license = "MIT OR Apache-2.0"
@@ -16,5 +16,5 @@ web-sys = { version = "^0.3", features = ["Element", "DomRect", "IntersectionObs
 log = "^0.4"
 yewlish-presence = "^0.1"
 yewlish-attr-passer = "^0.1"
-yewlish-utils = "^0.1.9"
+yewlish-utils = "^0.1"
 yewlish-roving-focus = "^0.1"
