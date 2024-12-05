@@ -290,7 +290,6 @@ pub fn popover_content(props: &PopoverContentProps) -> Html {
         );
     }
 
-    let window = web_sys::window().expect("Failed to get window");
     let dom_rect = host.get_bounding_client_rect();
     let adjusted_height = use_state(|| None::<f64>);
 
@@ -308,6 +307,7 @@ pub fn popover_content(props: &PopoverContentProps) -> Html {
         top: 0;
         left: 0;
         will-change: transform;
+        z-index: auto;
     )
     .to_string();
 
@@ -419,12 +419,15 @@ pub fn popover_content(props: &PopoverContentProps) -> Html {
         }
     };
 
-    let viewport = window
-        .document()
-        .expect("Failed to get document")
-        .body()
-        .expect("Failed to get document element")
-        .into();
+    let viewport = context
+        .host
+        .cast::<Element>()
+        .and_then(|element| {
+            element
+                .owner_document()
+                .and_then(|doc| doc.document_element())
+        })
+        .expect("Failed to get viewport");
 
     create_portal(
         html! {

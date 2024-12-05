@@ -130,7 +130,6 @@ pub fn popover_page() -> Html {
                         </PopoverContent>
                     </Popover>
                 </Section>
-
                 // <Section title="With container">
                 //     <Popover>
                 //         <PopoverTrigger class="flex justify-center gap-x-2" render_as={Callback::from(move |PopoverTriggerRenderAsProps { class, children, toggle, is_open }| {
@@ -301,6 +300,8 @@ pub fn popover_page() -> Html {
                 //     </Popover>
                 // </Section>
             </Wrapper>
+
+            <iframe class="min-w-screen max-h-[800px]" src="http://localhost:8080/popover"></iframe>
         </div>
     }
 }

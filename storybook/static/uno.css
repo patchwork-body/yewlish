@@ -31,6 +31,7 @@
 .h-full{height:100%;}
 .max-h-\[200px\]{max-height:200px;}
 .max-h-\[300px\]{max-height:300px;}
+.max-w-\[300px\]{max-width:300px;}
 .min-h-\[2000px\]{min-height:2000px;}
 .min-h-screen{min-height:100vh;}
 .min-w-\[200px\]{min-width:200px;}
