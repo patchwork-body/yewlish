@@ -155,8 +155,6 @@ pub fn use_observe_move(
                             .as_str(),
                         );
 
-                        // options.set_root(Some(root));
-
                         let threshold = current_threshold
                             .borrow()
                             .map(|t| t.clamp(0.0, 1.0))
