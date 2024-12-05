@@ -307,7 +307,6 @@ pub fn popover_content(props: &PopoverContentProps) -> Html {
         top: 0;
         left: 0;
         will-change: transform;
-        z-index: auto;
     )
     .to_string();
 
