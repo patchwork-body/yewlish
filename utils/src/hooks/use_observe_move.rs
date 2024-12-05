@@ -34,7 +34,8 @@ pub fn use_observe_move(
         element_ref.cast::<Element>().and_then(|element| {
             element
                 .owner_document()
-                .and_then(|doc| doc.document_element())
+                .and_then(|document| document.body())
+                .and_then(|body| body.dyn_into::<Element>().ok())
         })
     });
 
@@ -153,6 +154,8 @@ pub fn use_observe_move(
                             )
                             .as_str(),
                         );
+
+                        // options.set_root(Some(root));
 
                         let threshold = current_threshold
                             .borrow()
