@@ -230,6 +230,8 @@ pub struct PopoverContentProps {
     #[prop_or_default]
     pub container: Option<Element>,
     #[prop_or_default]
+    pub viewport: Option<Element>,
+    #[prop_or_default]
     pub render_as: Option<Callback<PopoverContentRenderAsProps, Html>>,
     #[prop_or_default]
     pub side: PopoverSide,
@@ -418,13 +420,12 @@ pub fn popover_content(props: &PopoverContentProps) -> Html {
         }
     };
 
-    let viewport = context
-        .host
-        .cast::<Element>()
-        .and_then(|element| element.owner_document())
-        .and_then(|document| document.body())
-        .and_then(|body| body.dyn_into::<Element>().ok())
-        .expect("Failed to get viewport");
+    let viewport = props.viewport.clone().unwrap_or_else(|| {
+        host.owner_document()
+            .and_then(|document| document.body())
+            .and_then(|body| body.dyn_into::<Element>().ok())
+            .expect("Failed to get viewport")
+    });
 
     create_portal(
         html! {
