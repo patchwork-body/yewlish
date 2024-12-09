@@ -212,16 +212,6 @@ impl Display for PopoverAlign {
 }
 
 #[derive(Clone, Debug, PartialEq, Properties)]
-pub struct PopoverContentRenderAsProps {
-    pub r#ref: NodeRef,
-    pub is_open: bool,
-    #[prop_or_default]
-    pub children: Children,
-    #[prop_or_default]
-    pub class: Option<AttrValue>,
-}
-
-#[derive(Clone, Debug, PartialEq, Properties)]
 pub struct PopoverContentProps {
     #[prop_or_default]
     pub children: Children,
@@ -231,8 +221,6 @@ pub struct PopoverContentProps {
     pub container: Option<Element>,
     #[prop_or_default]
     pub viewport: Option<Element>,
-    #[prop_or_default]
-    pub render_as: Option<Callback<PopoverContentRenderAsProps, Html>>,
     #[prop_or_default]
     pub side: PopoverSide,
     #[prop_or_default]
@@ -397,29 +385,6 @@ pub fn popover_content(props: &PopoverContentProps) -> Html {
         }
     });
 
-    let element = if let Some(render_as) = &props.render_as {
-        html! {
-            render_as.emit(PopoverContentRenderAsProps {
-                r#ref: content_ref.clone(),
-                children: props.children.clone(),
-                class: props.class.clone(),
-                is_open: context.is_open,
-            })
-        }
-    } else {
-        html! {
-            <Presence
-                r#ref={content_ref.clone()}
-                name="popover-content"
-                present={context.is_open}
-                class={&props.class}
-                on_present={focus_on_present}
-            >
-                {props.children.clone()}
-            </Presence>
-        }
-    };
-
     let viewport = props.viewport.clone().unwrap_or_else(|| {
         host.owner_document()
             .and_then(|document| document.body())
@@ -427,17 +392,40 @@ pub fn popover_content(props: &PopoverContentProps) -> Html {
             .expect("Failed to get viewport")
     });
 
+    let side = props.side.clone();
+    let align = props.align.clone();
+
     create_portal(
         html! {
-            <AttrPasser name="popover-content" ..attributify! {
-                "data-state" => if context.is_open { "open" } else { "closed" },
-                "data-side" => props.side.to_string(),
-                "data-align" => props.align.to_string(),
-                "style" => style,
-                "role" => "dialog",
-            }>
-                {element}
-            </AttrPasser>
+            <Presence
+                r#ref={content_ref.clone()}
+                class={&props.class}
+                name="popover-content"
+                present={context.is_open}
+                class={&props.class}
+                on_present={focus_on_present}
+                render_as={Callback::from(move |presence_props: PresenceRenderAsProps| {
+                    if !presence_props.presence {
+                        return html! {};
+                    }
+
+                    html! {
+                        <div
+                            ref={presence_props.r#ref.clone()}
+                            data-state={if context.is_open { "open" } else { "closed" }}
+                            data-side={side.to_string()}
+                            data-align={align.to_string()}
+                            role="dialog"
+                            style={style.clone()}
+                            class={&presence_props.class}
+                        >
+                            {presence_props.children.clone()}
+                        </div>
+                    }
+                })}
+            >
+                {props.children.clone()}
+            </Presence>
         },
         viewport,
     )
