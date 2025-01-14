@@ -19,16 +19,16 @@ To use yewlish-fetch in your project, add the following to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-yewlish-fetch = "0.3.0"
+yewlish-fetch = "^0.3"
 
 # required peer-dependencies
-yewlish-fetch-utils = "0.3.0"
+yewlish-fetch-utils = "^0.3"
 ```
 
 in case you want to use web sockets, make sure you have `web-sys` with `WebSocket` feature enabled.
 
 ```toml
-web-sys = {version = "0.3.72", features = ["AbortController", "WebSocket"]}
+web-sys = {version = "^0.3", features = ["AbortController", "WebSocket"]}
 ```
 
 ## Prerequisites
